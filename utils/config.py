@@ -1,0 +1,29 @@
+# utils/config.py
+
+import os
+from dotenv import load_dotenv
+from utils.config import LAZADA_PARTNER_ID, LAZADA_PARTNER_KEY, LAZADA_REDIRECT_URI
+
+load_dotenv()
+
+# ของ shopee
+SHOPEE_PARTNER_ID = os.getenv("SHOPEE_PARTNER_ID")
+SHOPEE_PARTNER_KEY = os.getenv("SHOPEE_PARTNER_KEY")
+SHOPEE_SHOP_ID = os.getenv("SHOPEE_SHOP_ID")
+SHOPEE_ACCESS_TOKEN = os.getenv("SHOPEE_ACCESS_TOKEN")
+ 
+ # ของ เว็บไซต์ 
+FUJIKA_WP_USER = os.getenv("FUJIKA_WP_USER")
+FUJIKA_WP_APP_PASSWORD_API_ACCESS = os.getenv("FUJIKA_WP_APP_PASSWORD_API_ACCESS")
+
+
+MYSQL_HOST = os.getenv("MYSQL_HOST")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_USER = os.getenv("MYSQL_USER")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
+MYSQL_DB = os.getenv("MYSQL_DB")
+
+LAZADA_PARTNER_ID = os.getenv("LAZADA_PARTNER_ID")
+LAZADA_PARTNER_KEY = os.getenv("LAZADA_PARTNER_KEY")
+LAZADA_REDIRECT_URI = os.getenv("LAZADA_REDIRECT_URI")
+LAZADA_SHOPEE_API_KEY = os.getenv("SHOPEE_API_KEY")
