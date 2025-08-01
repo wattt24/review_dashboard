@@ -17,9 +17,10 @@ from utils.config import (
     MYSQL_DB,
 )
 
+
 def fetch_shopee_ratings(product_id, limit=20, offset=0):
     """
-    ดึงรีวิวสินค้าจาก Shopee OpenAPI
+    ดึงรีวิวสินค้าจาก Shopee OpenAPI พร้อมดัก error
     """
     partner_id = int(SHOPEE_PARTNER_ID)
     partner_key = SHOPEE_PARTNER_KEY.encode("utf-8")
@@ -45,63 +46,82 @@ def fetch_shopee_ratings(product_id, limit=20, offset=0):
         "limit": limit,
     }
 
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    data = response.json()
-    return data.get("data", {}).get("ratings", [])
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # ตรวจสอบว่า status code เป็น 2xx หรือไม่
+        data = response.json()
+        return data.get("data", {}).get("ratings", [])
+    except requests.RequestException as e:
+        print(f"เกิดข้อผิดพลาดในการดึงข้อมูลจาก Shopee API: {e}")
+        return []
+    except Exception as e:
+        print(f"ข้อผิดพลาดอื่น ๆ: {e}")
+        return []
 
-def save_reviews_to_db(reviews, product_name="Unknown", platform="Shopee"):
+
+def save_reviews_to_db(reviews, product_id: int, platform_id: int):
     """
-    บันทึกรีวิวลง MySQL
+    บันทึกรีวิวลง MySQL พร้อมดัก error
     """
-    conn = pymysql.connect(
-        host=MYSQL_HOST,
-        user=MYSQL_USER,
-        password=MYSQL_PASSWORD,
-        database=MYSQL_DB,
-        charset="utf8mb4",
-    )
-    cursor = conn.cursor()
-
-    for r in reviews:
-        review_text = r.get("comment", "")
-        rating = r.get("rating_star", 0)
-        review_date_unix = r.get("ctime", 0)
-        author = r.get("author_username", "")
-
-        review_date = datetime.fromtimestamp(review_date_unix).strftime("%Y-%m-%d")
-
-        cursor.execute(
-            """
-            INSERT INTO reviews
-            (product_name, platform, rating, review_text, review_date, author, sentiment)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                product_name,
-                platform,
-                rating,
-                review_text,
-                review_date,
-                author,
-                "unknown",  # รอวิเคราะห์ sentiment ต่อไป
-            ),
+    try:
+        conn = pymysql.connect(
+            host=MYSQL_HOST,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            database=MYSQL_DB,
+            charset="utf8mb4",
         )
+        cursor = conn.cursor()
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+        for r in reviews:
+            review_text = r.get("comment", "")
+            rating = r.get("rating_star", 0)
+            review_date_unix = r.get("ctime", 0)
+            author = r.get("author_username", "")
+            review_title = None
+            sentiment_score = None
+            review_date = datetime.fromtimestamp(review_date_unix).strftime("%Y-%m-%d %H:%M:%S")
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO reviews
+                    (customer_id, product_id, platform_id, rating, review_title, review_text, review_date, sentiment_score, author)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        None,
+                        product_id,
+                        platform_id,
+                        rating,
+                        review_title,
+                        review_text,
+                        review_date,
+                        sentiment_score,
+                        author,
+                    ),
+                )
+            except Exception as e:
+                print(f"เกิดข้อผิดพลาดในการบันทึกรีวิว: {e}")
+                continue
+
+        conn.commit()
+    except pymysql.MySQLError as e:
+        print(f"ไม่สามารถเชื่อมต่อหรือเขียนฐานข้อมูลได้: {e}")
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
 
 if __name__ == "__main__":
-    # ทดสอบดึงและบันทึกรีวิว
-    PRODUCT_ID = "1234567890"  # แก้เป็นรหัสสินค้าจริง
-    PRODUCT_NAME = "Shower Head 5-in-1"
+    PRODUCT_ID = 1234567890  # แก้ให้ตรงกับสินค้าจริงใน Shopee
+    PLATFORM_ID = 1  # สมมุติว่า Shopee มี platform_id = 1
 
     reviews = fetch_shopee_ratings(PRODUCT_ID)
     print(f"ดึงรีวิวมาได้ {len(reviews)} รายการ")
 
     if reviews:
-        save_reviews_to_db(reviews, product_name=PRODUCT_NAME, platform="Shopee")
+        save_reviews_to_db(reviews, product_id=PRODUCT_ID, platform_id=PLATFORM_ID)
         print("บันทึกรีวิวลงฐานข้อมูลสำเร็จ")
     else:
         print("ไม่มีรีวิวให้บันทึก")
