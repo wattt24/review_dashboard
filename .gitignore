@@ -1,4 +1,13 @@
+# ไฟล์ config ส่วนตัว
 .env
 .env.*
+
+# Python compiled files
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Virtual environment
+venv/
+
+# VS Code config (ถ้ามี)
+.vscode/
