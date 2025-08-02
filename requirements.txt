@@ -1,8 +1,17 @@
-certifi==2025.7.14
-charset-normalizer==3.4.2
-idna==3.10
-PyMySQL==1.1.1
+# Core HTTP libraries
 requests==2.32.4
 urllib3==2.5.0
-uvicorn[standard]
+idna==3.10
+charset-normalizer==3.4.2
+certifi==2025.7.14
+
+# Database connector
+PyMySQL==1.1.1
+SQLAlchemy==2.0.30
+
+# Environment variables
+python-dotenv==1.1.1
+
+# FastAPI server
 fastapi
+uvicorn[standard]
