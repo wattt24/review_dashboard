@@ -1,0 +1,1 @@
+response = wcapi.get("products", params={"per_page": 20}, timeout=20) #เพิ่ม timeout

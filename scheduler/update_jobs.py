@@ -42,8 +42,8 @@ if project_root not in sys.path:
 
 import schedule
 import time
-from scraping.shopee_scraper import scrape_shopee
-from scraping.lazada_scraper import scrape_lazada
+from shopee_api import scrape_shopee
+from lazada_api import scrape_lazada
 from scraping.facebook_scraper import scrape_facebook
 from scraping.fujikaservice_scraper import scrape_fujikaservice
 from scraping.fujikathailand_scraper import scrape_fujikathailand

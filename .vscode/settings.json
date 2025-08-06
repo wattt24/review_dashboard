@@ -1,4 +1,29 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system",
+    // กำหนด path เพิ่มเติมให้ VS Code รู้จัก module ที่อยู่ในโฟลเดอร์ย่อย
+    "python.analysis.extraPaths": [
+        "./", // โฟลเดอร์หลักของโปรเจกต์
+        "./utils", // ฟังก์ชันช่วยต่างๆ เช่น config, logger
+        "./database", // โมดูลเชื่อมต่อฐานข้อมูล เช่น db_utils, token_models
+        "./services", // โค้ดเกี่ยวกับการเชื่อมต่อ Shopee/Lazada OAuth
+        "./scraping", // โค้ดดึงข้อมูลจากหลายแพลตฟอร์ม (Shopee, Lazada, Facebook, etc.)
+        "./processing", // โค้ดจัดรูปแบบหรือทำความสะอาดข้อมูล
+        "./analysis", // การวิเคราะห์ข้อมูล (Sentiment, SWOT)
+        "./dashboard", // โค้ดส่วนแสดงผล Dashboard
+        "./reports", // โมดูลสำหรับสร้างรายงาน PDF/CSV
+        "./routers", // FastAPI routers (OAuth Shopee/Lazada)
+        "./scheduler" // ตั้งเวลาการอัปเดตข้อมูลอัตโนมัติ
+    ],
+    // ระบุ path ไปยัง interpreter Python ที่ใช้ใน virtual environment (.venv) บน Windows
+    "python.pythonPath": "venv/Scripts/python.exe",
+    // ชี้ไปที่ไฟล์ .env ที่เก็บตัวแปรลับ เช่น API Key, Client Secret ฯลฯ
+    "python.envFile": "${workspaceFolder}/.env",
+    // เปิดใช้งานการตรวจสอบโค้ด (linting) เพื่อหาข้อผิดพลาดหรือข้อแนะนำ
+    "python.linting.enabled": true,
+    // ใช้ pylint เป็น linter ที่ช่วยตรวจสอบคุณภาพโค้ด Python
+    "python.linting.pylintEnabled": true,
+    // ใช้ black เป็น code formatter ให้โค้ดเรียบร้อยตามมาตรฐาน PEP8
+    "python.formatting.provider": "black",
+    // ให้ VS Code format โค้ดอัตโนมัติเมื่อกด Save
+    "editor.formatOnSave": true,
     "python-envs.pythonProjects": []
 }
