@@ -3,10 +3,12 @@ import os
 import sys
 import re
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from services.woocommerce_service import fetch_products
+from services.woocommerce_service import fetch_product_sales
+import scraping.shopee_api as shopee_api
+import plotly.express as px
 products = fetch_products()
-
+shopee_api.get_reviews()
 # ---- Imports ----
 from scraping import (
     cps_oem_scraper,
@@ -17,7 +19,6 @@ from scraping import (
     line_oa_scraper,
     shopee_api  
 )
-
 
 st.title("📊 Dashboard's ข้อมูลจากหลายแพลตฟอร์ม")
 # ---- Page config ----
@@ -39,11 +40,12 @@ if view == "by Watsana":
         "💬 LINE Official Account"
     ])
 
-    # 🧠 ที่ด้านบนสุด (ก่อนเริ่มแท็บ)
+    # ตั้งค่าค่าเริ่มต้น ถ้ายังไม่เคยคลิก
     if "show_posts" not in st.session_state:
-     st.session_state.show_posts = False
+        st.session_state.show_posts = False
     if "show_products" not in st.session_state:
-     st.session_state.show_products = False
+        st.session_state.show_products = False
+
     #--------------------- 1. Fujikathailand ---------------------
     with tabs[0]:
         st.header("📄 WordPress Posts: Fujikathailand.com")
@@ -52,14 +54,14 @@ if view == "by Watsana":
         col_post_btn1, col_post_btn2 = st.columns([1, 9])
         with col_post_btn1:
             post_btn_label = "📖 ดูบทความ" if not st.session_state.show_posts else "🔽 ย่อกลับบทความ"
-            if st.button(post_btn_label, key="toggle_posts"):
+            if st.button(post_btn_label, key="toggle_posts_button"):
                 st.session_state.show_posts = not st.session_state.show_posts
 
         # 🔘 ปุ่มสลับการแสดงสินค้า
         col_prod_btn1, col_prod_btn2 = st.columns([1, 9])
         with col_prod_btn1:
             prod_btn_label = "🛒 ดูสินค้า" if not st.session_state.show_products else "🔽 ย่อกลับสินค้า"
-            if st.button(prod_btn_label, key="toggle_products"):
+            if st.button(prod_btn_label, key="toggle_products_button"):
                 st.session_state.show_products = not st.session_state.show_products
 
         # 📄 แสดงบทความ
@@ -95,24 +97,75 @@ if view == "by Watsana":
 
                 st.markdown("---")
 
-            # 🔽 ปุ่มย่อกลับบทความ (ด้านล่างขวา)
+            # 🔽 ปุ่มย่อกลับบทความ (ล่างสุด)
             col1, col2 = st.columns([9, 1])
             with col2:
                 if st.button("🔽 ย่อกลับบทความ", key="collapse_posts_bottom"):
                     st.session_state.show_posts = False
 
-        # 🛍️ แสดงสินค้า
-        if st.session_state.show_products:
-            st.subheader("🛒 สินค้าในร้าน (WooCommerce)")
-            for p in products:
-                st.write(f"ชื่อสินค้า: {p['name']}, ราคา: {p['price']}")
 
-            # 🔽 ปุ่มย่อกลับสินค้า (ด้านล่างขวา)
-            col1, col2 = st.columns([9, 1])
-            with col2:
-                if st.button("🔽 ย่อกลับสินค้า", key="collapse_products_bottom"):
-                    st.session_state.show_products = True
+            # 🛒 แสดงสินค้า
+            if st.session_state.show_products:
+                st.subheader("🛒 สินค้าในร้าน (WooCommerce)")
+                for p in products:
+                    st.write(f"ชื่อสินค้า: {p['name']}, ราคา: {p['price']}")
 
+                # 🔽 ปุ่มย่อกลับสินค้า
+                col1, col2 = st.columns([9, 1])
+                with col2:
+                    if st.button("🔽 ย่อกลับสินค้า", key="collapse_products_bottom"):
+                        st.session_state.show_products = False
+
+        # 📈 วิเคราะห์ยอดขายสินค้า
+        
+
+    with st.expander("📈 วิเคราะห์ยอดขายสินค้า (WooCommerce Orders)"):
+        if st.button("📊 แสดงกราฟยอดขายสินค้า", key="show_sales_chart_btn"):
+            sales_data = fetch_product_sales()
+            if sales_data:
+                # เตรียมข้อมูลสำหรับกราฟ
+                product_names = list(sales_data.keys())
+                quantities = [info["quantity"] for info in sales_data.values()]
+                revenues = [round(info["revenue"], 2) for info in sales_data.values()]
+
+                # 🔸 แสดงข้อมูลแบบตาราง
+                sales_list = [
+                    {
+                        "สินค้า": name,
+                        "จำนวนที่ขายได้": qty,
+                        "รายได้รวม (บาท)": rev
+                    }
+                    for name, qty, rev in zip(product_names, quantities, revenues)
+                ]
+                st.dataframe(sales_list)
+
+                # 🔹 กราฟ Interactive ด้วย Plotly
+
+                # กราฟที่ 1: รายได้รวม (บาท)
+                fig_revenue = px.bar(
+                    x=product_names,
+                    y=revenues,
+                    labels={"x": "ชื่อสินค้า", "y": "รายได้รวม (บาท)"},
+                    title="💰 รายได้รวมต่อสินค้า (บาท)"
+                )
+                fig_revenue.update_layout(xaxis_tickangle=-45)
+                st.plotly_chart(fig_revenue, use_container_width=True)
+
+                # กราฟที่ 2: จำนวนสินค้าที่ขายได้
+                fig_quantity = px.bar(
+                    x=product_names,
+                    y=quantities,
+                    labels={"x": "ชื่อสินค้า", "y": "จำนวนที่ขายได้"},
+                    title="📦 จำนวนสินค้าที่ขายได้ต่อรายการ"
+                )
+                fig_quantity.update_layout(xaxis_tickangle=-45)
+                st.plotly_chart(fig_quantity, use_container_width=True)
+
+            else:
+                st.warning("ไม่มีข้อมูลยอดขายที่สามารถแสดงได้")
+
+
+    # --------------------- 1. Lazada ---------------------    
 
     # --------------------- 2. CPSManu ---------------------
     with tabs[1]:
@@ -162,8 +215,7 @@ if view == "by Watsana":
         insights = line_oa_scraper.get_line_oa_insight()
         st.json(insights)
 
-    # ---- Show alternate page ----
+# ---- Show alternate page ----
 elif view == "1 vs 2":
     st.title("🎉 May I be happy.")
     st.markdown("🥳 ขอให้ปีนี้เต็มไปด้วยความสุข ความสำเร็จ และสิ่งดีๆ!")
-

@@ -16,6 +16,7 @@ def get_wc_api():
         version="wc/v3"
     )
 def fetch_products():
+    wcapi = get_wc_api()    
     response = wcapi.get("products", params={"per_page": 20})
     return response.json()
 

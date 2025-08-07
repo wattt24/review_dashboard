@@ -1,4 +1,4 @@
-# scraping/shopee_scraper.py
+# scraping/shopee_api.py
 
 import requests
 import time
@@ -125,3 +125,23 @@ if __name__ == "__main__":
         print("บันทึกรีวิวลงฐานข้อมูลสำเร็จ")
     else:
         print("ไม่มีรีวิวให้บันทึก")
+
+def get_reviews():
+    """
+    ดึงรีวิวจาก Shopee และบันทึกลงฐานข้อมูล
+    """
+    PRODUCT_ID = 1234567890  # ใส่ ID จริงของสินค้า Shopee
+    PLATFORM_ID = 1  # 1 หมายถึง Shopee
+
+    reviews = fetch_shopee_ratings(PRODUCT_ID)
+    print(f"ดึงรีวิวมาได้ {len(reviews)} รายการ")
+
+    if reviews:
+        save_reviews_to_db(reviews, product_id=PRODUCT_ID, platform_id=PLATFORM_ID)
+        print("บันทึกรีวิวลงฐานข้อมูลสำเร็จ")
+    else:
+        print("ไม่มีรีวิวให้บันทึก")
+
+
+if __name__ == "__main__":
+    get_reviews()
