@@ -1,24 +1,12 @@
 # utils/config.py
 
 import os
-from dotenv import load_dotenv
 from woocommerce import API
+from dotenv import load_dotenv
+
+load_dotenv()  # โหลดจาก .env
 
 
-load_dotenv()
-
-# สร้าง WooCommerce API instance สําหรับการเชื่อมต่อ-ของ เว็บไซต์ fujikathailand.com
-def get_wc_api():
-    return API(
-        url=os.getenv("WOOCOMMERCE_URL"),
-        consumer_key=os.getenv("WOOCOMMERCE_CONSUMER_KEY"),
-        consumer_secret=os.getenv("WOOCOMMERCE_CONSUMER_SECRET"),
-        version="wc/v3"
-    )
-def fetch_products():
-    wcapi = get_wc_api()    
-    response = wcapi.get("products", params={"per_page": 20})
-    return response.json()
 
 
 # ของ shopee
@@ -29,8 +17,17 @@ SHOPEE_ACCESS_TOKEN = os.getenv("SHOPEE_ACCESS_TOKEN")
  
  # ของ เว็บไซต์ fujikathailand.com
 FUJIKA_WP_USER = os.getenv("FUJIKA_WP_USER")
+FUJIKA_WP_PASSWORD = os.getenv("FUJIKA_WP_PASSWORD")
 FUJIKA_WP_APP_PASSWORD_API_ACCESS = os.getenv("FUJIKA_WP_APP_PASSWORD_API_ACCESS")
+WOOCOMMERCE_URL = os.getenv("WOOCOMMERCE_URL")
+WOOCOMMERCE_CONSUMER_KEY = os.getenv("WOOCOMMERCE_CONSUMER_KEY")
+WOOCOMMERCE_CONSUMER_SECRET = os.getenv("WOOCOMMERCE_CONSUMER_SECRET")  
 
+
+# 🛠️ Fujikaservice.com (บริการหลังการขาย)
+FUJIKA_SERVICE_SITE_URL = os.getenv("FUJIKA_SERVICE_SITE_URL")
+FUJIKA_SERVICE_CONSUMER_KEY = os.getenv("FUJIKA_SERVICE_CONSUMER_KEY")
+FUJIKA_SERVICE_CONSUMER_SECRET = os.getenv("FUJIKA_SERVICE_CONSUMER_SECRET")
 
 #lazada
 LAZADA_PARTNER_ID = os.getenv("LAZADA_PARTNER_ID")

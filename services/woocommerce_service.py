@@ -1,4 +1,4 @@
-#services/woocommerce_service.py
+# services/woocommerce_service.py
 import requests
 from requests.auth import HTTPBasicAuth
 import os
@@ -11,62 +11,81 @@ load_dotenv()
 WOOCOMMERCE_URL = os.getenv("WOOCOMMERCE_URL")
 WOOCOMMERCE_CONSUMER_KEY = os.getenv("WOOCOMMERCE_CONSUMER_KEY")
 WOOCOMMERCE_CONSUMER_SECRET = os.getenv("WOOCOMMERCE_CONSUMER_SECRET")
-WOOCOMMERCE_BASE_URL = os.getenv("WOOCOMMERCE_BASE_URL")
-def fetch_products(per_page=20, timeout=15):
-    print("✅ เริ่ม fetch_products()55555")  # DEBUG
-    url = f"{WOOCOMMERCE_URL}/wp-json/wc/v3/products"
+
+# ----------------- ดึงสินค้าทั้งหมด -----------------
+def fetch_all_product_sales(per_page=100, timeout=15, max_pages=50, order_status="completed"):
+    print("✅ เริ่ม fetch_products_with_sales()")
     auth = HTTPBasicAuth(WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET)
 
-    try: 
-        response = requests.get(
-            url,
+    # ----------------- ดึงข้อมูลสินค้า -----------------
+    products_url = f"{WOOCOMMERCE_URL}/wp-json/wc/v3/products"
+    all_products = []
+    page = 1
+    while True:
+        resp = requests.get(
+            products_url,
             auth=auth,
-            params={"per_page": per_page},
+            params={"per_page": per_page, "page": page},
             timeout=timeout
         )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.Timeout:
-        print("⏱️ Timeout: เซิร์ฟเวอร์ใช้เวลานานเกินไป")
-        return []
-    except Exception as e:
-        print(f"❌ ดึงข้อมูลสินค้าไม่สำเร็จ99999: {e}")
-        return []
+        resp.raise_for_status()
+        products = resp.json()
+        if not products:
+            break
 
+        for p in products:
+            image_url = p.get("images", [{}])[0].get("src", "")
+            all_products.append({
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "price": float(p.get("price") or 0),
+                "image_url": image_url,
+                "stock_quantity": p.get("stock_quantity", 0),
+                "average_rating": float(p.get("average_rating", "0") or 0),
+                "rating_count": p.get("rating_count", 0),
+                "quantity_sold": 0,
+                "total_revenue": 0.0
+            })
 
-def fetch_product_sales(per_page=100, timeout=15):#วิเคราะห์ยอดขายรายสินค้า
-    print("✅ เริ่ม fetch_product_sales()")
-    url = f"{WOOCOMMERCE_URL}/wp-json/wc/v3/orders"
-    auth = HTTPBasicAuth(WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET)
+        if len(products) < per_page or page >= max_pages:
+            break
+        page += 1
 
-    try:
-        response = requests.get(
-            url,
+    # ----------------- ดึงยอดขาย -----------------
+    orders_url = f"{WOOCOMMERCE_URL}/wp-json/wc/v3/orders"
+    sales_data = {}
+    page = 1
+    while True:
+        resp = requests.get(
+            orders_url,
             auth=auth,
-            params={"per_page": per_page, "status": "completed"},  # เฉพาะออเดอร์ที่จบแล้ว
+            params={"per_page": per_page, "page": page, "status": order_status},
             timeout=timeout
         )
-        response.raise_for_status()
-        orders = response.json()
+        resp.raise_for_status()
+        orders = resp.json()
+        if not orders:
+            break
 
-        # รวมยอดขายตามสินค้า
-        product_sales = {}
         for order in orders:
             for item in order.get("line_items", []):
                 product_name = item.get("name")
-                quantity = item.get("quantity", 0)
+                qty = item.get("quantity", 0)
                 total = float(item.get("total", 0.0))
+                if product_name not in sales_data:
+                    sales_data[product_name] = {"quantity": 0, "revenue": 0.0}
+                sales_data[product_name]["quantity"] += qty
+                sales_data[product_name]["revenue"] += total
 
-                if product_name not in product_sales:
-                    product_sales[product_name] = {"quantity": 0, "revenue": 0.0}
-                product_sales[product_name]["quantity"] += quantity
-                product_sales[product_name]["revenue"] += total
+        if len(orders) < per_page or page >= max_pages:
+            break
+        page += 1
 
-        return product_sales
+    # ----------------- รวมข้อมูลสินค้า + ยอดขาย -----------------
+    for product in all_products:
+        if product["name"] in sales_data:
+            product["quantity_sold"] = sales_data[product["name"]]["quantity"]
+            product["total_revenue"] = round(sales_data[product["name"]]["revenue"], 2)
 
-    except requests.exceptions.Timeout:
-        print("⏱️ Timeout: เซิร์ฟเวอร์ใช้เวลานานเกินไป")
-        return {}
-    except Exception as e:
-        print(f"❌ ดึงข้อมูลยอดขายสินค้าไม่สำเร็จ:3333 {e}")
-        return {}
+    print(f"✅ รวมข้อมูลสำเร็จ: {len(all_products)} รายการ")
+    return all_products

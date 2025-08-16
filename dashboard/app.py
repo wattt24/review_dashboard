@@ -1,34 +1,40 @@
-import streamlit as st
 import os
 import sys
-import re
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from services.woocommerce_service import fetch_products
-from services.woocommerce_service import fetch_product_sales
-import scraping.shopee_api as shopee_api
+import pandas as pd
+import streamlit as st
 import plotly.express as px
-products = fetch_products()
-shopee_api.get_reviews()
-# ---- Imports ----
-from scraping import (
-    cps_oem_scraper,
-    facebook_scraper,
-    fujikaservice_scraper,
-    fujikathailand_scraper,
-    lazada_api,
-    line_oa_scraper,
-    shopee_api  
-)
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from scraping.fujikathailand_scraper import fetch_all_product_sales, fetch_posts, fetch_comments,fetch_product_reviews
+
+from collections import defaultdict
+from scraping.fujikaservice_scraper import fetch_service_all_products
+service_products = fetch_service_all_products()
+products = service_products 
+
+def summarize_buyers(buyers_list, group_by="email"):
+    """
+    นับจำนวนครั้งที่แต่ละผู้ซื้อซื้อสินค้า
+    """
+    buyer_count = defaultdict(int)
+
+    for b in buyers_list:
+        key = b[group_by]  # ใช้ email หรือ phone เป็นตัวระบุ
+        buyer_count[key] += 1
+
+    # แปลงเป็น list ของ dict
+    result = [{"buyer": k, "purchase_count": v} for k, v in buyer_count.items()]
+    return result
 
 st.title("📊 Dashboard's ข้อมูลจากหลายแพลตฟอร์ม")
 # ---- Page config ----
 st.set_page_config(page_title="Fujika Multi-Platform Dashboard", layout="wide")
 
 # ---- Top menu to switch view ----
-view = st.selectbox("🔽 เลือกหน้าแสดงผล", ["by Watsana", "1 vs 2"])
+view = st.selectbox("🔽 เลือกหน้าแสดงผล", ["แสดงข้อมูลแต่ละแหล่ง", "1 vs 2"])
 
 # ---- Show normal dashboard ----
-if view == "by Watsana":
+if view == "แสดงข้อมูลแต่ละแหล่ง":
 
     tabs = st.tabs([
         "📰 Fujikathailand.com",
@@ -40,182 +46,354 @@ if view == "by Watsana":
         "💬 LINE Official Account"
     ])
 
-    # ตั้งค่าค่าเริ่มต้น ถ้ายังไม่เคยคลิก
-    if "show_posts" not in st.session_state:
-        st.session_state.show_posts = False
-    if "show_products" not in st.session_state:
-        st.session_state.show_products = False
+   
 
-    #--------------------- 1. Fujikathailand ---------------------
+    # --------------------- 1. Fujikathailand ---------------------
     with tabs[0]:
-        st.header("📄 WordPress Posts: Fujikathailand.com")
+        st.header("📰 Website Fujikathailand.com")
+        products, buyers, total_orders = fetch_all_product_sales()
+        st.subheader("📦 ข้อมูลเกี่ยวกับสินค้าแลการขาย")
+        st.markdown(f"- จำนวนสินค้าทั้งหมด {len(products)} รายการ")
+        st.markdown(f"- จำนวนครั้งทั้งหมดที่เคยขาย {total_orders} ครั้ง")
+            
+        # -------------------- แสดงกราฟยอดขาย --------------------
+        # กรองเฉพาะสินค้าที่ขายได้
+        products_sold = [p for p in products if p["quantity_sold"] > 0]
 
-        # 🔘 ปุ่มสลับการแสดงบทความ
-        col_post_btn1, col_post_btn2 = st.columns([1, 9])
-        with col_post_btn1:
-            post_btn_label = "📖 ดูบทความ" if not st.session_state.show_posts else "🔽 ย่อกลับบทความ"
-            if st.button(post_btn_label, key="toggle_posts_button"):
-                st.session_state.show_posts = not st.session_state.show_posts
+        # ------------------ กราฟจำนวนสินค้าที่ขายได้ ------------------
+        if products_sold:  # แสดงเฉพาะสินค้าที่ขายได้
+            st.markdown("## 📊 จำนวนสินค้าที่ขายได้")
 
-        # 🔘 ปุ่มสลับการแสดงสินค้า
-        col_prod_btn1, col_prod_btn2 = st.columns([1, 9])
-        with col_prod_btn1:
-            prod_btn_label = "🛒 ดูสินค้า" if not st.session_state.show_products else "🔽 ย่อกลับสินค้า"
-            if st.button(prod_btn_label, key="toggle_products_button"):
-                st.session_state.show_products = not st.session_state.show_products
+            # --- สร้าง dict ใหม่เพื่อเปลี่ยนชื่อคีย์เป็นภาษาไทย ---
+            products_sold_renamed = []
+            for p in products_sold:
+                products_sold_renamed.append({
+                    "ชื่อสินค้า": p["name"],
+                    "จำนวนที่ขายได้": p["quantity_sold"],
+                    "รายได้รวม": p["total_revenue"]
+                })
+        if products_sold:
+            best_selling = max(products_sold, key=lambda x: x["quantity_sold"])
+            st.markdown(f"**📌 สินค้าขายดีที่สุด:** {best_selling['name']} ({best_selling['quantity_sold']} ชิ้น)")
 
-        # 📄 แสดงบทความ
-        if st.session_state.show_posts:
-            posts_with_comments = fujikathailand_scraper.fetch_posts_with_comments()
-            st.markdown("---")
-            for post in posts_with_comments:
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.subheader(post.get("title", {}).get("rendered", "ไม่มีหัวข้อ"))
-                    excerpt_raw = post.get("excerpt", {}).get("rendered", "")
-                    excerpt_clean = re.sub(
-                        r'<a[^>]*>(Read More|อ่านเพิ่มเติม|Continue reading)[^<]*</a>',
-                        '',
-                        excerpt_raw,
-                        flags=re.IGNORECASE
-                    )
-                    excerpt_clean = re.sub(r'(Read More\s*»?|อ่านเพิ่มเติม)', '', excerpt_clean, flags=re.IGNORECASE)
-                    st.write(excerpt_clean, unsafe_allow_html=True)
-                    st.markdown(f"[อ่านเพิ่มเติม]({post.get('link')})", unsafe_allow_html=True)
+            # --- กราฟจำนวนสินค้าที่ขายได้ ---
+            fig_qty = px.bar(
+                products_sold_renamed,
+                x="ชื่อสินค้า",
+                y="จำนวนที่ขายได้",
+                hover_data=["รายได้รวม"],
+                title="จำนวนสินค้าที่ขายได้"
+            )
+            fig_qty.update_layout(xaxis_tickangle=-45)
+            st.plotly_chart(fig_qty, use_container_width=True)
+        
+                    # ตรวจสอบค่าเริ่มต้นใน session_state
+            if "show_products_table" not in st.session_state:
+                st.session_state.show_products_table = False
 
-                with col2:
-                    comments = post.get("comments", [])
-                    if comments:
-                        st.markdown("### 💬 ความคิดเห็น")
-                        for c in comments:
-                            st.markdown(
-                                f"- **{c.get('author_name', 'ไม่ระบุชื่อ')}**: {c.get('content', {}).get('rendered', '')}",
-                                unsafe_allow_html=True
-                            )
-                    else:
-                        st.markdown("_ไม่มีคอมเมนต์_")
+            # ปุ่ม toggle ด้านบน
+            if st.button("🛒 คลิกเพื่อแสดง/ซ่อนตารางสินค้า", key="toggle_products_table_top"):
+                st.session_state.show_products_table = not st.session_state.show_products_table
 
-                st.markdown("---")
+            # แสดงตารางถ้าเปิด
+            if st.session_state.show_products_table:
+                st.markdown("### 🛒 ตารางสินค้า ทั้งหมด 57 รายการ")
 
-            # 🔽 ปุ่มย่อกลับบทความ (ล่างสุด)
-            col1, col2 = st.columns([9, 1])
-            with col2:
-                if st.button("🔽 ย่อกลับบทความ", key="collapse_posts_bottom"):
-                    st.session_state.show_posts = False
+                # --- หัวตาราง ---
+                col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5, 1, 3, 1, 1, 1, 1.5])
+                with col1: st.markdown("**ลำดับ**")
+                with col2: st.markdown("**ภาพสินค้า**")
+                with col3: st.markdown("**ชื่อสินค้า + ราคา**")
+                with col4: st.markdown("**สต๊อกคงเหลือ**")
+                with col5: st.markdown("**จำนวนขายได้**")
+                with col6: st.markdown("**รายได้รวม (บาท)**")
+                with col7: st.markdown("**เรทติ้ง**")
 
+                st.markdown("---")  # เส้นแบ่งหัวตาราง
 
-            # 🛒 แสดงสินค้า
-            if st.session_state.show_products:
-                st.subheader("🛒 สินค้าในร้าน (WooCommerce)")
-                for p in products:
-                    st.write(f"ชื่อสินค้า: {p['name']}, ราคา: {p['price']}")
+                # --- ข้อมูลสินค้า ---
+                for idx, p in enumerate(products, start=1):
+                    col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5, 1, 3, 1, 1, 1, 1.5])
+                    with col1: st.markdown(f"{idx}")
+                    with col2: 
+                        if p.get("image_url"): st.image(p["image_url"], width=80)
+                    with col3:
+                        st.markdown(f"**{p.get('name','')}**")
+                        st.markdown(f"💵 {p.get('price',0)} บาท")
+                    with col4: st.markdown(f"{p.get('stock_quantity',0)}")
+                    with col5: st.markdown(f"{p.get('quantity_sold',0)}")
+                    with col6: st.markdown(f"{p.get('total_revenue',0):,.2f}")
+                    with col7: st.markdown(f"{p.get('average_rating',0):.1f} ⭐ ({p.get('rating_count',0)})")
 
-                # 🔽 ปุ่มย่อกลับสินค้า
-                col1, col2 = st.columns([9, 1])
-                with col2:
-                    if st.button("🔽 ย่อกลับสินค้า", key="collapse_products_bottom"):
-                        st.session_state.show_products = False
+                    st.markdown("---")  # เส้นแบ่งแต่ละแถว
 
-        # 📈 วิเคราะห์ยอดขายสินค้า
+                # --- ปุ่ม toggle ด้านล่างขวา ---
+                st.write("")  # เว้นบรรทัด
+                # ฟังก์ชัน toggle
+                def hide_table():
+                    st.session_state.show_products_table = False
+
+                # --- ปุ่ม toggle ด้านล่างขวา ---
+                st.write("")  # เว้นบรรทัด
+                spacer1, spacer2, spacer3, spacer4, spacer5, spacer6, col_button = st.columns([1,1,1,1,1,1,1])
+                col_button.button("❌ ซ่อนตารางสินค้า", key="toggle_products_table_bottom", on_click=hide_table)
+
+                                
+        # ------------------ กราฟรายได้รวม ------------------
+        if products_sold:  # แสดงเฉพาะถ้ามีสินค้าที่ขายได้
+            st.markdown("## 💰 รายได้รวมต่อสินค้า")
+            fig_rev = px.bar(
+                products_sold,
+                x="name",
+                y="total_revenue",
+                hover_data=["quantity_sold"],
+                labels={"total_revenue": "รายได้รวม (บาท)"},
+                title="รายได้รวมต่อสินค้า"
+            )
+            fig_rev.update_layout(xaxis_tickangle=-45)
+            st.plotly_chart(fig_rev, use_container_width=True)
+
+        # ดึงข้อมูลสินค้าและผู้ซื้อ
+        products, buyers_list,total_orders = fetch_all_product_sales()
+
+        # นับจำนวนครั้งที่แต่ละผู้ซื้อซื้อสินค้า (ใช้ email เป็นตัวระบุ)
+        buyer_summary = summarize_buyers(buyers_list, group_by="email")
+
+        # แปลงเป็น DataFrame เพื่อจัดการง่าย
+        df_buyers = pd.DataFrame(buyer_summary)
+
+        # แสดงตารางทั้งหมด
+        # st.subheader("รายชื่อผู้ซื้อทั้งหมด")
+        # st.dataframe(df_buyers)
+
+        # ลูกค้าที่ซื้อเกิน 2 ครั้ง
+        # st.subheader("ลูกค้าที่ซื้อเกิน 2 ครั้ง")
+        # st.dataframe(df_buyers[df_buyers['purchase_count'] > 2])
+
+        # ลูกค้าที่ซื้อสูงสุด
+        max_purchase = df_buyers['purchase_count'].max()
+        st.subheader("ตารางจำนวนครั้งที่ลูกค้าซื้อสินค้า")
+        st.dataframe(df_buyers[df_buyers['purchase_count'] == max_purchase])
+        # กราฟ Top 10 ผู้ซื้อบ่อยที่สุด
+        fig = px.scatter(
+        df_buyers,
+        x="buyer",               # ชื่อลูกค้า หรือ email/phone
+        y="purchase_count",      # จำนวนครั้งที่ซื้อ
+        size="purchase_count",   # ขนาดจุดตามจำนวนครั้งซื้อ
+        color="purchase_count",  # สีตามจำนวนครั้งซื้อ
+        labels={"buyer": "ผู้ซื้อ", "purchase_count": "จำนวนครั้งที่ซื้อ"},
+        title="🛒 จำนวนครั้งที่ลูกค้าซื้อสินค้า"
+        )
+
+        fig.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='DarkSlateGrey')))
+        fig.update_layout(xaxis_tickangle=-45)
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # -------------------- ผู้ซื้อ --------------------
+        st.subheader("👥 รายชื่อผู้ซื้อทั้งหมด")
+        if st.checkbox("🗂️ แสดงตาราง"):
+            st.dataframe(buyers, use_container_width=True)
+
+        # -------------------- แยกภูมิภาค --------------------
+        st.subheader("🌏 สรุปผู้ซื้อแยกตามภูมิภาค")
+        if buyers:
+            region_counts = {}
+            for b in buyers:
+                region = b.get("region", "ไม่ทราบ")
+                region_counts[region] = region_counts.get(region, 0) + 1
+
+            regions = list(region_counts.keys())
+            counts = list(region_counts.values())
+
+            fig_region = px.pie(
+                names=regions,
+                values=counts,
+                title="ผู้ซื้อแยกตามภูมิภาค"
+            )
+            st.plotly_chart(fig_region, use_container_width=True)
+        
         
 
-    with st.expander("📈 วิเคราะห์ยอดขายสินค้า (WooCommerce Orders)"):
-        if st.button("📊 แสดงกราฟยอดขายสินค้า", key="show_sales_chart_btn"):
-            sales_data = fetch_product_sales()
-            if sales_data:
-                # เตรียมข้อมูลสำหรับกราฟ
-                product_names = list(sales_data.keys())
-                quantities = [info["quantity"] for info in sales_data.values()]
-                revenues = [round(info["revenue"], 2) for info in sales_data.values()]
+        st.markdown("---")
+        st.title("📌 Fujika WordPress Posts & Comments")
 
-                # 🔸 แสดงข้อมูลแบบตาราง
-                sales_list = [
-                    {
-                        "สินค้า": name,
-                        "จำนวนที่ขายได้": qty,
-                        "รายได้รวม (บาท)": rev
-                    }
-                    for name, qty, rev in zip(product_names, quantities, revenues)
-                ]
-                st.dataframe(sales_list)
+        # -------------------- ดึงโพสต์ --------------------
+        st.header("โพสต์ล่าสุด")
+        try:
+            posts = fetch_posts(per_page=5)
+        except Exception as e:
+            st.error(f"ไม่สามารถดึงโพสต์ได้: {e}")
+            posts = []
 
-                # 🔹 กราฟ Interactive ด้วย Plotly
+        for p in posts:
+            st.subheader(p["title"]["rendered"])
+            st.markdown(p.get("excerpt", {}).get("rendered", ""), unsafe_allow_html=True)
+            
+            # -------------------- ดึงคอมเมนต์ --------------------
+            post_id = p["id"]
+            try:
+                comments = fetch_comments(post_id)
+            except Exception as e:
+                st.warning(f"ไม่สามารถดึงคอมเมนต์สำหรับโพสต์ {post_id} ได้: {e}")
+                comments = []
 
-                # กราฟที่ 1: รายได้รวม (บาท)
-                fig_revenue = px.bar(
-                    x=product_names,
-                    y=revenues,
-                    labels={"x": "ชื่อสินค้า", "y": "รายได้รวม (บาท)"},
-                    title="💰 รายได้รวมต่อสินค้า (บาท)"
-                )
-                fig_revenue.update_layout(xaxis_tickangle=-45)
-                st.plotly_chart(fig_revenue, use_container_width=True)
-
-                # กราฟที่ 2: จำนวนสินค้าที่ขายได้
-                fig_quantity = px.bar(
-                    x=product_names,
-                    y=quantities,
-                    labels={"x": "ชื่อสินค้า", "y": "จำนวนที่ขายได้"},
-                    title="📦 จำนวนสินค้าที่ขายได้ต่อรายการ"
-                )
-                fig_quantity.update_layout(xaxis_tickangle=-45)
-                st.plotly_chart(fig_quantity, use_container_width=True)
-
+            if comments:
+                st.markdown(f"**คอมเมนต์ ({len(comments)})**")
+                for c in comments:
+                    st.markdown(f"- **{c['author_name']}**: {c['content']['rendered']}", unsafe_allow_html=True)
             else:
-                st.warning("ไม่มีข้อมูลยอดขายที่สามารถแสดงได้")
+                st.info("ยังไม่มีคอมเมนต์")
+        
+        # st.header("WooCommerce Product Reviews")
 
+        # per_page_reviews = st.slider("จำนวนรีวิวต่อครั้ง", min_value=10, max_value=100, value=20)
+        # reviews = fetch_product_reviews(per_page=per_page_reviews)
 
-    # --------------------- 1. Lazada ---------------------    
+        # min_rating = st.slider("กรองรีวิวตามเรทติ้ง ≥", min_value=0, max_value=5, value=4)
+        # filtered_reviews = filter_reviews_by_rating(reviews, min_rating=min_rating)
 
+        # if filtered_reviews:
+        #     reviews_df = pd.DataFrame([{
+        #         "ID": r["id"],
+        #         "Product ID": r["product_id"],
+        #         "Reviewer": r["reviewer"],
+        #         "Rating": r["rating"],
+        #         "Date": r["date_created"],
+        #         "Review": r["review"]
+        #     } for r in filtered_reviews])
+        #     st.dataframe(reviews_df)
+
+        #     # แสดงกราฟเรทติ้ง
+        #     fig = px.histogram(reviews_df, x="Rating", nbins=5, title="Distribution of Ratings")
+        #     st.plotly_chart(fig)
+        # else:
+        #     st.info("ไม่พบรีวิวที่ตรงกับเงื่อนไข")
     # --------------------- 2. CPSManu ---------------------
     with tabs[1]:
         st.header("🏭 WordPress Posts: cpsmanu.com")
-        posts = cps_oem_scraper.fetch_posts()
-        for post in posts:
-            st.subheader(post['title'])
-            st.write(post['date'])
-            st.write(post['link'])
-            st.divider()
+        st.write("ที่อยู่ ""https://www.cpsmanu.com/")
+        st.title("สินค้าและบริการ")
+
+
+        images = [
+            {"url": "https://www.cpsmanu.com/wp-content/uploads/2023/02/icon-sh_gr.jpg", "link": "https://www.cpsmanu.com/water-heater/"},
+            {"url": "https://www.cpsmanu.com/wp-content/uploads/2023/02/icon-pu_gr.jpg", "link": "https://www.cpsmanu.com/home-water-pump/"},
+            {"url": "https://www.cpsmanu.com/wp-content/uploads/2023/02/icon-wa_gr.jpg", "link": "https://www.cpsmanu.com/water-purifier/"},
+            {"url": "https://www.cpsmanu.com/wp-content/uploads/2023/02/icon-st_gr-.jpg", "link": "https://www.cpsmanu.com/electric-stove/"},
+            {"url": "https://www.cpsmanu.com/wp-content/uploads/2023/02/icon-oem_gr.jpg", "link": "https://www.cpsmanu.com/oem-odm-services/"},
+        ]
+
+        cols = st.columns(len(images))
+
+        for col, img in zip(cols, images):
+            with col:
+                st.markdown(f'<a href="{img["link"]}" target="_blank"><img src="{img["url"]}" width="120" style="border-radius: 8px;"></a>', unsafe_allow_html=True)
+
+
 
     # --------------------- 3. FujikaService ---------------------
     with tabs[2]:
         st.header("🛠️ ข้อมูลบริการหลังการขาย: Fujikaservice.com")
-        data = fujikaservice_scraper.fetch_service_data()
-        st.dataframe(data)
+        
+        # ดึงสินค้า
+        service_products = fetch_service_all_products()
+        
+        # สร้าง DataFrame (ถ้าต้องการ)
+        if service_products:
+            df_products = pd.DataFrame(service_products)
+            st.write("ตัวอย่าง DataFrame ของสินค้า:")
+            st.dataframe(df_products)
 
+        # toggle table
+        if "show_products_table" not in st.session_state:
+            st.session_state.show_products_table = True
+
+        def hide_table():
+            st.session_state.show_products_table = False
+
+        if st.button("🛒 คลิกเพื่อแสดง/ซ่อนตารางสินค้า", key="toggle_products_table_top_1"):
+            st.session_state.show_products_table = not st.session_state.show_products_table
+
+        if st.session_state.show_products_table:
+            st.markdown("### 🛒 ตารางสินค้า (สวยแบบหลายคอลัมน์)")
+            
+            # --- หัวตาราง ---
+            col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5,1,3,1,1,1,1.5])
+            with col1: st.markdown("**ลำดับ**")
+            with col2: st.markdown("**ภาพสินค้า**")
+            with col3: st.markdown("**ชื่อสินค้า + ราคา**")
+            with col4: st.markdown("**สต๊อกคงเหลือ**")
+            with col5: st.markdown("**จำนวนขายได้**")
+            with col6: st.markdown("**รายได้รวม (บาท)**")
+            with col7: st.markdown("**เรทติ้ง**")
+            st.markdown("---")
+
+            # --- ข้อมูลสินค้า ---
+            for idx, p in enumerate(service_products, start=1):
+                col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5,1,3,1,1,1,1.5])
+                with col1: st.markdown(f"{idx}")
+                with col2: 
+                    if p.get("image_url"): st.image(p["image_url"], width=80)
+                with col3:
+                    st.markdown(f"**{p.get('name','')}**")
+                    st.markdown(f"💵 {p.get('price',0)} บาท")
+                with col4: st.markdown(f"{p.get('stock_quantity',0)}")
+                with col5: st.markdown(f"{p.get('quantity_sold',0)}")
+                with col6: st.markdown(f"{p.get('total_revenue',0):,.2f}")
+                with col7: st.markdown(f"{p.get('average_rating',0):.1f} ⭐ ({p.get('rating_count',0)})")
+                st.markdown("---")
+
+            # ปุ่ม toggle ด้านล่าง
+            col1, col2, col3, col4, col5, col6, col_button = st.columns([1,1,1,1,1,1,1])
+            col_button.button("❌ ซ่อนตารางสินค้า", key="toggle_products_table_bottom_1", on_click=hide_table)
+            
+        # st.subheader("🛒 Products / สินค้า")
+        # if products:
+        #     df_products = pd.DataFrame(products)
+        #     st.dataframe(df_products)
+        # else:
+        #     st.info("ไม่พบ products")
+
+        # -------------------- Summary --------------------
+        # st.subheader("📌 Summary")
+        # st.write(f"จำนวน Feedback: {len(feedback)}")
+        # st.write(f"จำนวน Tickets: {len(tickets)}")
+        # st.write(f"จำนวน Products: {len(products)}")
     # --------------------- 4. Shopee ---------------------
     with tabs[3]:
         st.header("🛍️ รีวิว Shopee")
-        reviews = shopee_api.get_reviews()
-        st.dataframe(reviews)
+        # reviews = shopee_api.get_reviews()
+        # st.dataframe(reviews)
 
     # --------------------- 5. Lazada ---------------------
     with tabs[4]:
         st.header("📦 Lazada Orders")
-        if lazada_api.is_token_valid():
-            orders = lazada_api.get_orders()
-            st.dataframe(orders)
-        else:
-            st.warning("⚠️ Token หมดอายุ กรุณาเข้าสู่ระบบใหม่")
-            st.markdown(f"[คลิกเพื่อรับ Token ใหม่]({lazada_api.get_auth_url()})")
+        # if lazada_api.is_token_valid():
+        #     orders = lazada_api.get_orders()
+        #     st.dataframe(orders)
+        # else:
+        #     st.warning("⚠️ Token หมดอายุ กรุณาเข้าสู่ระบบใหม่")
+        #     st.markdown(f"[คลิกเพื่อรับ Token ใหม่]({lazada_api.get_auth_url()})")
 
     # --------------------- 6. Facebook Page / Ads ---------------------
     with tabs[5]:
         st.header("📘 Facebook Page / Ads")
-        page_insight = facebook_scraper.get_page_insights()
-        ad_data = facebook_scraper.get_ads_data()
-        st.subheader("📈 Page Insights")
-        st.json(page_insight)
-        st.subheader("💰 Ads Data")
-        st.dataframe(ad_data)
+        # page_insight = facebook_scraper.get_page_insights()
+        # ad_data = facebook_scraper.get_ads_data()
+        # st.subheader("📈 Page Insights")
+        # st.json(page_insight)
+        # st.subheader("💰 Ads Data")
+        # st.dataframe(ad_data)
 
     # --------------------- 7. LINE OA ---------------------
     with tabs[6]:
         st.header("💬 LINE OA Insights")
-        insights = line_oa_scraper.get_line_oa_insight()
-        st.json(insights)
+        # insights = line_oa_scraper.get_line_oa_insight()
+        # st.json(insights)
 
 # ---- Show alternate page ----
 elif view == "1 vs 2":
     st.title("🎉 May I be happy.")
     st.markdown("🥳 ขอให้ปีนี้เต็มไปด้วยความสุข ความสำเร็จ และสิ่งดีๆ!")
+    st.button("🎉 คุณสามารถกดปุ่มนี้ได้")
