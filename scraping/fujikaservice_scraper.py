@@ -1,20 +1,105 @@
 
 # scraping/fujikaservice_scraper.py
 import requests
-from utils.config import FUJIKA_SERVICE_API_KEY
+from utils.config import FUJIKA_SERVICE_SITE_URL, FUJIKA_SERVICE_CONSUMER_KEY, FUJIKA_SERVICE_CONSUMER_SECRET
+from requests.auth import HTTPBasicAuth
 
-def fetch_service_feedback():
-    url = "https://fujikaservice.com/api/v1/feedback"
-    headers = {"Authorization": f"Bearer {FUJIKA_SERVICE_API_KEY}"}
-    r = requests.get(url, headers=headers)
-    return r.json() if r.status_code == 200 else []
-# scraping/fujikaservice_scraper.py
+def fetch_service_all_products(per_page=100, timeout=15, max_pages=50):
+    """
+    ดึงข้อมูลสินค้า WooCommerce
+    """
+    auth = HTTPBasicAuth(FUJIKA_SERVICE_CONSUMER_KEY, FUJIKA_SERVICE_CONSUMER_SECRET)
+    url = "https://www.fujikaservice.com/wp-json/wc/v3/products"
 
-def fetch_service_data():
-    # TODO: เขียน logic ดึงข้อมูลจากระบบบริการหลังการขายของ fujikaservice.com
-    # เช่น web scraping หรือ REST API ถ้ามี
-    print("✅ เรียกใช้งาน fetch_service_data สำเร็จจ้าาาา")
-    return [
-        {"ticket_id": 1, "status": "open", "subject": "แจ้งซ่อมสินค้า"},
-        {"ticket_id": 2, "status": "closed", "subject": "ขอใบรับประกัน"},
-    ]
+    all_products = []
+    page = 1
+
+    while True:
+        resp = requests.get(url, auth=auth, params={"per_page": per_page, "page": page}, timeout=timeout)
+        resp.raise_for_status()
+        products = resp.json()
+
+        if not products:
+            break
+
+        for p in products:
+            image_url = p.get("images", [{}])[0].get("src", "")
+            all_products.append({
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "price": float(p.get("price") or 0),
+                "image_url": image_url,
+                "stock_quantity": p.get("stock_quantity", 0),
+                "average_rating": float(p.get("average_rating", "0") or 0),
+                "rating_count": p.get("rating_count", 0),
+                "quantity_sold": 0,
+                "total_revenue": 0.0
+            })
+
+        if len(products) < per_page or page >= max_pages:
+            break
+        page += 1
+
+    return all_products
+
+# -------------------- ดึง feedback / คำติชม --------------------
+# -------------------- ฟังก์ชันรวมเรียกใช้งาน --------------------
+# -------------------- ดึง Feedback --------------------
+# def fetch_service_feedback():
+#     """
+#     ดึง Feedback / คำติชมจาก REST API ของ fujikaservice.com
+#     คืนค่าเป็น list ของ dict
+#     """
+#     url = "https://fujikaservice.com/wp-json/wc/v3/feedback"
+#     headers = {
+#         "Authorization": f"Bearer {FUJIKA_SERVICE_CONSUMER_SECRET,WOOCOMMERCE_CONSUMER_KEY}",
+#         "Accept": "application/json"
+#     }
+#     try:
+#         r = requests.get(url, headers=headers, timeout=10)
+#         r.raise_for_status()
+#         return r.json()  # คืนค่า list ของ feedback
+#     except requests.RequestException as e:
+#         print(f"Error fetching feedback: {e}")
+#         return []
+
+# # -------------------- ดึง Tickets --------------------
+# def fetch_service_tickets():
+#     """
+#     ดึงข้อมูล Tickets / งานบริการ
+#     """
+#     url = "f{FUJIKA_SERVICE_SITE_URL}/wp-json/fujikaservice/v1/tickets"
+#     headers = {
+#         "Authorization": f"Bearer {FUJIKA_SERVICE_CONSUMER_SECRET}",
+#         "Accept": "application/json"
+#     }
+#     try:
+#         r = requests.get(url, headers=headers, timeout=10)
+#         r.raise_for_status()
+#         return r.json()
+#     except requests.RequestException as e:
+#         print(f"Error fetching tickets: {e}")
+#         # fallback ถ้า API ไม่คืนค่า
+#         return [
+#             {"ticket_id": 1, "status": "open", "subject": "แจ้งซ่อมสินค้า"},
+#             {"ticket_id": 2, "status": "closed", "subject": "ขอใบรับประกัน"},
+#         ]
+
+# # -------------------- ดึง Products --------------------
+
+
+# -------------------- ฟังก์ชันรวม --------------------
+# def fetch_all_service_data():
+    # """
+    # ดึงข้อมูลทั้งหมด: feedback + tickets + products
+    # """
+    # feedback = fetch_service_feedback()
+    # tickets = fetch_service_tickets()
+    # products = fetch_service_all_products()
+
+    # print(f"✅ ดึงข้อมูลสำเร็จ: {len(feedback)} feedback, {len(tickets)} tickets, {len(products)} products")
+    # return {
+    #     "feedback": feedback,
+    #     "tickets": tickets,
+    #     "products": products
+    # }
