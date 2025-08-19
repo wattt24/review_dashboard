@@ -11,10 +11,10 @@ load_dotenv()  # โหลดจาก .env
 
 # ของ shopee
 SHOPEE_PARTNER_ID = os.getenv("SHOPEE_PARTNER_ID")
-SHOPEE_PARTNER_KEY = os.getenv("SHOPEE_PARTNER_KEY")
+SHOPEE_PARTNER_SECRET = os.getenv("SHOPEE_PARTNER_SECRET")
 SHOPEE_SHOP_ID = os.getenv("SHOPEE_SHOP_ID")
 SHOPEE_ACCESS_TOKEN = os.getenv("SHOPEE_ACCESS_TOKEN")
- 
+SHOPEE_REDIRECT_URI = os.getenv("SHOPEE_REDIRECT_URI")
  # ของ เว็บไซต์ fujikathailand.com
 FUJIKA_WP_USER = os.getenv("FUJIKA_WP_USER")
 FUJIKA_WP_PASSWORD = os.getenv("FUJIKA_WP_PASSWORD")

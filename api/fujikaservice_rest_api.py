@@ -9,7 +9,7 @@ def fetch_service_all_products(per_page=100, timeout=15, max_pages=50):
     ดึงข้อมูลสินค้า WooCommerce
     """
     auth = HTTPBasicAuth(FUJIKA_SERVICE_CONSUMER_KEY, FUJIKA_SERVICE_CONSUMER_SECRET)
-    url = "https://www.fujikaservice.com/wp-json/wc/v3/products"
+    url = f"{FUJIKA_SERVICE_SITE_URL}/wp-json/wc/v3/products"
 
     all_products = []
     page = 1

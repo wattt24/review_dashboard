@@ -44,11 +44,11 @@ import schedule
 import time
 from shopee_api import scrape_shopee
 from lazada_api import scrape_lazada
-from scraping.facebook_scraper import scrape_facebook
-from scraping.fujikaservice_scraper import scrape_fujikaservice
-from scraping.fujikathailand_scraper import scrape_fujikathailand
-from scraping.cps_oem_scraper import scrape_cps_oem
-from scraping.line_oa_scraper import scrape_line_oa
+from api.facebook_scraper import scrape_facebook
+from api.fujikaservice_rest_api import scrape_fujikaservice
+from api.fujikathailand_rest_api import scrape_fujikathailand
+from api.cps_oem_scraper import scrape_cps_oem
+from api.line_oa_scraper import scrape_line_oa
 
 def run_scheduler():
     print("✅ Scheduler started... รันทุก 10 วินาที")
