@@ -3,7 +3,6 @@
 import os
 from woocommerce import API
 from dotenv import load_dotenv
-
 load_dotenv()  # โหลดจาก .env
 
 
@@ -47,9 +46,3 @@ FUJIKA_SERVICE_API_KEY = os.getenv("FUJIKA_SERVICE_API_KEY")
 #cps
 CPS_WP_USER = os.getenv("CPS_WP_USER")
 CPS_WP_APP_PASSWORD_API_ACCESS = os.getenv("CPS_WP_APP_PASSWORD_API_ACCESS")
-
-MYSQL_HOST = os.getenv("MYSQL_HOST")
-MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
-MYSQL_USER = os.getenv("MYSQL_USER")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
-MYSQL_DB = os.getenv("MYSQL_DB")
