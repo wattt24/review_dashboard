@@ -6,3 +6,5 @@ python-dotenv==1.1.1
 plotly==6.2.0
 schedule==1.2.1
 WooCommerce==3.0.0
+fastapi
+uvicorn
