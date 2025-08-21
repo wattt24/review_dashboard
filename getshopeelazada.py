@@ -1,25 +1,8 @@
+#ge
 from fastapi import FastAPI
 from services.shopee_auth import get_token
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import os
-from datetime import datetime
 
 app = FastAPI()
-
-
-
-scope = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
-
-credentials = ServiceAccountCredentials.from_json_keyfile_name("/etc/secrets/service_account.json", scope)
-client = gspread.authorize(credentials)
-
-sheet_id = os.environ.get("GOOGLE_SHEET_ID")
-sheet = client.open_by_key(sheet_id).sheet1
-
-print(sheet.title)
-
 @app.get("/")
 def home():
     return {"msg": "Shopee Backend is running"}

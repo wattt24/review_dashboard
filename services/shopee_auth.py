@@ -1,4 +1,5 @@
 # services/shopee_auth.py
+import os
 import time
 import hmac
 import hashlib
@@ -12,15 +13,16 @@ from utils.config import (
     SHOPEE_REDIRECT_URI
 )
 
-# ===================== Google Sheets setup =====================
-scope = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
-creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
-gc = gspread.authorize(creds)
-sheet = gc.open("shopee_tokens").sheet1  # ชื่อ Google Sheet ของคุณ
+scope = ["https://spreadsheets.google.com/feeds",
+         "https://www.googleapis.com/auth/drive"]
 
+credentials = ServiceAccountCredentials.from_json_keyfile_name("/etc/secrets/service_account.json", scope)
+client = gspread.authorize(credentials)
+
+sheet_id = os.environ.get("GOOGLE_SHEET_ID")
+sheet = client.open_by_key(sheet_id).sheet1
+
+print(sheet.title)
 # ===================== Shopee OAuth & API =====================
 def generate_sign(path, partner_id, timestamp, redirect_url, partner_secret):
     base_string = f"{partner_id}{path}{timestamp}{redirect_url}"
