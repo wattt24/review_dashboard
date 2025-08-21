@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-#from services.shopee_auth import get_authorization_url
+from services.shopee_auth import get_authorization_url
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api.fujikathailand_rest_api import *#fetch_all_product_sales, fetch_posts, fetch_comments,fetch_product_reviews

@@ -8,6 +8,10 @@ __pycache__/
 
 # Virtual environment
 venv/
+# Google credentials
+*.json
+!package.json
+!requirements.json
 
 # VS Code config (ถ้ามี)
 .vscode/

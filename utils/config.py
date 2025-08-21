@@ -8,6 +8,7 @@ load_dotenv()  # โหลดจาก .env
 
 
 
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 # ของ shopee
 SHOPEE_PARTNER_ID = os.getenv("SHOPEE_PARTNER_ID")
 SHOPEE_PARTNER_SECRET = os.getenv("SHOPEE_PARTNER_SECRET")
