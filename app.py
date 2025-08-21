@@ -7,34 +7,22 @@ import plotly.express as px
 #from services.shopee_auth import get_authorization_url
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api.fujikathailand_rest_api import fetch_all_product_sales, fetch_posts, fetch_comments,fetch_product_reviews
-
+from api.fujikathailand_rest_api import *#fetch_all_product_sales, fetch_posts, fetch_comments,fetch_product_reviews
+# from services.gsc_fujikathailand import *
 from collections import defaultdict
-from api.fujikaservice_rest_api import fetch_service_all_products
+from api.fujikaservice_rest_api import *#fetch_service_all_products
 service_products = fetch_service_all_products()
 products = service_products 
 
-def summarize_buyers(buyers_list, group_by="email"):
-    """
-    นับจำนวนครั้งที่แต่ละผู้ซื้อซื้อสินค้า
-    """
-    buyer_count = defaultdict(int)
 
-    for b in buyers_list:
-        key = b[group_by]  # ใช้ email หรือ phone เป็นตัวระบุ
-        buyer_count[key] += 1
-
-    # แปลงเป็น list ของ dict
-    result = [{"buyer": k, "purchase_count": v} for k, v in buyer_count.items()]
-    return result
 
 st.title("📊 Dashboard's ข้อมูลจากหลายแพลตฟอร์ม")
-# auth_url = get_authorization_url()
+auth_url = get_authorization_url()
 
-# แสดงปุ่มให้ร้านค้ากด
-# if st.button("เชื่อมต่อร้านค้า Shopee"):
-#     st.write("คลิกลิงก์ด้านล่างเพื่อไปหน้าอนุญาต Shopee:")
-#     st.markdown(f"[เชื่อมต่อ Shopee]({auth_url})", unsafe_allow_html=True)
+#แสดงปุ่มให้ร้านค้ากด
+if st.button("เชื่อมต่อร้านค้า Shopee"):
+    st.write("คลิกลิงก์ด้านล่างเพื่อไปหน้าอนุญาต Shopee:")
+    st.markdown(f"[เชื่อมต่อ Shopee]({auth_url})", unsafe_allow_html=True)
 # ---- Page config ----
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 
@@ -44,6 +32,18 @@ view = st.selectbox("🔽 เลือกหน้าแสดงผล", ["1 vs
 
 # ---- Show alternate page ----
 if view == "1 vs 2":
+
+
+    # st.title("📈 Search Keywords Dashboard (Google Search Console)")
+
+    # st.write("Top 20 คีย์เวิร์ดที่ลูกค้าใช้ค้นหาเว็บไซต์")
+
+    # df = pd.DataFrame(data)
+    # st.dataframe(df)
+
+    # st.bar_chart(df.set_index("query")["clicks"])
+
+
     st.title("🎉 May I be happy.")
     st.markdown("🥳 ขอให้ปีนี้เต็มไปด้วยความสุข ความสำเร็จ และสิ่งดีๆ!")
     st.button("🎉 คุณสามารถกดปุ่มนี้ได้")
@@ -167,6 +167,19 @@ elif view == "แสดงข้อมูลแต่ละแหล่ง":
             fig_rev.update_layout(xaxis_tickangle=-45)
             st.plotly_chart(fig_rev, use_container_width=True)
 
+        def summarize_buyers(buyers_list, group_by="email"):
+            """
+            นับจำนวนครั้งที่แต่ละผู้ซื้อซื้อสินค้า
+            """
+            buyer_count = defaultdict(int)
+
+            for b in buyers_list:
+                key = b[group_by]  # ใช้ email หรือ phone เป็นตัวระบุ
+                buyer_count[key] += 1
+
+            # แปลงเป็น list ของ dict
+            result = [{"buyer": k, "purchase_count": v} for k, v in buyer_count.items()]
+            return result
         # ดึงข้อมูลสินค้าและผู้ซื้อ
         products, buyers_list,total_orders = fetch_all_product_sales()
 
@@ -175,8 +188,6 @@ elif view == "แสดงข้อมูลแต่ละแหล่ง":
 
         # แปลงเป็น DataFrame เพื่อจัดการง่าย
         df_buyers = pd.DataFrame(buyer_summary)
-
-
         # ลูกค้าที่ซื้อสูงสุด
         max_purchase = df_buyers['purchase_count'].max()
         st.subheader("ตารางจำนวนครั้งที่ลูกค้าซื้อสินค้า")
