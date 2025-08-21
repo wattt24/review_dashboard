@@ -7,17 +7,18 @@ from datetime import datetime
 
 app = FastAPI()
 
-# --- เชื่อม Google Sheet ---
+
+
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
 
-json_path = "/etc/secrets/service_account.json"   # Secret File บน Render
-credentials = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
+credentials = ServiceAccountCredentials.from_json_keyfile_name("/etc/secrets/service_account.json", scope)
 client = gspread.authorize(credentials)
 
-sheet_id = os.environ.get("GOOGLE_SHEET_ID")      # ENV Variable บน Render
+sheet_id = os.environ.get("GOOGLE_SHEET_ID")
 sheet = client.open_by_key(sheet_id).sheet1
 
+print(sheet.title)
 
 @app.get("/")
 def home():
