@@ -13,30 +13,30 @@ from utils.config import (
     SHOPEE_REDIRECT_URI
 )
 
-scope = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
-#render
-credentials = ServiceAccountCredentials.from_json_keyfile_name("/etc/secrets/service_account.json", scope)
-client = gspread.authorize(credentials)
 
 #--------
 # # ใช้ path แบบ Windows-friendly (อยู่ในโฟลเดอร์ data)
 # scope สำหรับ Google API
 # scope = ["https://spreadsheets.google.com/feeds",
 #          "https://www.googleapis.com/auth/drive"]
-key_path = os.path.join("data", "service_account.json")
+# key_path = os.path.join("data", "service_account.json")
 # credentials = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
 # client = gspread.authorize(credentials)
 # sheet_id = os.environ.get("GOOGLE_SHEET_ID")
 # sheet = client.open_by_key(sheet_id).sheet1
+# ใส่ path ตามที่ Render กำหนด
+key_path = "/etc/secrets/service_account.json"
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+if not os.path.exists(key_path):
+    raise FileNotFoundError(f"Credential file not found at {key_path}")
+
+credentials = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+client = gspread.authorize(credentials)
+sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
 #--------
 # โหลด credentials render
-credentials = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
 
-sheet_id = os.environ.get("GOOGLE_SHEET_ID")
-sheet = client.open_by_key(sheet_id).sheet1
-
-print(sheet.title)
 # ===================== Shopee OAuth & API =====================
 def generate_sign(path, partner_id, timestamp, redirect_url, partner_secret):
     base_string = f"{partner_id}{path}{timestamp}{redirect_url}"
