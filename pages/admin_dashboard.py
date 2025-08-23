@@ -4,7 +4,6 @@ import sys
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-from services.shopee_auth import get_authorization_url
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api.fujikathailand_rest_api import *#fetch_all_product_sales, fetch_posts, fetch_comments,fetch_product_reviews
@@ -21,13 +20,7 @@ def app():
         st.stop()
 
     st.title("📊 Dashboard's ข้อมูลจากหลายแพลตฟอร์ม")
-    auth_url = get_authorization_url()
-
-    #แสดงปุ่มให้ร้านค้ากด
-    if st.button("เชื่อมต่อร้านค้า Shopee"):
-        st.write("คลิกลิงก์ด้านล่างเพื่อไปหน้าอนุญาต Shopee:")
-        st.markdown(f"[เชื่อมต่อ Shopee]({auth_url})", unsafe_allow_html=True)
-
+    
     
 
     # ---- Top menu to switch view ----
