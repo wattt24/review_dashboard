@@ -8,6 +8,19 @@ import pymysql
 from datetime import datetime
 from utils.config import *
 
+access_token = shopee_auth.get_valid_access_token(shop_id)
+if access_token:
+    # ตัวอย่างดึง Shop Info
+    path = "/api/v2/shop/get_shop_info"
+    result = shopee_auth.call_shopee_api(path, access_token, shop_id)
+    st.write(result)
+
+    # ตัวอย่างดึง Orders
+    path = "/api/v2/orders/get_order_list"
+    params = {"page_size": 10, "time_range_field": "create_time"}
+    orders = shopee_auth.call_shopee_api(path, access_token, shop_id, params)
+    st.write(orders)
+
 def fetch_shopee_ratings(product_id, limit=20, offset=0):
     """
     ดึงรีวิวสินค้าจาก Shopee OpenAPI พร้อมดัก error
