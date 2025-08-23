@@ -23,12 +23,16 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ---------------- Load users ----------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-USERS_FILE = os.path.join(BASE_DIR, "data", "users.json")
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# USERS_FILE = os.path.join(BASE_DIR, "data", "users.json")
 
-with open(USERS_FILE, "r", encoding="utf-8") as f:
+# with open(USERS_FILE, "r", encoding="utf-8") as f:
+#     users = json.load(f)
+key_path = "/etc/secrets/service_account.json"
+if not os.path.exists(key_path):
+    raise FileNotFoundError(f"Secret file not found at {key_path}")
+with open(key_path, "r", encoding="utf-8") as f:
     users = json.load(f)
-
 # ---------------- Session state ----------------
 if "role" not in st.session_state:
     st.session_state.role = None
