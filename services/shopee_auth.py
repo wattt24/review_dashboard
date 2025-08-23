@@ -15,9 +15,23 @@ from utils.config import (
 
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
-
+#render
 credentials = ServiceAccountCredentials.from_json_keyfile_name("/etc/secrets/service_account.json", scope)
 client = gspread.authorize(credentials)
+
+#--------
+# # ใช้ path แบบ Windows-friendly (อยู่ในโฟลเดอร์ data)
+# scope สำหรับ Google API
+# scope = ["https://spreadsheets.google.com/feeds",
+#          "https://www.googleapis.com/auth/drive"]
+key_path = os.path.join("data", "service_account.json")
+# credentials = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+# client = gspread.authorize(credentials)
+# sheet_id = os.environ.get("GOOGLE_SHEET_ID")
+# sheet = client.open_by_key(sheet_id).sheet1
+#--------
+# โหลด credentials render
+credentials = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
 
 sheet_id = os.environ.get("GOOGLE_SHEET_ID")
 sheet = client.open_by_key(sheet_id).sheet1
