@@ -26,8 +26,12 @@ from utils.config import (
 # sheet = client.open_by_key(sheet_id).sheet1
 # ใส่ path ตามที่ Render กำหนด
 key_path = "/etc/secrets/service_account.json"
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
 
+# ตรวจสอบว่ามีไฟล์ดังกล่าวจริงก่อนใช้งาน
 if not os.path.exists(key_path):
     raise FileNotFoundError(f"Credential file not found at {key_path}")
 
