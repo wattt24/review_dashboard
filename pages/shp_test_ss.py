@@ -13,8 +13,6 @@ def app():
     if st.button("เชื่อมต่อร้านค้า Shopee"):
         st.write("คลิกลิงก์ด้านล่างเพื่อไปหน้าอนุญาต Shopee:")
         st.markdown(f"[เชื่อมต่อ Shopee]({auth_url})", unsafe_allow_html=True)
-
-    # สมมติกำหนด shop_id ของ Sandbox
     shop_id = 123456789  
 
     with tabs[0]:

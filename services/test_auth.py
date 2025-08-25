@@ -56,13 +56,16 @@ def get_authorization_url():
 
 def generate_signature(path, timestamp, access_token=None, shop_id=None):
     base_str = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    if access_token and shop_id:
-        base_str = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}"
+    if shop_id and access_token:
+        base_str += f"{access_token}{shop_id}"
+    elif shop_id:  # กรณี token endpoint ใช้แค่ shop_id
+        base_str += f"{shop_id}"
     return hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_str.encode(),
         hashlib.sha256
     ).hexdigest()
+
 
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"

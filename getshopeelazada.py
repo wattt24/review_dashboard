@@ -1,3 +1,4 @@
+# getshopeelazada.py
 from fastapi import FastAPI
 from services.shopee_auth import get_token, save_token
 from datetime import datetime
@@ -14,8 +15,9 @@ def shopee_callback(code: str, shop_id: int, main_account_id: int = None):
 
     access_token = token_data.get("access_token")
     refresh_token_value = token_data.get("refresh_token")
-    expires_in = token_data.get("expire_in")
+    expires_in = token_data.get("expires_in")
     refresh_expires_in = token_data.get("refresh_expires_in")
+
 
     # ใช้ฟังก์ชันจาก shopee_auth.py บันทึกลง Google Sheet
     save_token(shop_id, access_token, refresh_token_value, expires_in, refresh_expires_in)
