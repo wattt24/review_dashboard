@@ -1,30 +1,28 @@
-# getshopeelazada.py
-from fastapi import FastAPI
+
+from flask import Flask
+import os
 from services.test_auth import get_token, save_token
-from datetime import datetime
 
-app = FastAPI()
+app = Flask(__name__)
 
-@app.get("/")
-def home():
-    return {"msg": "Shopee Backend is running"}
+@app.route("/exchange_token")
+def exchange_token():
+    CODE = os.environ.get("SHOPEE_CODE")
+    SHOP_ID = int(os.environ.get("SHOPEE_SHOP_ID"))
 
-@app.get("/shopee/callback")
-def shopee_callback(code: str, shop_id: int, main_account_id: int = None):
-    
-    token_data = get_token(code, shop_id)
+    token_data = get_token(CODE, SHOP_ID)
 
-    access_token = token_data.get("access_token")
-    refresh_token_value = token_data.get("refresh_token")
-    expires_in = token_data.get("expires_in")
-    refresh_expires_in = token_data.get("refresh_expires_in")
+    if "access_token" in token_data:
+        save_token(
+            SHOP_ID,
+            token_data["access_token"],
+            token_data["refresh_token"],
+            token_data["expires_in"],
+            token_data["refresh_expires_in"]
+        )
+        return "✅ Access token saved to Google Sheet"
+    else:
+        return f"❌ Failed to get token: {token_data}"
 
-
-    # ใช้ฟังก์ชันจาก shopee_auth.py บันทึกลง Google Sheet
-    save_token(shop_id, access_token, refresh_token_value, expires_in, refresh_expires_in)
-
-    return {
-        "status": "success",
-        "shop_id": shop_id,
-        "token_data": token_data
-    }
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
