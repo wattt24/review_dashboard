@@ -55,26 +55,28 @@ def get_authorization_url():
     )
     return url
 
-def generate_signature(path, timestamp, access_token=None, shop_id=None):
+def generate_signature(path, timestamp, shop_id=None, redirect_url=None, refresh_token_value=None):
     base_str = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    if shop_id and access_token:  # สำหรับ API call ปกติ
-        base_str += f"{access_token}{shop_id}"
-    elif shop_id:  # สำหรับ token endpoint
+    
+    if shop_id and redirect_url:  # สำหรับ get_token
+        base_str += f"{shop_id}{redirect_url}"
+    elif shop_id and refresh_token_value:  # สำหรับ refresh_token
+        base_str += f"{refresh_token_value}{shop_id}"
+    elif shop_id:  # กรณีอื่นๆ
         base_str += f"{shop_id}"
-
+    
     return hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_str.encode(),
         hashlib.sha256
     ).hexdigest()
 
-
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
     
     # ✅ ต้องส่ง shop_id ตอน gen sign
-    sign = generate_signature(path, timestamp, shop_id=shop_id)
+    sign = generate_signature(path, timestamp, shop_id=shop_id, redirect_url=SHOPEE_REDIRECT_URI)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
@@ -88,18 +90,21 @@ def get_token(code, shop_id):
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
-    sign = generate_signature(path, timestamp)
+    sign = generate_signature(path, timestamp, shop_id=shop_id, refresh_token_value=refresh_token_value)
+
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
         "refresh_token": refresh_token_value,
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id
+        "shop_id": shop_id,
+        "redirect_url": SHOPEE_REDIRECT_URI
     }
     r = requests.post(url, json=payload)
     return r.json()
 
 def call_shopee_api(path, access_token, shop_id, params=None):
+    
     timestamp = int(time.time())
     sign = generate_signature(path, timestamp, access_token, shop_id)
 
