@@ -20,7 +20,8 @@ hide_streamlit_style = """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ---------------- Load users ----------------
-key_path = "/etc/secrets/users.json"
+#key_path = "/etc/secrets/users.json"
+key_path = "data/users.json"
 if not os.path.exists(key_path):
     raise FileNotFoundError(f"Secret file not found at {key_path}")
 

@@ -1,4 +1,4 @@
-# services/shopee_auth.py
+# services/test_auth.py
 import os
 import time
 import hmac
@@ -19,6 +19,7 @@ BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https
 
 # ---------------- Google Sheets ----------------
 key_path = "/etc/secrets/service_account.json"
+#key_path = "data/service_account.json"
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
@@ -58,8 +59,9 @@ def generate_signature(path, timestamp, access_token=None, shop_id=None):
     base_str = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     if shop_id and access_token:
         base_str += f"{access_token}{shop_id}"
-    elif shop_id:  # กรณี token endpoint ใช้แค่ shop_id
+    elif shop_id and "token" not in path:
         base_str += f"{shop_id}"
+
     return hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_str.encode(),
@@ -76,11 +78,11 @@ def get_token(code, shop_id):
     payload = {
         "code": code,
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id
+        "shop_id": shop_id,
+        "redirect_url": SHOPEE_REDIRECT_URI  # ✅ ต้องเพิ่ม
     }
     r = requests.post(url, json=payload)
     return r.json()
-
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
