@@ -78,8 +78,7 @@ def get_token(code, shop_id):
     payload = {
         "code": code,
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id,
-        "redirect_url": SHOPEE_REDIRECT_URI  # ✅ ต้องเพิ่ม
+        "shop_id": shop_id# ✅ ต้องเพิ่ม
     }
     r = requests.post(url, json=payload)
     return r.json()
