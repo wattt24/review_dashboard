@@ -1,11 +1,15 @@
-
-from flask import Flask
-import os
+# getshopeelazada.py
+from fastapi import FastAPI
 from services.test_auth import get_token, save_token
+import os
 
-app = Flask(__name__)
+app = FastAPI()
 
-@app.route("/exchange_token")
+@app.get("/")
+def home():
+    return {"msg": "Shopee Backend is running"}
+
+@app.get("/exchange_token")
 def exchange_token():
     CODE = os.environ.get("SHOPEE_CODE")
     SHOP_ID = int(os.environ.get("SHOPEE_SHOP_ID"))
@@ -20,9 +24,6 @@ def exchange_token():
             token_data["expires_in"],
             token_data["refresh_expires_in"]
         )
-        return "✅ Access token saved to Google Sheet"
+        return {"status": "success", "msg": "✅ Access token saved to Google Sheet"}
     else:
-        return f"❌ Failed to get token: {token_data}"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+        return {"status": "error", "msg": f"❌ Failed to get token: {token_data}"}
