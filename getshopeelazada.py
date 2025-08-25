@@ -1,24 +1,34 @@
-# getshopeelazada.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from services.test_auth import get_token, save_token
 import os
 
 app = FastAPI()
 
-@app.get("/")
-def home():
-    return {"msg": "Shopee Backend is running"}
+@app.get("/shopee/callback")
+async def shopee_callback(request: Request):
+    """
+    Endpoint ที่ Shopee redirect กลับมา หลัง user login
+    รับ query parameter: code, shop_id
+    """
+    code = request.query_params.get("code")
+    shop_id = request.query_params.get("shop_id")
 
-@app.get("/exchange_token")
-def exchange_token():
-    CODE = os.environ.get("SHOPEE_CODE")
-    SHOP_ID = int(os.environ.get("SHOPEE_SHOP_ID"))
+    if not code or not shop_id:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "msg": "Missing code or shop_id"}
+        )
 
-    token_data = get_token(CODE, SHOP_ID)
+    shop_id = int(shop_id)
+
+    # เรียกฟังก์ชัน get_token เพื่อแลก access token
+    token_data = get_token(code, shop_id)
 
     if "access_token" in token_data:
+        # บันทึก token ลง Google Sheet
         save_token(
-            SHOP_ID,
+            shop_id,
             token_data["access_token"],
             token_data["refresh_token"],
             token_data["expires_in"],
