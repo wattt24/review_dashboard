@@ -57,9 +57,9 @@ def get_authorization_url():
 
 def generate_signature(path, timestamp, access_token=None, shop_id=None):
     base_str = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    if shop_id and access_token:
+    if shop_id and access_token:  # สำหรับ API call ปกติ
         base_str += f"{access_token}{shop_id}"
-    elif shop_id and "token" not in path:
+    elif shop_id:  # สำหรับ token endpoint
         base_str += f"{shop_id}"
 
     return hmac.new(
@@ -72,16 +72,19 @@ def generate_signature(path, timestamp, access_token=None, shop_id=None):
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-    sign = generate_signature(path, timestamp)
+    
+    # ✅ ต้องส่ง shop_id ตอน gen sign
+    sign = generate_signature(path, timestamp, shop_id=shop_id)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
         "code": code,
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id# ✅ ต้องเพิ่ม
+        "shop_id": shop_id
     }
     r = requests.post(url, json=payload)
     return r.json()
+
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
