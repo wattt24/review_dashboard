@@ -114,46 +114,29 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
 
 # services/test_auth.py (ส่วนที่แก้ไข)
 
-def get_token(code, shop_id):
+import hmac, hashlib, time, requests
+
+def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
-    url = BASE_URL + path
     timestamp = int(time.time())
 
-    payload = {
-        "code": code,
-        "shop_id": int(shop_id)
-    }
-
-    # JSON body ต้องไม่มี partner_id
-    body_json = json.dumps(payload, separators=(',', ':'))
-
-    # ✅ Base string
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_json}"
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
     sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode(),
-        base_string.encode(),
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
-    print("DEBUG: base_string =", base_string)
-    print("DEBUG: sign =", sign)
-    print("DEBUG: payload =", payload)
+    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
-    resp = requests.post(
-        url,
-        json=payload,
-        headers={"Content-Type": "application/json"},
-        params={"partner_id": SHOPEE_PARTNER_ID, "timestamp": timestamp, "sign": sign}
-    )
+    payload = {
+        "code": code,
+        "shop_id": shop_id
+    }
 
-    print("==== Shopee API Debug ====")
-    print("Status:", resp.status_code)
-    print("Response:", resp.text)
+    resp = requests.post(url, json=payload)
+    return resp.json()
 
-    try:
-        return resp.json()
-    except Exception:
-        return {"status": "error", "raw": resp.text}
 
 
 def refresh_token(refresh_token_value, shop_id):
