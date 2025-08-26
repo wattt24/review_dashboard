@@ -118,25 +118,29 @@ def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
 
-    # 1. สร้าง payload และเรียง key ตามตัวอักษร
+    # 1. สร้าง payload
+    # Payload สำหรับ API แลก Token ไม่ต้องมี partner_id
     payload = {
         "code": code,
         "shop_id": int(shop_id)
     }
-    sorted_payload = json.dumps(payload, separators=(',', ':')) # เรียง key และไม่มีช่องว่าง
 
-    # 2. สร้าง base_string ที่ถูกต้อง
-    # base_string: partner_id + path + timestamp + payload_json
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload}"
+    # 2. แปลง payload เป็นสตริง JSON ที่เรียงลำดับคีย์และไม่มีช่องว่าง
+    # "sort_keys=True" และ "separators=(',', ':')" คือส่วนสำคัญที่ต้องไม่ลืม
+    sorted_payload_json = json.dumps(payload, sort_keys=True, separators=(',', ':'))
 
-    # 3. คำนวณ signature
+    # 3. สร้าง base_string ที่ถูกต้อง
+    # base_string: partner_id + path + timestamp + sorted_payload_json
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload_json}"
+
+    # 4. คำนวณ signature
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
         hashlib.sha256
     ).hexdigest()
 
-    # 4. สร้าง URL และส่ง Request
+    # 5. ส่ง Request
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     r = requests.post(url, json=payload)
     return r.json()
