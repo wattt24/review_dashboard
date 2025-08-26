@@ -114,35 +114,29 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
 
 # services/test_auth.py (ส่วนที่แก้ไข)
 
-# services/test_auth.py
-# ...
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
 
-    # 1. สร้าง payload
+    # 1. สร้าง payload และเรียง key ตามตัวอักษร
     payload = {
         "code": code,
-        "partner_id": SHOPEE_PARTNER_ID,
         "shop_id": int(shop_id)
     }
+    sorted_payload = json.dumps(payload, separators=(',', ':')) # เรียง key และไม่มีช่องว่าง
 
-    # 2. แปลง payload เป็นสตริง JSON ที่เรียงลำดับคีย์แล้ว
-    # **ใช้ sort_keys=True** เพื่อให้เรียงลำดับคีย์ตามตัวอักษร (code, partner_id, shop_id)
-    # **ใช้ separators=(',', ':')** เพื่อให้ไม่มีช่องว่าง
-    sorted_payload_json = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+    # 2. สร้าง base_string ที่ถูกต้อง
+    # base_string: partner_id + path + timestamp + payload_json
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload}"
 
-    # 3. สร้าง base_string ที่ถูกต้อง
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload_json}"
-
-    # 4. คำนวณ signature
+    # 3. คำนวณ signature
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
         hashlib.sha256
     ).hexdigest()
 
-    # 5. ส่ง Request
+    # 4. สร้าง URL และส่ง Request
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     r = requests.post(url, json=payload)
     return r.json()
