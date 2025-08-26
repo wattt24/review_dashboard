@@ -14,7 +14,7 @@ from utils.config import (
 )
 
 # ---------------- Config toggle ----------------
-SANDBOX = True  # True = ใช้ Sandbox, False = Production
+SANDBOX = True
 BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https://partner.shopeemobile.com"
 
 # ---------------- Google Sheets ----------------
@@ -33,10 +33,44 @@ client = gspread.authorize(credentials)
 sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
 
 # ---------------- Shopee OAuth & API ----------------
-def generate_sign(path, partner_id, timestamp, redirect_url, partner_secret):
-    base_string = f"{partner_id}{path}{timestamp}{redirect_url}"
+
+# แยกฟังก์ชันการ generate signature ตามประเภท API เพื่อความชัดเจนและถูกต้อง
+def generate_auth_sign(path, timestamp):
+    # สำหรับ /api/v2/shop/auth_partner
+    # base_string: partner_id + api path + timestamp
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     return hmac.new(
-        partner_secret.encode(),
+        SHOPEE_PARTNER_SECRET.encode(),
+        base_string.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+def generate_token_sign(path, timestamp, code):
+    # สำหรับ /api/v2/auth/token/get
+    # base_string: partner_id + api path + timestamp + code
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}"
+    return hmac.new(
+        SHOPEE_PARTNER_SECRET.encode(),
+        base_string.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+def generate_api_sign(path, timestamp, access_token, shop_id):
+    # สำหรับ Shop API ทั่วไป
+    # base_string: partner_id + api path + timestamp + access_token + shop_id
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}"
+    return hmac.new(
+        SHOPEE_PARTNER_SECRET.encode(),
+        base_string.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
+    # สำหรับ /api/v2/auth/access_token/get
+    # base_string: partner_id + api path + timestamp + refresh_token + shop_id
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{refresh_token_value}{shop_id}"
+    return hmac.new(
+        SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
         hashlib.sha256
     ).hexdigest()
@@ -44,7 +78,7 @@ def generate_sign(path, partner_id, timestamp, redirect_url, partner_secret):
 def get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
-    sign = generate_sign(path, SHOPEE_PARTNER_ID, timestamp, SHOPEE_REDIRECT_URI, SHOPEE_PARTNER_SECRET)
+    sign = generate_auth_sign(path, timestamp)
 
     url = (
         f"{BASE_URL}{path}"
@@ -55,34 +89,17 @@ def get_authorization_url():
     )
     return url
 
-def generate_signature(path, timestamp, shop_id=None, redirect_url=None, refresh_token_value=None):
-    base_str = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    
-    if shop_id and redirect_url:  # สำหรับ get_token
-        base_str += f"{shop_id}{redirect_url}"
-    elif shop_id and refresh_token_value:  # สำหรับ refresh_token
-        base_str += f"{refresh_token_value}{shop_id}"
-    elif shop_id:  # กรณีอื่นๆ
-        base_str += f"{shop_id}"
-    
-    return hmac.new(
-        SHOPEE_PARTNER_SECRET.encode(),
-        base_str.encode(),
-        hashlib.sha256
-    ).hexdigest()
-
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-    
-    # ✅ ต้องส่ง shop_id ตอน gen sign
-    sign = generate_signature(path, timestamp, shop_id=shop_id, redirect_url=SHOPEE_REDIRECT_URI)
+    # ใช้ generate_token_sign ที่สร้างใหม่
+    sign = generate_token_sign(path, timestamp, code)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
         "code": code,
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id
+        "shop_id": int(shop_id)  # Shopee คาดหวังว่าเป็น int
     }
     r = requests.post(url, json=payload)
     return r.json()
@@ -90,23 +107,20 @@ def get_token(code, shop_id):
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
-    sign = generate_signature(path, timestamp, shop_id=shop_id, refresh_token_value=refresh_token_value)
-
+    sign = generate_refresh_sign(path, timestamp, refresh_token_value, shop_id)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
         "refresh_token": refresh_token_value,
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id,
-        "redirect_url": SHOPEE_REDIRECT_URI
+        "shop_id": int(shop_id)
     }
     r = requests.post(url, json=payload)
     return r.json()
 
 def call_shopee_api(path, access_token, shop_id, params=None):
-    
     timestamp = int(time.time())
-    sign = generate_signature(path, timestamp, access_token, shop_id)
+    sign = generate_api_sign(path, timestamp, access_token, shop_id)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&access_token={access_token}&shop_id={shop_id}&sign={sign}"
     r = requests.get(url, params=params)

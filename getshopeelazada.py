@@ -9,6 +9,7 @@ async def shopee_callback(
     shop_id: str,
     code: str | None = Query(default=None)
 ):
+    
     if code is None:
         return {"status": "error", "detail": "Missing code parameter"}
     
