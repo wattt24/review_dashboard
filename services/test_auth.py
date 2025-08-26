@@ -14,6 +14,18 @@ from utils.config import (
     SHOPEE_REDIRECT_URI
 )
 
+# ---------------- Google Sheets ----------------
+key_path = "/etc/secrets/service_account.json"
+#key_path = "data/service_account.json"
+
+# เพิ่มส่วนนี้เข้าไป
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+# สิ้นสุดส่วนที่ต้องเพิ่ม
+
+
 # ---------------- Config toggle ----------------
 SANDBOX = True
 BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https://partner.shopeemobile.com"
