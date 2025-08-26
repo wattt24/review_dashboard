@@ -180,7 +180,7 @@ def check_time_drift():
     # 1. รับเวลาปัจจุบันจากเครื่องของคุณ
     local_timestamp = int(time.time())
     print(f"เวลาของเครื่องคุณ (Timestamp): {local_timestamp}")
-    print(f"เวลาของเครื่องคุณ (UTC): {datetime.datetime.fromtimestamp(local_timestamp, datetime.timezone.utc)}")
+    print(f"เวลาของเครื่องคุณ (UTC): {datetime.fromtimestamp(local_timestamp, datetime.timezone.utc)}")
 
     try:
         # 2. เรียก API ของ Shopee เพื่อรับเวลาของเซิร์ฟเวอร์
