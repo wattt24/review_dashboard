@@ -119,27 +119,20 @@ def get_token(code, shop_id):
     url = BASE_URL + path
     timestamp = int(time.time())
 
-    # 1. สร้าง payload
     payload = {
         "code": code,
         "shop_id": int(shop_id)
     }
 
-    # 2. แปลง payload เป็นสตริง JSON ที่เรียงลำดับคีย์และไม่มีช่องว่าง
-    # ** นี่คือส่วนสำคัญที่ต้องแน่ใจว่ามี sort_keys=True และ separators=(',', ':') **
+    # 1. สร้าง JSON payload ที่เรียงลำดับคีย์และไม่มีช่องว่าง
     sorted_payload_json = json.dumps(payload, sort_keys=True, separators=(',', ':'))
 
-    # 3. สร้าง base_string ที่ถูกต้อง
-    # ** ต้องเพิ่ม sorted_payload_json เข้าไปใน base_string ด้วย **
+    # 2. สร้าง base_string ที่ถูกต้อง
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload_json}"
 
     print(f"DEBUG: base_string = {base_string}")
-    print(f"DEBUG: sign will be calculated with Partner Secret = {SHOPEE_PARTNER_SECRET}")
-    print(f"DEBUG: payload = {payload}")
-    print(f"DEBUG: sorted_payload_json = {sorted_payload_json}")
-
-
-    # 4. คำนวณ signature
+    # 3. คำนวณ signature
+    # **ใช้ SHOPEE_PARTNER_SECRET ในการคำนวณ sign**
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
@@ -148,25 +141,13 @@ def get_token(code, shop_id):
 
     print(f"DEBUG: sign = {sign}")
 
-    # 5. สร้าง URL และส่ง Request
-    # ใน requests.post, JSON payload จะถูกส่งใน body
-    # parameters ใน URL จะมี partner_id, timestamp, sign
+    # 4. ส่ง Request
     resp = requests.post(
         url,
         json=payload,
         headers={"Content-Type": "application/json"},
         params={"partner_id": SHOPEE_PARTNER_ID, "timestamp": timestamp, "sign": sign}
     )
-
-    print("==== Shopee API Debug ====")
-    print("Status:", resp.status_code)
-    print("Response:", resp.text)
-
-    try:
-        return resp.json()
-    except json.JSONDecodeError: # เปลี่ยนเป็น json.JSONDecodeError เพื่อจับข้อผิดพลาดที่เฉพาะเจาะจง
-        return {"status": "error", "raw": resp.text, "message": "Failed to decode JSON response"}
-
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
