@@ -1,6 +1,7 @@
 # services/test_auth.py
 import os
 import time
+import json
 import hmac
 import hashlib
 import requests
@@ -89,18 +90,33 @@ def get_authorization_url():
     )
     return url
 
+# services/test_auth.py (ส่วนที่แก้ไข)
+
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-    # ใช้ generate_token_sign ที่สร้างใหม่
-    sign = generate_token_sign(path, timestamp, code)
 
-    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    # 1. สร้าง payload และเรียง key ตามตัวอักษร
     payload = {
         "code": code,
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": int(shop_id)  # Shopee คาดหวังว่าเป็น int
+        "shop_id": int(shop_id)
     }
+    sorted_payload = json.dumps(payload, separators=(',', ':')) # เรียง key และไม่มีช่องว่าง
+
+    # 2. สร้าง base_string ที่ถูกต้อง
+    # base_string: partner_id + path + timestamp + payload_json
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload}"
+
+    # 3. คำนวณ signature
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode(),
+        base_string.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    # 4. สร้าง URL และส่ง Request
+    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     r = requests.post(url, json=payload)
     return r.json()
 
