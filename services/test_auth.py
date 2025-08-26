@@ -176,3 +176,33 @@ def get_valid_access_token(shop_id):
         return token["access_token"]
     else:
         return None
+def check_time_drift():
+    # 1. รับเวลาปัจจุบันจากเครื่องของคุณ
+    local_timestamp = int(time.time())
+    print(f"เวลาของเครื่องคุณ (Timestamp): {local_timestamp}")
+    print(f"เวลาของเครื่องคุณ (UTC): {datetime.datetime.fromtimestamp(local_timestamp, datetime.timezone.utc)}")
+
+    try:
+        # 2. เรียก API ของ Shopee เพื่อรับเวลาของเซิร์ฟเวอร์
+        # ใช้ API ที่ไม่ต้องใช้ signature เพื่อความง่ายในการทดสอบ
+        # ในที่นี้ใช้ API ทั่วไปที่ไม่ต้อง Authenticate
+        r = requests.get(f"{BASE_URL}/api/v2/public/get_time") 
+        shopee_timestamp = r.json()["response"]["timestamp"]
+        print(f"เวลาของ Shopee Server (Timestamp): {shopee_timestamp}")
+        print(f"เวลาของ Shopee Server (UTC): {datetime.datetime.fromtimestamp(shopee_timestamp, datetime.timezone.utc)}")
+        
+        # 3. คำนวณความคลาดเคลื่อน
+        time_diff_seconds = abs(local_timestamp - shopee_timestamp)
+        print(f"ความคลาดเคลื่อน: {time_diff_seconds} วินาที")
+
+        # 4. ตรวจสอบเงื่อนไข
+        if time_diff_seconds > 300: # 300 วินาที = 5 นาที
+            print("❌ ความคลาดเคลื่อนเกิน 5 นาที! อาจเป็นสาเหตุของ 'Wrong sign.'")
+        else:
+            print("✅ ความคลาดเคลื่อนอยู่ในเกณฑ์ที่ยอมรับได้")
+
+    except Exception as e:
+        print(f"เกิดข้อผิดพลาดในการเชื่อมต่อกับ Shopee API: {e}")
+
+# เรียกใช้ฟังก์ชันเพื่อตรวจสอบ
+check_time_drift()
