@@ -168,7 +168,6 @@ def refresh_token(refresh_token_value, shop_id):
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
         "refresh_token": refresh_token_value,
-        "partner_id": SHOPEE_PARTNER_ID,
         "shop_id": int(shop_id)
     }
     r = requests.post(url, json=payload)
