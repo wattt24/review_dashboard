@@ -116,38 +116,33 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
 
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
+    url = BASE_URL + path
     timestamp = int(time.time())
 
-    # 1. payload
     payload = {
         "code": code,
-        "shop_id": int(shop_id),
-        "partner_id": int(SHOPEE_PARTNER_ID)
+        "shop_id": int(shop_id)
     }
 
-    # 2. payload json ที่ sort keys
-    sorted_payload_json = json.dumps(payload, sort_keys=True, separators=(',', ':'))
+    # JSON body ต้องไม่มี partner_id
+    body_json = json.dumps(payload, separators=(',', ':'))
 
-    # 3. base_string
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload_json}"
-
-    print(f"DEBUG: Base String is: {base_string}")
-    print(f"DEBUG: Partner Secret is: {SHOPEE_PARTNER_SECRET}")
-
-    # 4. sign
+    # ✅ Base string
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_json}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
         hashlib.sha256
     ).hexdigest()
 
-    url = BASE_URL + path
-    headers = {"Content-Type": "application/json"}
+    print("DEBUG: base_string =", base_string)
+    print("DEBUG: sign =", sign)
+    print("DEBUG: payload =", payload)
 
     resp = requests.post(
         url,
         json=payload,
-        headers=headers,
+        headers={"Content-Type": "application/json"},
         params={"partner_id": SHOPEE_PARTNER_ID, "timestamp": timestamp, "sign": sign}
     )
 
@@ -159,6 +154,7 @@ def get_token(code, shop_id):
         return resp.json()
     except Exception:
         return {"status": "error", "raw": resp.text}
+
 
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
