@@ -110,13 +110,9 @@ def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
 
-    payload = {
-        "code": code,
-        "shop_id": int(shop_id)
-    }
-    payload_str = json.dumps(payload, separators=(',', ':'))
+    # shop_id ต้องเป็น int
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{int(shop_id)}"
 
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{payload_str}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
@@ -124,17 +120,17 @@ def get_token(code: str, shop_id: int):
     ).hexdigest()
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    payload = {"code": code, "shop_id": int(shop_id)}
+
     resp = requests.post(url, json=payload)
     print("==== DEBUG ====")
     print("URL:", url)
-    print("Payload:", payload_str)
+    print("Payload:", payload)
     print("Base String:", base_string)
     print("Sign:", sign)
     print("Response:", resp.text)
 
     return resp.json()
-
-
 
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
