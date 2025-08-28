@@ -119,47 +119,34 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
     ).hexdigest()
 
 # *** แก้ไข get_token() ตรงนี้ ***
-def get_token(code, shop_id):
+def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
 
-    payload = {
-        "code": code,
-        "shop_id": int(shop_id)
-    }
-
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
     sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode(),
-        base_string.encode(),
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
-    url = f"{BASE_URL}{path}"
-    headers = {"Content-Type": "application/json"}
+    print("==== Shopee Sign Debug ====")
+    print("partner_id:", SHOPEE_PARTNER_ID)
+    print("partner_secret:", SHOPEE_PARTNER_SECRET)
+    print("timestamp:", timestamp)
+    print("code:", code)
+    print("shop_id:", shop_id)
+    print("base_string:", base_string)
+    print("sign:", sign)
 
-    resp = requests.post(
-        url,
-        json=payload,
-        headers=headers,
-        params={
-            "partner_id": SHOPEE_PARTNER_ID,
-            "timestamp": timestamp,
-            "sign": sign
-        }
-    )
+    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    payload = {"code": code, "shop_id": shop_id}
+    print("Request URL:", url)
+    print("Payload:", payload)
 
-    print("==== Shopee API Debug ====")
-    print("Request URL:", resp.request.url)
-    print("Request Headers:", resp.request.headers)
-    print("Request Body:", resp.request.body)
-    print("Status:", resp.status_code)
+    resp = requests.post(url, json=payload)
     print("Response:", resp.text)
-
-    try:
-        return resp.json()
-    except Exception:
-        return {"status": "error", "raw": resp.text}
+    return resp.json()
 
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
