@@ -1,26 +1,41 @@
-# import os
-# import pandas as pd
-# from googleapiclient.discovery import build
-# from oauth2client.service_account import ServiceAccountCredentials
-# SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
-# KEY_FILE = os.path.join("data","review-dashboard-service-7304afdb2e7e.json")
-# SITE_URL = "https://www.fujikathailand.com"  # เว็บของคุณ
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+import pandas as pd
+from datetime import date, timedelta
 
-# credentials = ServiceAccountCredentials.from_json_keyfile_name(KEY_FILE, SCOPES)
-# service = build("searchconsole", "v1", credentials=credentials)
+SCOPES = ['https://www.googleapis.com/auth/webmasters.readonly']
+KEY_FILE_LOCATION = 'client_secret_675111212550-fd7qv0jd539qr24hfdljdauipm4hs8q0.apps.googleusercontent.com.json'  # ใส่ไฟล์ service account ของคุณ
+SITE_URL = 'https://www.fujikathailand.com'
+# ----------------- Authenticate -----------------
+credentials = service_account.Credentials.from_service_account_file(
+    KEY_FILE_LOCATION, scopes=SCOPES
+)
 
-# request = {
-#     "startDate": "2025-07-01",
-#     "endDate": "2025-07-31",
-#     "dimensions": ["query"],
-#     "rowLimit": 10
-# }
+webmasters_service = build('searchconsole', 'v1', credentials=credentials)
 
-# response = service.searchanalytics().query(siteUrl=SITE_URL, body=request).execute()
+# ----------------- Set Date Range -----------------
+end_date = date.today()
+start_date = end_date - timedelta(days=30)
 
-# rows = response.get("rows", [])
-# data = [{"query": r["keys"][0], "clicks": r["clicks"], "impressions": r["impressions"],
-#          "ctr": r["ctr"], "position": r["position"]} for r in rows]
+request = {
+    'startDate': start_date.isoformat(),
+    'endDate': end_date.isoformat(),
+    'dimensions': ['query'],
+    'rowLimit': 50  # จำนวน keyword สูงสุด
+}
 
-# df = pd.DataFrame(data)
-# print(df)
+response = webmasters_service.searchanalytics().query(siteUrl=SITE_URL, body=request).execute()
+
+# ----------------- แปลงเป็น DataFrame -----------------
+rows = response.get('rows', [])
+data = []
+for row in rows:
+    data.append({
+        'Keyword': row['keys'][0],
+        'Clicks': row.get('clicks', 0),
+        'Impressions': row.get('impressions', 0),
+        'CTR': row.get('ctr', 0) * 100,
+        'Avg. Position': row.get('position', 0)
+    })
+
+df = pd.DataFrame(data)

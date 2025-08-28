@@ -4,6 +4,8 @@ import sys
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+import plotly.express as px
+from gsc_fujikathailand import df  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api.fujikathailand_rest_api import *#fetch_all_product_sales, fetch_posts, fetch_comments,fetch_product_reviews
@@ -29,17 +31,20 @@ def app():
 
     # ---- Show alternate page ----
     if view == "1 vs 2":
+        
 
+        st.set_page_config(page_title="GSC Dashboard", layout="wide")
+        st.title("Google Search Console Dashboard")
 
-        # st.title("📈 Search Keywords Dashboard (Google Search Console)")
+    # ----------------- Table -----------------
+        st.subheader("Top Keywords")
+        st.dataframe(df.sort_values('Clicks', ascending=False))
 
-        # st.write("Top 20 คีย์เวิร์ดที่ลูกค้าใช้ค้นหาเว็บไซต์")
-
-        # df = pd.DataFrame(data)
-        # st.dataframe(df)
-
-        # st.bar_chart(df.set_index("query")["clicks"])
-
+    # ----------------- Bar Chart -----------------
+        fig = px.bar(df.sort_values('Clicks', ascending=False), 
+                x='Keyword', y='Clicks', 
+                hover_data=['Impressions', 'CTR', 'Avg. Position'])
+        st.plotly_chart(fig, use_container_width=True)
 
         st.title("🎉 May I be happy.")
         st.markdown("🥳 ขอให้ปีนี้เต็มไปด้วยความสุข ความสำเร็จ และสิ่งดีๆ!")
