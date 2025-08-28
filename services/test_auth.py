@@ -14,36 +14,23 @@ from utils.config import (
     SHOPEE_REDIRECT_URI
 )
 
-# ---------------- Google Sheets ----------------
-key_path = "/etc/secrets/service_account.json"
-#key_path = "data/service_account.json"
-
-# เพิ่มส่วนนี้เข้าไป
-scope = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
-# สิ้นสุดส่วนที่ต้องเพิ่ม
-
-
-# ---------------- Config toggle ----------------
 SANDBOX = True
 BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https://partner.shopeemobile.com"
 
 # ---------------- Google Sheets ----------------
 key_path = "/etc/secrets/service_account.json"
-#key_path = "data/service_account.json" # ถ้าใช้ local path ให้ comment บรรทัดบนแล้วใช้บรรทัดนี้แทน
 
-# **** สำคัญ: ตรวจสอบว่าคุณตั้งค่า Environment Variable 'SERVICE_ACCOUNT_KEY_PATH' บน Render แล้ว ****
-# และเปลี่ยน key_path ให้ดึงมาจาก Environment Variable ถ้าใช้ Render
-# key_path = os.environ.get("SERVICE_ACCOUNT_KEY_PATH")
-
-if not os.path.exists(key_path):
-    raise FileNotFoundError(f"Credential file not found at {key_path}")
-
-credentials = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
-client = gspread.authorize(credentials)
-sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
+def get_sheet():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = ServiceAccountCredentials.from_json_keyfile_name(
+        os.environ["service_account"], scope
+    )
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
+    return sheet
 
 # ---------------- Shopee OAuth & API ----------------
 
@@ -180,6 +167,8 @@ def call_shopee_api(path, access_token, shop_id, params=None):
 
 # ---------------- Google Sheets token management ----------------
 def save_token(shop_id, access_token, refresh_token_value, expires_in, refresh_expires_in):
+    sheet = get_sheet()  # เรียก function ก่อนใช้
+
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat()
     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat()
 
@@ -193,6 +182,8 @@ def save_token(shop_id, access_token, refresh_token_value, expires_in, refresh_e
         sheet.append_row([shop_id, access_token, refresh_token_value, expired_at, refresh_expired_at, datetime.now().isoformat()])
 
 def get_latest_token(shop_id):
+    sheet = get_sheet()  # เรียก function ก่อนใช้
+
     records = sheet.get_all_records()
     for record in records:
         if str(record["shop_id"]) == str(shop_id):
