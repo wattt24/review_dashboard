@@ -116,7 +116,6 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
 # *** แก้ไข get_token() ตรงนี้ ***
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
-    url = BASE_URL + path
     timestamp = int(time.time())
 
     payload = {
@@ -124,30 +123,39 @@ def get_token(code, shop_id):
         "shop_id": int(shop_id)
     }
 
-    # 1. สร้าง JSON payload ที่เรียงลำดับคีย์และไม่มีช่องว่าง
-    sorted_payload_json = json.dumps(payload, sort_keys=True, separators=(',', ':'))
-
-    # 2. สร้าง base_string ที่ถูกต้อง
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload_json}"
-
-    print(f"DEBUG: base_string = {base_string}")
-    # 3. คำนวณ signature
-    # **ใช้ SHOPEE_PARTNER_SECRET ในการคำนวณ sign**
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
         hashlib.sha256
     ).hexdigest()
 
-    print(f"DEBUG: sign = {sign}")
+    url = f"{BASE_URL}{path}"
+    headers = {"Content-Type": "application/json"}
 
-    # 4. ส่ง Request
     resp = requests.post(
         url,
         json=payload,
-        headers={"Content-Type": "application/json"},
-        params={"partner_id": SHOPEE_PARTNER_ID, "timestamp": timestamp, "sign": sign}
+        headers=headers,
+        params={
+            "partner_id": SHOPEE_PARTNER_ID,
+            "timestamp": timestamp,
+            "sign": sign
+        }
     )
+
+    print("==== Shopee API Debug ====")
+    print("Request URL:", resp.request.url)
+    print("Request Headers:", resp.request.headers)
+    print("Request Body:", resp.request.body)
+    print("Status:", resp.status_code)
+    print("Response:", resp.text)
+
+    try:
+        return resp.json()
+    except Exception:
+        return {"status": "error", "raw": resp.text}
+
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
