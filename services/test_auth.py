@@ -114,13 +114,9 @@ def get_token(code: str, shop_id: int):
         "code": code,
         "shop_id": int(shop_id)
     }
+    payload_str = json.dumps(payload, separators=(',', ':'))
 
-    # serialize payload เป็น compact JSON (no spaces)
-    payload_str = json.dumps(payload, separators=(",", ":"))
-
-    # base string ตามเอกสาร
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{payload_str}"
-
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
@@ -128,9 +124,16 @@ def get_token(code: str, shop_id: int):
     ).hexdigest()
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
-
     resp = requests.post(url, json=payload)
+    print("==== DEBUG ====")
+    print("URL:", url)
+    print("Payload:", payload_str)
+    print("Base String:", base_string)
+    print("Sign:", sign)
+    print("Response:", resp.text)
+
     return resp.json()
+
 
 
 def refresh_token(refresh_token_value, shop_id):
