@@ -80,14 +80,19 @@ def get_authorization_url():
     )
     return url
 
-# ไม่ใช้ generate_token_sign แยกอีกแล้ว จะรวมการสร้าง base_string ใน get_token เลย
-# def generate_token_sign(path, timestamp, code):
-#     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}"
-#     return hmac.new(
-#         SHOPEE_PARTNER_SECRET.encode(),
-#         base_string.encode(),
-#         hashlib.sha256
-#     ).hexdigest()
+def generate_token_sign(path, timestamp, body_dict):
+    """
+    Generates the signature for /api/v2/auth/token/get
+    Base string: partner_id + path + timestamp + request_body(JSON string)
+    """
+    body_str = json.dumps(body_dict, separators=(',', ':'))  # compact JSON
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_str}"
+    return hmac.new(
+        SHOPEE_PARTNER_SECRET.encode(),
+        base_string.encode(),
+        hashlib.sha256
+    ).hexdigest(), body_str
+
 
 def generate_api_sign(path, timestamp, access_token, shop_id):
     """
