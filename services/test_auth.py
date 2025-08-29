@@ -118,8 +118,8 @@ def get_token(code: str, shop_id: int):
 
     payload = {"code": code, "shop_id": int(shop_id)}
 
-    # ✅ ต้องรวม code และ shop_id เข้าไปด้วย
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
+    # ✅ base_string ใช้แค่นี้
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
 
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
@@ -127,7 +127,12 @@ def get_token(code: str, shop_id: int):
         hashlib.sha256
     ).hexdigest()
 
-    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    url = (
+        f"{BASE_URL}{path}"
+        f"?partner_id={SHOPEE_PARTNER_ID}"
+        f"&timestamp={timestamp}"
+        f"&sign={sign}"
+    )
 
     resp = requests.post(url, json=payload)
 
