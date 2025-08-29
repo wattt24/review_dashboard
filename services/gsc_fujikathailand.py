@@ -2,17 +2,16 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import pandas as pd
 from datetime import date, timedelta
+import json
+import os
 
-SCOPES = ['https://www.googleapis.com/auth/webmasters.readonly']
-KEY_FILE_LOCATION = 'svgscfujith@webfujikathailand.iam.gserviceaccount.com' # ใส่ไฟล์ service account ของคุณ
-SITE_URL = 'https://www.fujikathailand.com'
-# ----------------- Authenticate -----------------
-credentials = service_account.Credentials.from_service_account_file(
-    KEY_FILE_LOCATION, scopes=SCOPES
+SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
+
+service_account_info = json.loads(os.environ["service_account.json"])
+credentials = service_account.Credentials.from_service_account_info(
+    service_account_info, scopes=SCOPES
 )
-
-webmasters_service = build('searchconsole', 'v1', credentials=credentials)
-
+SITE_URL = 'https://www.fujikathailand.com'
 # ----------------- Set Date Range -----------------
 end_date = date.today()
 start_date = end_date - timedelta(days=30)
