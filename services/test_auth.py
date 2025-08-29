@@ -111,10 +111,8 @@ def get_token(code: str, shop_id: int):
     timestamp = int(time.time())
     payload = {"code": code, "shop_id": int(shop_id)}
 
-    # compact JSON
-    body_str = json.dumps(payload, separators=(',', ':'))
-
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_str}"
+    # ❌ ไม่ต้องเอา body_str ไปใส่
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
 
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
@@ -134,6 +132,7 @@ def get_token(code: str, shop_id: int):
     print("Response:", resp.text)
 
     return resp.json()
+
 
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
