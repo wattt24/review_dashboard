@@ -28,3 +28,17 @@ request = {
 response = webmasters_service.searchanalytics().query(
     siteUrl=SITE_URL, body=request
 ).execute()
+rows = response.get("rows", [])
+if rows:
+    df = pd.DataFrame([
+        {
+            "query": row["keys"][0] if "keys" in row and row["keys"] else None,
+            "clicks": row.get("clicks", 0),
+            "impressions": row.get("impressions", 0),
+            "ctr": row.get("ctr", 0),
+            "position": row.get("position", 0),
+        }
+        for row in rows
+    ])
+else:
+    df = pd.DataFrame(columns=["query", "clicks", "impressions", "ctr", "position"])
