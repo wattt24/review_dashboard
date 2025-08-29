@@ -41,10 +41,21 @@ def app():
         st.dataframe(df.sort_values('clicks', ascending=False))
 
     # ----------------- Bar Chart -----------------
-        fig = px.bar(df.sort_values('clicks', ascending=False), 
-                x='Keyword', y='clicks', 
-                hover_data=['Impressions', 'CTR', 'Avg. Position'])
-        st.plotly_chart(fig, use_container_width=True)
+        df_plot = df.rename(columns={
+            "query": "Keyword",
+            "clicks": "Clicks",
+            "impressions": "Impressions",
+            "ctr": "CTR",
+            "position": "Avg. Position"
+        })
+
+        fig = px.bar(
+            df_plot.sort_values('Clicks', ascending=False),
+            x='Keyword',
+            y='Clicks',
+            hover_data=['Impressions', 'CTR', 'Avg. Position']
+)
+
 
         st.title("🎉 May I be happy.")
         st.markdown("🥳 ขอให้ปีนี้เต็มไปด้วยความสุข ความสำเร็จ และสิ่งดีๆ!")
