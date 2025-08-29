@@ -106,14 +106,24 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
     ).hexdigest()
 
 # *** แก้ไข get_token() ตรงนี้ ***
+import time
+import hmac
+import hashlib
+import requests
+from datetime import datetime, timezone
+
 def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
-    timestamp = int(time.time())
+    
+    # ✅ ใช้ UTC timestamp จาก python โดยตรง
+    timestamp = int(datetime.now(timezone.utc).timestamp())
+
     payload = {"code": code, "shop_id": int(shop_id)}
 
-    # ❌ ไม่ต้องเอา body_str ไปใส่
+    # ✅ base string ไม่ต้องมี payload
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
 
+    # ✅ ต้อง .hexdigest()
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
@@ -125,7 +135,7 @@ def get_token(code: str, shop_id: int):
     resp = requests.post(url, json=payload)
 
     print("==== DEBUG ====")
-    print(requests.get("https://worldtimeapi.org/api/timezone/Etc/UTC").json())
+    print("UTC Timestamp:", timestamp)
     print("URL:", url)
     print("Payload:", payload)
     print("Base String:", base_string)
@@ -133,6 +143,7 @@ def get_token(code: str, shop_id: int):
     print("Response:", resp.text)
 
     return resp.json()
+
 
 
 def refresh_token(refresh_token_value, shop_id):
