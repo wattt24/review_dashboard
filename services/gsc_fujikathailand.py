@@ -7,7 +7,7 @@ import os
 
 SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
 
-service_account_info = json.loads(os.environ["service_account"])
+service_account_info = json.loads(os.environ["SERVICE_AC"])
 credentials = service_account.Credentials.from_service_account_info(
     service_account_info, scopes=SCOPES
 )
