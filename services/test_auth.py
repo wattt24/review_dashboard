@@ -114,16 +114,13 @@ from datetime import datetime, timezone
 
 def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
-    
-    # ✅ ใช้ UTC timestamp จาก python โดยตรง
     timestamp = int(datetime.now(timezone.utc).timestamp())
 
     payload = {"code": code, "shop_id": int(shop_id)}
 
-    # ✅ base string ไม่ต้องมี payload
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    # ✅ ต้องรวม code และ shop_id เข้าไปด้วย
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
 
-    # ✅ ต้อง .hexdigest()
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
@@ -143,6 +140,7 @@ def get_token(code: str, shop_id: int):
     print("Response:", resp.text)
 
     return resp.json()
+
 
 
 
