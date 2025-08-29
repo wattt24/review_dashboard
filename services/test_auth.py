@@ -125,7 +125,7 @@ def get_token(code: str, shop_id: int):
     resp = requests.post(url, json=payload)
 
     print("==== DEBUG ====")
-    print(requests.get("http://worldtimeapi.org/api/timezone/Etc/UTC").json())
+    print(requests.get("https://worldtimeapi.org/api/timezone/Etc/UTC").json())
     print("URL:", url)
     print("Payload:", payload)
     print("Base String:", base_string)
