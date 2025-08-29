@@ -38,11 +38,11 @@ def app():
 
     # ----------------- Table -----------------
         st.subheader("Top Keywords")
-        st.dataframe(df.sort_values('Clicks', ascending=False))
+        st.dataframe(df.sort_values('clicks', ascending=False))
 
     # ----------------- Bar Chart -----------------
-        fig = px.bar(df.sort_values('Clicks', ascending=False), 
-                x='Keyword', y='Clicks', 
+        fig = px.bar(df.sort_values('clicks', ascending=False), 
+                x='Keyword', y='clicks', 
                 hover_data=['Impressions', 'CTR', 'Avg. Position'])
         st.plotly_chart(fig, use_container_width=True)
 
