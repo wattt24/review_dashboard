@@ -4,37 +4,27 @@ import pandas as pd
 from datetime import date, timedelta
 import json
 import os
-
 SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
+SITE_URL = "https://www.fujikathailand.com/"
 
-service_account_info = json.loads(os.environ["SERVICE_AC"])
+# โหลด credentials จาก environment variable
+service_account_info = json.loads(os.environ["service_account"])
 credentials = service_account.Credentials.from_service_account_info(
     service_account_info, scopes=SCOPES
 )
-SITE_URL = 'https://www.fujikathailand.com'
-# ----------------- Set Date Range -----------------
-end_date = date.today()
-start_date = end_date - timedelta(days=30)
 
+# ✅ ตรงนี้แหละที่ต้องสร้าง service object
+webmasters_service = build("searchconsole", "v1", credentials=credentials)
+
+# ตัวอย่าง request
 request = {
-    'startDate': start_date.isoformat(),
-    'endDate': end_date.isoformat(),
-    'dimensions': ['query'],
-    'rowLimit': 50  # จำนวน keyword สูงสุด
+    "startDate": "2025-08-01",
+    "endDate": "2025-08-28",
+    "dimensions": ["query"],
+    "rowLimit": 10
 }
 
-response = webmasters_service.searchanalytics().query(siteUrl=SITE_URL, body=request).execute()
-
-# ----------------- แปลงเป็น DataFrame -----------------
-rows = response.get('rows', [])
-data = []
-for row in rows:
-    data.append({
-        'Keyword': row['keys'][0],
-        'Clicks': row.get('clicks', 0),
-        'Impressions': row.get('impressions', 0),
-        'CTR': row.get('ctr', 0) * 100,
-        'Avg. Position': row.get('position', 0)
-    })
-
-df = pd.DataFrame(data)
+# เรียก API
+response = webmasters_service.searchanalytics().query(
+    siteUrl=SITE_URL, body=request
+).execute()
