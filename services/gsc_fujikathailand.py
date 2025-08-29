@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import json
 import os
 SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
-SITE_URL = "https://www.fujikathailand.com/"
+SITE_URL = "sc-domain:fujikathailand.com"
 
 # โหลด credentials จาก environment variable
 service_account_info = json.loads(os.environ["SERVICE_AC"])
