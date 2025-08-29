@@ -3,44 +3,66 @@
 import requests
 from utils.config import FUJIKA_SERVICE_SITE_URL, FUJIKA_SERVICE_CONSUMER_KEY, FUJIKA_SERVICE_CONSUMER_SECRET
 from requests.auth import HTTPBasicAuth
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
-def fetch_service_all_products(per_page=100, timeout=15, max_pages=50):
-    """
-    ดึงข้อมูลสินค้า WooCommerce
-    """
-    auth = HTTPBasicAuth(FUJIKA_SERVICE_CONSUMER_KEY, FUJIKA_SERVICE_CONSUMER_SECRET)
-    url = f"{FUJIKA_SERVICE_SITE_URL}/wp-json/wc/v3/products"
+# def fetch_service_all_products(per_page=100, timeout=15, max_pages=50):
+#     """
+#     ดึงข้อมูลสินค้า WooCommerce
+#     """
+#     auth = HTTPBasicAuth(FUJIKA_SERVICE_CONSUMER_KEY, FUJIKA_SERVICE_CONSUMER_SECRET)
+#     url = f"{FUJIKA_SERVICE_SITE_URL}/wp-json/wc/v3/products"
 
-    all_products = []
-    page = 1
+#     all_products = []
+#     page = 1
 
-    while True:
-        resp = requests.get(url, auth=auth, params={"per_page": per_page, "page": page}, timeout=timeout)
+#     while True:
+#         resp = requests.get(url, auth=auth, params={"per_page": per_page, "page": page}, timeout=timeout)
+#         resp.raise_for_status()
+#         products = resp.json()
+
+#         if not products:
+#             break
+
+#         for p in products:
+#             image_url = p.get("images", [{}])[0].get("src", "")
+#             all_products.append({
+#                 "id": p.get("id"),
+#                 "name": p.get("name"),
+#                 "price": float(p.get("price") or 0),
+#                 "image_url": image_url,
+#                 "stock_quantity": p.get("stock_quantity", 0),
+#                 "average_rating": float(p.get("average_rating", "0") or 0),
+#                 "rating_count": p.get("rating_count", 0),
+#                 "quantity_sold": 0,
+#                 "total_revenue": 0.0
+#             })
+
+#         if len(products) < per_page or page >= max_pages:
+#             break
+#         page += 1
+
+#     return all_products
+def fetch_service_all_products(per_page=100, page=1, timeout=10):
+    url = "https://www.fujikaservice.com/wp-json/wc/v3/products"
+    auth = (FUJIKA_SERVICE_CONSUMER_KEY, FUJIKA_SERVICE_CONSUMER_SECRET)
+
+    session = requests.Session()
+    retries = Retry(
+        total=5,
+        backoff_factor=1,
+        status_forcelist=[502, 503, 504],
+        allowed_methods=["GET"]
+    )
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+
+    try:
+        resp = session.get(url, auth=auth, params={"per_page": per_page, "page": page}, timeout=timeout)
         resp.raise_for_status()
-        products = resp.json()
-
-        if not products:
-            break
-
-        for p in products:
-            image_url = p.get("images", [{}])[0].get("src", "")
-            all_products.append({
-                "id": p.get("id"),
-                "name": p.get("name"),
-                "price": float(p.get("price") or 0),
-                "image_url": image_url,
-                "stock_quantity": p.get("stock_quantity", 0),
-                "average_rating": float(p.get("average_rating", "0") or 0),
-                "rating_count": p.get("rating_count", 0),
-                "quantity_sold": 0,
-                "total_revenue": 0.0
-            })
-
-        if len(products) < per_page or page >= max_pages:
-            break
-        page += 1
-
-    return all_products
+        return resp.json()
+    except requests.exceptions.RequestException as e:
+        print("Error fetching products:", e)
+        return []  # ถ้า connect ไม่ได้ ให้ return list ว่าง
 
 # -------------------- ดึง feedback / คำติชม --------------------
 # -------------------- ฟังก์ชันรวมเรียกใช้งาน --------------------
