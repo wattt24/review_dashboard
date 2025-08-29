@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date, timedelta
 
 SCOPES = ['https://www.googleapis.com/auth/webmasters.readonly']
-KEY_FILE_LOCATION = "/etc/secrets/webfujikathailand-0aafa2666049.json"  # ใส่ไฟล์ service account ของคุณ
+KEY_FILE_LOCATION = 'svgscfujith@webfujikathailand.iam.gserviceaccount.com' # ใส่ไฟล์ service account ของคุณ
 SITE_URL = 'https://www.fujikathailand.com'
 # ----------------- Authenticate -----------------
 credentials = service_account.Credentials.from_service_account_file(
