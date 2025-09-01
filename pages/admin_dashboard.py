@@ -15,6 +15,15 @@ from api.fujikaservice_rest_api import *#fetch_service_all_products
 service_products = fetch_service_all_products()
 products = service_products 
 
+import json
+
+def make_safe_for_streamlit(df):
+    """แปลงทุก column object/list/dict เป็น string เพื่อให้ Streamlit แสดงได้"""
+    for col in df.columns:
+        if df[col].dtype == "object":
+            df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (list, dict)) else str(x))
+    return df
+
 def app():
         
     if "role" not in st.session_state or st.session_state["role"] != "admin":
@@ -175,72 +184,78 @@ def app():
 
                                     
             # ------------------ กราฟรายได้รวม ------------------
-            if products_sold:  # แสดงเฉพาะถ้ามีสินค้าที่ขายได้
-                st.markdown("## 💰 รายได้รวมต่อสินค้า")
-                fig_rev = px.bar(
-                    products_sold,
-                    x="name",
-                    y="total_revenue",
-                    hover_data=["quantity_sold"],
-                    labels={"total_revenue": "รายได้รวม (บาท)"},
-                    title="รายได้รวมต่อสินค้า"
+                if products_sold:  # แสดงเฉพาะถ้ามีสินค้าที่ขายได้
+                    st.markdown("## 💰 รายได้รวมต่อสินค้า")
+                    fig_rev = px.bar(
+                        products_sold,
+                        x="name",
+                        y="total_revenue",
+                        hover_data=["quantity_sold"],
+                        labels={"total_revenue": "รายได้รวม (บาท)"},
+                        title="รายได้รวมต่อสินค้า"
+                    )
+                    fig_rev.update_layout(xaxis_tickangle=-45)
+                    st.plotly_chart(fig_rev, use_container_width=True)
+
+                def summarize_buyers(buyers_list, group_by="email"):
+                    """
+                    นับจำนวนครั้งที่แต่ละผู้ซื้อซื้อสินค้า
+                    """
+                    buyer_count = defaultdict(int)
+
+                    for b in buyers_list:
+                        key = b[group_by]  # ใช้ email หรือ phone เป็นตัวระบุ
+                        buyer_count[key] += 1
+
+                    # แปลงเป็น list ของ dict
+                    result = [{"buyer": k, "purchase_count": v} for k, v in buyer_count.items()]
+                    return result
+                # ดึงข้อมูลสินค้าและผู้ซื้อ
+                products, buyers_list,total_orders = fetch_all_product_sales()
+
+                # นับจำนวนครั้งที่แต่ละผู้ซื้อซื้อสินค้า (ใช้ email เป็นตัวระบุ)
+                buyer_summary = summarize_buyers(buyers_list, group_by="email")
+
+                # แปลงเป็น DataFrame เพื่อจัดการง่าย
+                df_buyers = pd.DataFrame(buyer_summary)
+                # ลูกค้าที่ซื้อสูงสุด
+                max_purchase = df_buyers['purchase_count'].max()
+                st.subheader("ตารางจำนวนครั้งที่ลูกค้าซื้อสินค้า")
+                st.dataframe(df_buyers[df_buyers['purchase_count'] == max_purchase])
+                if st.checkbox("🗂️ แสดงตาราง"):
+                    st.dataframe(make_safe_for_streamlit(buyers), use_container_width=True)
+
+                    # แสดงตาราง buyer_summary
+                df_buyers = pd.DataFrame(buyer_summary)
+                st.dataframe(make_safe_for_streamlit(df_buyers[df_buyers['purchase_count'] == max_purchase]))
+                # กราฟ Top 10 ผู้ซื้อบ่อยที่สุด
+                fig = px.scatter(
+                df_buyers,
+                x="buyer",               # ชื่อลูกค้า หรือ email/phone
+                y="purchase_count",      # จำนวนครั้งที่ซื้อ
+                size="purchase_count",   # ขนาดจุดตามจำนวนครั้งซื้อ
+                color="purchase_count",  # สีตามจำนวนครั้งซื้อ
+                labels={"buyer": "ผู้ซื้อ", "purchase_count": "จำนวนครั้งที่ซื้อ"},
+                title="🛒 จำนวนครั้งที่ลูกค้าซื้อสินค้า"
                 )
-                fig_rev.update_layout(xaxis_tickangle=-45)
-                st.plotly_chart(fig_rev, use_container_width=True)
 
-            def summarize_buyers(buyers_list, group_by="email"):
-                """
-                นับจำนวนครั้งที่แต่ละผู้ซื้อซื้อสินค้า
-                """
-                buyer_count = defaultdict(int)
+                fig.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='DarkSlateGrey')))
+                fig.update_layout(xaxis_tickangle=-45)
 
-                for b in buyers_list:
-                    key = b[group_by]  # ใช้ email หรือ phone เป็นตัวระบุ
-                    buyer_count[key] += 1
+                st.plotly_chart(fig, use_container_width=True)
 
-                # แปลงเป็น list ของ dict
-                result = [{"buyer": k, "purchase_count": v} for k, v in buyer_count.items()]
-                return result
-            # ดึงข้อมูลสินค้าและผู้ซื้อ
-            products, buyers_list,total_orders = fetch_all_product_sales()
+                # -------------------- ผู้ซื้อ --------------------
+                st.subheader("👥 รายชื่อผู้ซื้อทั้งหมด")
+                if st.checkbox("🗂️ แสดงตาราง"):
+                    st.dataframe(buyers, use_container_width=True)
 
-            # นับจำนวนครั้งที่แต่ละผู้ซื้อซื้อสินค้า (ใช้ email เป็นตัวระบุ)
-            buyer_summary = summarize_buyers(buyers_list, group_by="email")
-
-            # แปลงเป็น DataFrame เพื่อจัดการง่าย
-            df_buyers = pd.DataFrame(buyer_summary)
-            # ลูกค้าที่ซื้อสูงสุด
-            max_purchase = df_buyers['purchase_count'].max()
-            st.subheader("ตารางจำนวนครั้งที่ลูกค้าซื้อสินค้า")
-            st.dataframe(df_buyers[df_buyers['purchase_count'] == max_purchase])
-            # กราฟ Top 10 ผู้ซื้อบ่อยที่สุด
-            fig = px.scatter(
-            df_buyers,
-            x="buyer",               # ชื่อลูกค้า หรือ email/phone
-            y="purchase_count",      # จำนวนครั้งที่ซื้อ
-            size="purchase_count",   # ขนาดจุดตามจำนวนครั้งซื้อ
-            color="purchase_count",  # สีตามจำนวนครั้งซื้อ
-            labels={"buyer": "ผู้ซื้อ", "purchase_count": "จำนวนครั้งที่ซื้อ"},
-            title="🛒 จำนวนครั้งที่ลูกค้าซื้อสินค้า"
-            )
-
-            fig.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color='DarkSlateGrey')))
-            fig.update_layout(xaxis_tickangle=-45)
-
-            st.plotly_chart(fig, use_container_width=True)
-
-            # -------------------- ผู้ซื้อ --------------------
-            st.subheader("👥 รายชื่อผู้ซื้อทั้งหมด")
-            if st.checkbox("🗂️ แสดงตาราง"):
-                st.dataframe(buyers, use_container_width=True)
-
-            # -------------------- แยกภูมิภาค --------------------
-            st.subheader("🌏 สรุปผู้ซื้อแยกตามภูมิภาค")
-            if buyers:
-                region_counts = {}
-                for b in buyers:
-                    region = b.get("region", "ไม่ทราบ")
-                    region_counts[region] = region_counts.get(region, 0) + 1
+                # -------------------- แยกภูมิภาค --------------------
+                st.subheader("🌏 สรุปผู้ซื้อแยกตามภูมิภาค")
+                if buyers:
+                    region_counts = {}
+                    for b in buyers:
+                        region = b.get("region", "ไม่ทราบ")
+                        region_counts[region] = region_counts.get(region, 0) + 1
 
                 # regions = list(region_counts.keys())
                 # counts = list(region_counts.values())
