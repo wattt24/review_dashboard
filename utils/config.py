@@ -23,6 +23,7 @@ FUJIKA_WP_APP_PASSWORD_API_ACCESS = os.getenv("FUJIKA_WP_APP_PASSWORD_API_ACCESS
 WOOCOMMERCE_URL = os.getenv("WOOCOMMERCE_URL")
 WOOCOMMERCE_CONSUMER_KEY = os.getenv("WOOCOMMERCE_CONSUMER_KEY")
 WOOCOMMERCE_CONSUMER_SECRET = os.getenv("WOOCOMMERCE_CONSUMER_SECRET")  
+SERVICE_AC = os.getenv("SERVICE_AC")
 
 
 # 🛠️ Fujikaservice.com (บริการหลังการขาย)

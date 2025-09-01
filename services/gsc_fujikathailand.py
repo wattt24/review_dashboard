@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import date, timedelta
 import json
 import os
+
 SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
 SITE_URL = "sc-domain:fujikathailand.com"
 
