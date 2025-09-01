@@ -32,16 +32,15 @@ def app():
     # ---- Show alternate page ----
     if view == "1 vs 2":
         
-        
-        df = get_gsc_data()
+
         st.set_page_config(page_title="GSC Dashboard", layout="wide")
         st.title("Google Search Console Dashboard")
 
-        # ----------------- Table -----------------
+    # ----------------- Table -----------------
         st.subheader("Top Keywords")
         st.dataframe(df.sort_values('clicks', ascending=False))
 
-        # ----------------- Bar Chart -----------------
+    # ----------------- Bar Chart -----------------
         df_plot = df.rename(columns={
             "query": "Keyword",
             "clicks": "Clicks",
@@ -55,10 +54,8 @@ def app():
             x='Keyword',
             y='Clicks',
             hover_data=['Impressions', 'CTR', 'Avg. Position']
-        )
+)
 
-        # แสดงกราฟ
-        st.plotly_chart(fig, use_container_width=True)
 
         st.title("🎉 May I be happy.")
         st.markdown("🥳 ขอให้ปีนี้เต็มไปด้วยความสุข ความสำเร็จ และสิ่งดีๆ!")
@@ -204,7 +201,6 @@ def app():
 
             # แปลงเป็น DataFrame เพื่อจัดการง่าย
             df_buyers = pd.DataFrame(buyer_summary)
-            df_products = normalize_df_for_streamlit(df_products)
             # ลูกค้าที่ซื้อสูงสุด
             max_purchase = df_buyers['purchase_count'].max()
             st.subheader("ตารางจำนวนครั้งที่ลูกค้าซื้อสินค้า")
@@ -252,7 +248,7 @@ def app():
 
                 # แปลงข้อมูลเป็น DataFrame      
                 df = pd.DataFrame(list(region_counts.items()), columns=["province", "buyers"])
-                
+
                 # สร้าง Choropleth Map
                 fig = px.choropleth(
                     df,
