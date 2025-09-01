@@ -257,34 +257,34 @@ def app():
                         region = b.get("region", "ไม่ทราบ")
                         region_counts[region] = region_counts.get(region, 0) + 1
 
-                # regions = list(region_counts.keys())
-                # counts = list(region_counts.values())
+                regions = list(region_counts.keys())
+                counts = list(region_counts.values())
 
-                # fig_region = px.pie(
-                #     names=regions,
-                #     values=counts,
-                #     title="ผู้ซื้อแยกตามภูมิภาค"
-                # )
-                # st.plotly_chart(fig_region, use_container_width=True)
-                url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
-                geojson = requests.get(url).json()
-
-                # แปลงข้อมูลเป็น DataFrame      
-                df = pd.DataFrame(list(region_counts.items()), columns=["province", "buyers"])
-
-                # สร้าง Choropleth Map
-                fig = px.choropleth(
-                    df,
-                    geojson=geojson,
-                    locations="province",
-                    featureidkey="properties.name",
-                    color="buyers",
-                    color_continuous_scale="Blues",
-                    title="ผู้ซื้อแยกตามจังหวัด",
+                fig_region = px.pie(
+                    names=regions,
+                    values=counts,
+                    title="ผู้ซื้อแยกตามภูมิภาค"
                 )
+                st.plotly_chart(fig_region, use_container_width=True)
+                # url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
+                # geojson = requests.get(url).json()
 
-                fig.update_geos(fitbounds="locations", visible=False)
-                st.plotly_chart(fig, use_container_width=True)
+                # # แปลงข้อมูลเป็น DataFrame      
+                # df = pd.DataFrame(list(region_counts.items()), columns=["province", "buyers"])
+
+                # # สร้าง Choropleth Map
+                # fig = px.choropleth(
+                #     df,
+                #     geojson=geojson,
+                #     locations="province",
+                #     featureidkey="properties.name",
+                #     color="buyers",
+                #     color_continuous_scale="Blues",
+                #     title="ผู้ซื้อแยกตามจังหวัด",
+                # )
+
+                # fig.update_geos(fitbounds="locations", visible=False)
+                # st.plotly_chart(fig, use_container_width=True)
             
             
 
