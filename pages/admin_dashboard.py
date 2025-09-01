@@ -267,9 +267,30 @@ def app():
                     title="ผู้ซื้อแยกตามภูมิภาค"
                 )
                 st.plotly_chart(fig_region, use_container_width=True)
-            
-            
+                
+            # ====== 5) Choropleth Map ======
+                st.subheader("🗺️ ผู้ซื้อแยกตามจังหวัด (Choropleth Map)")
 
+                # โหลด geojson ของประเทศไทย (ดาวน์โหลดล่วงหน้าเก็บไว้ใน project)
+                if "thailand" not in st.session_state:
+                    url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
+                    st.session_state.thailand = requests.get(url).json()
+
+                geojson = st.session_state.thailand
+
+                fig_map = px.choropleth_mapbox(
+                    geojson=geojson,
+                    locations=list(province_counts.keys()),   # province name
+                    featureidkey="properties.name",          # ต้องตรงกับ key ใน geojson
+                    color=list(province_counts.values()),
+                    color_continuous_scale="Blues",
+                    mapbox_style="carto-positron",
+                    zoom=4, center={"lat": 13.736717, "lon": 100.523186},
+                    opacity=0.6,
+                    title="จำนวนผู้ซื้อแยกตามจังหวัด"
+                )
+
+                st.plotly_chart(fig_map, use_container_width=True)
             st.markdown("---")
             st.title("📌 Fujika WordPress Posts & Comments")
 
