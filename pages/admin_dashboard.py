@@ -372,26 +372,19 @@ def app():
                         st.markdown(f"💵 {p.get('price',0)} บาท")
                     with col4: st.markdown(f"{p.get('stock_quantity',0)}")
                     with col5: st.markdown(f"{p.get('quantity_sold',0)}")
-                    with col6: st.markdown(f"{p.get('total_revenue',0):,.2f}")
-                    with col7: st.markdown(f"{p.get('average_rating',0):.1f} ⭐ ({p.get('rating_count',0)})")
+                    
+                    # แปลงเป็น float ก่อน format
+                    total_revenue = float(p.get('total_revenue', 0) or 0)
+                    st.markdown(f"{total_revenue:,.2f}")
+                    
+                    try:
+                        avg_rating = float(p.get('average_rating', 0) or 0)
+                    except (ValueError, TypeError):
+                        avg_rating = 0
+                    st.markdown(f"{avg_rating:.1f} ⭐ ({p.get('rating_count',0)})")
+                    
                     st.markdown("---")
 
-                # ปุ่ม toggle ด้านล่าง
-                col1, col2, col3, col4, col5, col6, col_button = st.columns([1,1,1,1,1,1,1])
-                col_button.button("❌ ซ่อนตารางสินค้า", key="toggle_products_table_bottom_1", on_click=hide_table)
-                
-            # st.subheader("🛒 Products / สินค้า")
-            # if products:
-            #     df_products = pd.DataFrame(products)
-            #     st.dataframe(df_products)
-            # else:
-            #     st.info("ไม่พบ products")
-
-            # -------------------- Summary --------------------
-            # st.subheader("📌 Summary")
-            # st.write(f"จำนวน Feedback: {len(feedback)}")
-            # st.write(f"จำนวน Tickets: {len(tickets)}")
-            # st.write(f"จำนวน Products: {len(products)}")
         # --------------------- 4. Shopee ---------------------
         with tabs[3]:
             st.header("🛍️ รีวิว Shopee")
