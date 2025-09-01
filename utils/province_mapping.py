@@ -1,20 +1,20 @@
 # utils/province_mapping.py
 # utils/province_mapping.py
 province_code_map = {
-    "TH-10": "กรุงเทพมหานคร", "TH-11": "สมุทรปราการ", "TH-12": "นนทบุรี", "TH-13": "ปทุมธานี","TH-14": "พระนครศรีอยุธยา",
-    "TH-15": "อ่างทอง", "TH-16": "ลพบุรี", "TH-17": "สิงห์บุรี","TH-18": "ชัยนาท", "TH-19": "สระบุรี",
-    "TH-20": "ชลบุรี", "TH-21": "ระยอง","TH-22": "จันทบุรี", "TH-23": "ตราด", "TH-24": "ฉะเชิงเทรา",
-    "TH-25": "ปราจีนบุรี","TH-26": "นครนายก", "TH-27": "สระแก้ว", "TH-30": "นครราชสีมา", "TH-31": "บุรีรัมย์",
-    "TH-32": "สุรินทร์", "TH-33": "ศรีสะเกษ", "TH-34": "อุบลราชธานี", "TH-35": "ยโสธร","TH-36": "ชัยภูมิ", 
-    "TH-37": "อำนาจเจริญ", "TH-38": "บึงกาฬ", "TH-39": "หนองบัวลำภู","TH-40": "ขอนแก่น", "TH-41": "อุดรธานี", 
-    "TH-42": "เลย", "TH-43": "หนองคาย","TH-44": "มหาสารคาม", "TH-45": "ร้อยเอ็ด", "TH-46": "กาฬสินธุ์", 
-    "TH-47": "สกลนคร","TH-48": "นครพนม", "TH-49": "มุกดาหาร", "TH-50": "เชียงใหม่", "TH-51": "ลำพูน",
-    "TH-52": "ลำปาง", "TH-53": "อุตรดิตถ์", "TH-54": "แพร่", "TH-55": "น่าน","TH-56": "พะเยา", 
-    "TH-57": "เชียงราย", "TH-58": "แม่ฮ่องสอน", "TH-60": "นครสวรรค์","TH-61": "อุทัยธานี", "TH-62": "กำแพงเพชร",
-    "TH-63": "ตาก", "TH-64": "สุโขทัย","TH-65": "พิษณุโลก", "TH-66": "พิจิตร", "TH-67": "เพชรบูรณ์", 
-    "TH-70": "ราชบุรี","TH-71": "กาญจนบุรี", "TH-72": "สุพรรณบุรี", "TH-73": "นครปฐม", "TH-74": "สมุทรสาคร",
-    "TH-75": "สมุทรสงคราม", "TH-76": "เพชรบุรี", "TH-77": "ประจวบคีรีขันธ์", "TH-80": "นครศรีธรรมราช","TH-81": "กระบี่", 
-    "TH-82": "พังงา", "TH-83": "ภูเก็ต", "TH-84": "สุราษฎร์ธานี","TH-85": "ระนอง", "TH-86": "ชุมพร", 
-    "TH-90": "สงขลา", "TH-91": "สตูล","TH-92": "ตรัง", "TH-93": "พัทลุง", "TH-94": "ปัตตานี", 
-    "TH-95": "ยะลา","TH-96": "นราธิวาส"
+    "TH-10": "Bangkok", "TH-11": "Samut Prakan", "TH-12": "Nonthaburi", "TH-13": "Pathum Thani", "TH-14": "Phra Nakhon Si Ayutthaya",
+    "TH-15": "Ang Thong", "TH-16": "Lop Buri", "TH-17": "Sing Buri", "TH-18": "Chai Nat", "TH-19": "Saraburi",
+    "TH-20": "Chon Buri", "TH-21": "Rayong", "TH-22": "Chanthaburi", "TH-23": "Trat", "TH-24": "Chachoengsao",
+    "TH-25": "Prachin Buri", "TH-26": "Nakhon Nayok", "TH-27": "Sa Kaeo", "TH-30": "Nakhon Ratchasima", "TH-31": "Buri Ram",
+    "TH-32": "Surin", "TH-33": "Si Sa Ket", "TH-34": "Ubon Ratchathani", "TH-35": "Yasothon", "TH-36": "Chaiyaphum",
+    "TH-37": "Amnat Charoen", "TH-38": "Bueng Kan", "TH-39": "Nong Bua Lam Phu", "TH-40": "Khon Kaen", "TH-41": "Udon Thani",
+    "TH-42": "Loei", "TH-43": "Nong Khai", "TH-44": "Maha Sarakham", "TH-45": "Roi Et", "TH-46": "Kalasin",
+    "TH-47": "Sakon Nakhon", "TH-48": "Nakhon Phanom", "TH-49": "Mukdahan", "TH-50": "Chiang Mai", "TH-51": "Lamphun",
+    "TH-52": "Lampang", "TH-53": "Uttaradit", "TH-54": "Phrae", "TH-55": "Nan", "TH-56": "Phayao",
+    "TH-57": "Chiang Rai", "TH-58": "Mae Hong Son", "TH-60": "Nakhon Sawan", "TH-61": "Uthai Thani", "TH-62": "Kamphaeng Phet",
+    "TH-63": "Tak", "TH-64": "Sukhothai", "TH-65": "Phitsanulok", "TH-66": "Phichit", "TH-67": "Phetchabun",
+    "TH-70": "Ratchaburi", "TH-71": "Kanchanaburi", "TH-72": "Suphan Buri", "TH-73": "Nakhon Pathom", "TH-74": "Samut Sakhon",
+    "TH-75": "Samut Songkhram", "TH-76": "Phetchaburi", "TH-77": "Prachuap Khiri Khan", "TH-80": "Nakhon Si Thammarat", "TH-81": "Krabi",
+    "TH-82": "Phangnga", "TH-83": "Phuket", "TH-84": "Surat Thani", "TH-85": "Ranong", "TH-86": "Chumphon",
+    "TH-90": "Songkhla", "TH-91": "Satun", "TH-92": "Trang", "TH-93": "Phatthalung", "TH-94": "Pattani",
+    "TH-95": "Yala", "TH-96": "Narathiwat"
 }
