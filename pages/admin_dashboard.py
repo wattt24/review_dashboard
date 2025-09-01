@@ -32,15 +32,16 @@ def app():
     # ---- Show alternate page ----
     if view == "1 vs 2":
         
+        
         df = get_gsc_data()
         st.set_page_config(page_title="GSC Dashboard", layout="wide")
         st.title("Google Search Console Dashboard")
 
-    # ----------------- Table -----------------
+        # ----------------- Table -----------------
         st.subheader("Top Keywords")
         st.dataframe(df.sort_values('clicks', ascending=False))
 
-    # ----------------- Bar Chart -----------------
+        # ----------------- Bar Chart -----------------
         df_plot = df.rename(columns={
             "query": "Keyword",
             "clicks": "Clicks",
@@ -54,8 +55,10 @@ def app():
             x='Keyword',
             y='Clicks',
             hover_data=['Impressions', 'CTR', 'Avg. Position']
-)
+        )
 
+        # แสดงกราฟ
+        st.plotly_chart(fig, use_container_width=True)
 
         st.title("🎉 May I be happy.")
         st.markdown("🥳 ขอให้ปีนี้เต็มไปด้วยความสุข ความสำเร็จ และสิ่งดีๆ!")
