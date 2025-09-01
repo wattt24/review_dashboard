@@ -270,7 +270,7 @@ def app():
                 
             # ====== 5) Choropleth Map ======
                 st.subheader("🗺️ ผู้ซื้อแยกตามจังหวัด (Choropleth Map)")
-
+                province_counts = {}
                 # โหลด geojson ของประเทศไทย (ดาวน์โหลดล่วงหน้าเก็บไว้ใน project)
                 if "thailand" not in st.session_state:
                     url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
