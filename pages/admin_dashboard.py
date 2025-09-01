@@ -204,6 +204,7 @@ def app():
 
             # แปลงเป็น DataFrame เพื่อจัดการง่าย
             df_buyers = pd.DataFrame(buyer_summary)
+            df_products = normalize_df_for_streamlit(df_products)
             # ลูกค้าที่ซื้อสูงสุด
             max_purchase = df_buyers['purchase_count'].max()
             st.subheader("ตารางจำนวนครั้งที่ลูกค้าซื้อสินค้า")
@@ -251,7 +252,7 @@ def app():
 
                 # แปลงข้อมูลเป็น DataFrame      
                 df = pd.DataFrame(list(region_counts.items()), columns=["province", "buyers"])
-
+                
                 # สร้าง Choropleth Map
                 fig = px.choropleth(
                     df,
