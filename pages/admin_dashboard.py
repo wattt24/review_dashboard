@@ -247,6 +247,7 @@ def app():
                 # -------------------- ผู้ซื้อ --------------------
                 st.subheader("👥 รายชื่อผู้ซื้อทั้งหมด")
                 if st.checkbox("🗂️ แสดงตาราง", key="show_table_1"):
+                    
                     st.dataframe(buyers, use_container_width=True)
 
                 # -------------------- แยกภูมิภาค --------------------
@@ -266,25 +267,6 @@ def app():
                     title="ผู้ซื้อแยกตามภูมิภาค"
                 )
                 st.plotly_chart(fig_region, use_container_width=True)
-                # url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
-                # geojson = requests.get(url).json()
-
-                # # แปลงข้อมูลเป็น DataFrame      
-                # df = pd.DataFrame(list(region_counts.items()), columns=["province", "buyers"])
-
-                # # สร้าง Choropleth Map
-                # fig = px.choropleth(
-                #     df,
-                #     geojson=geojson,
-                #     locations="province",
-                #     featureidkey="properties.name",
-                #     color="buyers",
-                #     color_continuous_scale="Blues",
-                #     title="ผู้ซื้อแยกตามจังหวัด",
-                # )
-
-                # fig.update_geos(fitbounds="locations", visible=False)
-                # st.plotly_chart(fig, use_container_width=True)
             
             
 
@@ -351,6 +333,7 @@ def app():
             # สร้าง DataFrame (ถ้าต้องการ)
             if service_products:
                 df_products = pd.DataFrame(service_products)
+                df_products = make_safe_for_streamlit(df_products)  # <-- แปลงให้ safe
                 st.write("ตัวอย่าง DataFrame ของสินค้า:")
                 st.dataframe(df_products)
 

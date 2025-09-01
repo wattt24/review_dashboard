@@ -207,12 +207,3 @@ def fetch_product_reviews(product_id=None, per_page=10):
     resp = requests.get(url, auth=HTTPBasicAuth(WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET), params=params)
     resp.raise_for_status()
     return resp.json()
-def normalize_df_for_streamlit(df):
-    """
-    แปลงทุก column type object ที่เป็น list/dict ให้เป็น string
-    เพื่อป้องกัน pyarrow ArrowInvalid
-    """
-    for col in df.columns:
-        if df[col].dtype == "object":
-            df[col] = df[col].apply(lambda x: str(x) if pd.notnull(x) else "")
-    return df

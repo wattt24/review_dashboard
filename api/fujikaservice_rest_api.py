@@ -125,3 +125,13 @@ def fetch_service_all_products(per_page=100, page=1, timeout=10):
     #     "tickets": tickets,
     #     "products": products
     # }
+def normalize_df_for_streamlit(df):
+    """
+    แปลงทุก column type object ที่เป็น list/dict ให้เป็น string
+    เพื่อป้องกัน pyarrow ArrowInvalid
+    """
+    for col in df.columns:
+        if df[col].dtype == "object":
+            df[col] = df[col].apply(lambda x: str(x) if pd.notnull(x) else "")
+    return df
+    
