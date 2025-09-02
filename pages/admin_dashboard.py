@@ -271,7 +271,7 @@ def app():
             st.subheader("🗺️ ผู้ซื้อแยกตามจังหวัด (Choropleth Map)")
             df = pd.DataFrame(buyers_list)
 
-            # สร้าง province_counts
+            # นับจำนวนผู้ซื้อแต่ละจังหวัด
             province_counts = df["province"].value_counts().reset_index()
             province_counts.columns = ["province", "count"]
 
@@ -279,9 +279,11 @@ def app():
             url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
             geojson = requests.get(url).json()
 
-            # กรองเฉพาะจังหวัดที่มีอยู่ใน GeoJSON
-            thailand_provinces = [feature["properties"]["name"] for feature in geojson["features"]]
-            province_counts = province_counts[province_counts["province"].isin(thailand_provinces)]
+            # สร้าง DataFrame ของทุกจังหวัดในประเทศไทย
+            all_provinces = pd.DataFrame([feature["properties"]["name"] for feature in geojson["features"]], columns=["province"])
+
+            # รวมกับ province_counts โดยเติมค่า 0 สำหรับจังหวัดที่ไม่มีข้อมูล
+            province_counts = all_provinces.merge(province_counts, on="province", how="left").fillna(0)
 
             # สร้างแผนที่
             fig_map = px.choropleth_mapbox(
