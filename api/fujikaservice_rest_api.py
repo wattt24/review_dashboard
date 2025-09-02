@@ -5,7 +5,7 @@ from utils.config import FUJIKA_SERVICE_SITE_URL, FUJIKA_SERVICE_CONSUMER_KEY, F
 from requests.auth import HTTPBasicAuth
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-
+import pandas as pd
 # def fetch_service_all_products(per_page=100, timeout=15, max_pages=50):
 #     """
 #     ดึงข้อมูลสินค้า WooCommerce

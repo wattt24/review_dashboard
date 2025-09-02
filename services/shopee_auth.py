@@ -12,19 +12,7 @@ from utils.config import (
     SHOPEE_PARTNER_SECRET, 
     SHOPEE_REDIRECT_URI
 )
-#key_path = "data/service_account.json"
-key_path = "/etc/secrets/service_account.json"
-#--------
-# ใช้ path แบบ Windows-friendly (อยู่ในโฟลเดอร์ data)
-# scope สำหรับ Google API
-# scope = ["https://spreadsheets.google.com/feeds",
-#          "https://www.googleapis.com/auth/drive"]
-# key_path = os.path.join("data", "service_account.json")
-credentials = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
-client = gspread.authorize(credentials)
-sheet_id = os.environ.get("GOOGLE_SHEET_ID")
-sheet = client.open_by_key(sheet_id).sheet1
-# ใส่ path ตามที่ Render กำหนด
+key_path = os.environ["SERVICE_AC_SHP"]
 
 scope = [
      "https://spreadsheets.google.com/feeds",

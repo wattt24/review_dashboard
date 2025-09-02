@@ -24,7 +24,7 @@ WOOCOMMERCE_URL = os.getenv("WOOCOMMERCE_URL")
 WOOCOMMERCE_CONSUMER_KEY = os.getenv("WOOCOMMERCE_CONSUMER_KEY")
 WOOCOMMERCE_CONSUMER_SECRET = os.getenv("WOOCOMMERCE_CONSUMER_SECRET")  
 SERVICE_AC = os.getenv("SERVICE_AC")
-
+SERVICE_AC_SHP = os.getenv("SERVICE_AC_SHP")
 
 # 🛠️ Fujikaservice.com (บริการหลังการขาย)
 FUJIKA_SERVICE_SITE_URL = os.getenv("FUJIKA_SERVICE_SITE_URL")
