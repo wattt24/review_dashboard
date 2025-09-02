@@ -14,7 +14,7 @@ from collections import defaultdict
 from api.fujikaservice_rest_api import *#fetch_service_all_products
 service_products = fetch_service_all_products()
 products = service_products 
-
+buyers_list, _ = fetch_sales_and_buyers_all(order_status="completed")
 import json
 
 def make_safe_for_streamlit(df):
@@ -269,9 +269,11 @@ def app():
                 st.plotly_chart(fig_region, use_container_width=True)
                 
             st.subheader("🗺️ ผู้ซื้อแยกตามจังหวัด (Choropleth Map)")
+            df_buyers = pd.DataFrame(buyers_list)
             # นับจำนวนผู้ซื้อแยกตามจังหวัด
             province_counts = df["province"].value_counts().reset_index()
-            province_counts.columns = ["province", "count"]
+            # นับจำนวนผู้ซื้อแยกตามจังหวัด
+            province_counts = df_buyers["province"].value_counts().to_dict()
             url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
             geojson = requests.get(url).json()
 
