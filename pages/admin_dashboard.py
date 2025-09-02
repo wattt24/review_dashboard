@@ -14,7 +14,7 @@ from collections import defaultdict
 from api.fujikaservice_rest_api import *#fetch_service_all_products
 service_products = fetch_service_all_products()
 products = service_products 
-buyers_list, _ = fetch_sales_and_buyers_all(order_status="completed")
+sales_data, buyers_list, total_orders = fetch_sales_and_buyers_all(order_status="completed")
 import json
 
 def make_safe_for_streamlit(df):
