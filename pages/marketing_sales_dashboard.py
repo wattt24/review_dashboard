@@ -17,7 +17,7 @@ products = service_products
 
 def app():
         
-    if "role" not in st.session_state or st.session_state["role"] != "ma":
+    if "role" not in st.session_state or st.session_state["role"] != "marketing":
         st.error("⛔ คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
         st.stop()
 

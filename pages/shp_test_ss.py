@@ -1,7 +1,7 @@
 import streamlit as st
 from services.test_auth import *
 def app():
-    if "role" not in st.session_state or st.session_state["role"] != "testing":
+    if "role" not in st.session_state or st.session_state["role"] != "shopee_test":
         st.error("⛔ คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
         st.stop()
 
