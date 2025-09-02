@@ -270,29 +270,19 @@ def app():
                 
             st.subheader("🗺️ ผู้ซื้อแยกตามจังหวัด (Choropleth Map)")
 
-            # 1) นับจำนวนผู้ซื้อแยกตามจังหวัด
-            province_counts = {}
-            for b in buyers:
-                province_code = b.get("province_code")   # เช่น "TH-10"
-                province_name = province_code_map.get(province_code, "ไม่ทราบจังหวัด")
-                province_counts[province_name] = province_counts.get(province_name, 0) + 1
+            url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
+            geojson = requests.get(url).json()
 
-            # 2) โหลด geojson ของประเทศไทย (ดาวน์โหลดล่วงหน้าเก็บไว้ใน project หรือโหลดจาก github)
-            if "thailand" not in st.session_state:
-                url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
-                st.session_state.thailand = requests.get(url).json()
-
-            geojson = st.session_state.thailand
-
-            # 3) สร้าง Choropleth Map
             fig_map = px.choropleth_mapbox(
+                province_counts,
                 geojson=geojson,
-                locations=list(province_counts.keys()),   # province name เช่น "กรุงเทพมหานคร"
-                featureidkey="properties.name",           # ต้องตรงกับ key ใน geojson
-                color=list(province_counts.values()),
+                locations="province",
+                featureidkey="properties.name",
+                color="count",
                 color_continuous_scale="Blues",
                 mapbox_style="carto-positron",
-                zoom=4, center={"lat": 13.736717, "lon": 100.523186},
+                zoom=4,
+                center={"lat": 13.736717, "lon": 100.523186},
                 opacity=0.6,
                 title="จำนวนผู้ซื้อแยกตามจังหวัด"
             )
