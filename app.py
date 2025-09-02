@@ -39,7 +39,7 @@ users = {
         "role": secrets["marketing"]["role"]
     },
     "shopee": {
-        "password": secrets["shopee"]["password"],
+        "password": secrets["shopee_test"]["password"],
         "role": secrets["shopee"]["role"]
     }
 }
