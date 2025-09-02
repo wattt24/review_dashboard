@@ -274,9 +274,16 @@ def app():
             # สร้าง province_counts
             province_counts = df["province"].value_counts().reset_index()
             province_counts.columns = ["province", "count"]
+
+            # โหลด GeoJSON ของประเทศไทย
             url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
             geojson = requests.get(url).json()
 
+            # กรองเฉพาะจังหวัดที่มีอยู่ใน GeoJSON
+            thailand_provinces = [feature["properties"]["name"] for feature in geojson["features"]]
+            province_counts = province_counts[province_counts["province"].isin(thailand_provinces)]
+
+            # สร้างแผนที่
             fig_map = px.choropleth_mapbox(
                 province_counts,
                 geojson=geojson,
@@ -285,10 +292,10 @@ def app():
                 color="count",
                 color_continuous_scale="Blues",
                 mapbox_style="carto-positron",
-                zoom=4,
+                zoom=5,
                 center={"lat": 13.736717, "lon": 100.523186},
                 opacity=0.6,
-                title="จำนวนผู้ซื้อแยกตามจังหวัด"
+                title="จำนวนผู้ซื้อแยกตามจังหวัดในประเทศไทย"
             )
 
             st.plotly_chart(fig_map, use_container_width=True)
