@@ -40,7 +40,7 @@ users = {
     },
     "shopee": {
         "password": secrets["shopee_test"]["password"],
-        "role": secrets["shopee"]["role"]
+        "role": secrets["shopee_test"]["role"]
     }
 }
 
