@@ -19,15 +19,12 @@ header {visibility: hidden;}
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ---------------- Load Users from Secrets ----------------
-# secrets.toml format:
-# [users.admin]
-# password = "fujika2023"
-# role = "admin"
 users = {}
 for key, info in st.secrets["users"].items():
     users[key] = {
         "password": info["password"],
-        "role": info["role"]
+        "role": info["role"],
+        "email": info.get("email")  # ถ้า secrets.toml มี email
     }
 
 # ---------------- Session State ----------------
@@ -43,14 +40,20 @@ if st.session_state.role is None:
     password_input = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        user = users.get(email_input)
-        if user and user["password"] == password_input:
-            st.session_state.role = user["role"]
-            st.session_state.email = email_input
+        # loop หา user ตาม email
+        user_found = None
+        for key, info in users.items():
+            if info.get("email") == email_input or key == email_input:
+                user_found = info
+                break
+
+        if user_found and user_found["password"] == password_input:
+            st.session_state.role = user_found["role"]
+            st.session_state.email = user_found.get("email") or key
             st.success(f"✅ Logged in as {st.session_state.role}")
             st.experimental_rerun()
         else:
-            st.error("❌ Username or password is incorrect")
+            st.error("❌ Email or password incorrect")
 
 # ---------------- Dashboard Pages ----------------
 else:
@@ -64,36 +67,19 @@ else:
 
     st.sidebar.info(f"Logged in as: {st.session_state.email} ({st.session_state.role})")
 
-    # Role-based page routing
+    # Role-based routing
     role = st.session_state.role
-
     if role == "admin":
-        try:
-            import pages.admin_dashboard as admin
-            admin.app()
-        except Exception as e:
-            st.error(f"Error loading admin dashboard: {e}")
-
+        import pages.admin_dashboard as admin
+        admin.app()
     elif role == "service":
-        try:
-            import pages.after_sales_dashboard as aftersls
-            aftersls.app()
-        except Exception as e:
-            st.error(f"Error loading service dashboard: {e}")
-
+        import pages.after_sales_dashboard as aftersls
+        aftersls.app()
     elif role == "marketing":
-        try:
-            import pages.marketing_sales_dashboard as marketingsls
-            marketingsls.app()
-        except Exception as e:
-            st.error(f"Error loading marketing dashboard: {e}")
-
+        import pages.marketing_sales_dashboard as marketingsls
+        marketingsls.app()
     elif role == "shopee_test":
-        try:
-            import pages.shp_test_ss as shptst
-            shptst.app()
-        except Exception as e:
-            st.error(f"Error loading Shopee test dashboard: {e}")
-
+        import pages.shp_test_ss as shptst
+        shptst.app()
     else:
         st.error(f"❌ Role '{role}' not recognized")
