@@ -269,11 +269,11 @@ def app():
                 st.plotly_chart(fig_region, use_container_width=True)
                 
             st.subheader("🗺️ ผู้ซื้อแยกตามจังหวัด (Choropleth Map)")
-            df_buyers = pd.DataFrame(buyers_list)
-            # นับจำนวนผู้ซื้อแยกตามจังหวัด
+            df = pd.DataFrame(buyers_list)
+
+            # สร้าง province_counts
             province_counts = df["province"].value_counts().reset_index()
-            # นับจำนวนผู้ซื้อแยกตามจังหวัด
-            province_counts = df_buyers["province"].value_counts().to_dict()
+            province_counts.columns = ["province", "count"]
             url = "https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json"
             geojson = requests.get(url).json()
 
