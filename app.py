@@ -19,14 +19,30 @@ hide_streamlit_style = """
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-# ---------------- Load users ----------------
-key_path = os.environ["USER"]
-#key_path = "data/users.json"
-if not os.path.exists(key_path):
-    raise FileNotFoundError(f"Secret file not found at {key_path}")
+secrets = st.secrets["users"]
 
-with open(key_path, "r", encoding="utf-8") as f:
-    users = json.load(f)
+admin_pass = secrets["admin"]["password"]
+admin_role = secrets["admin"]["role"]
+
+# ดึง users ทั้งหมดจาก secrets
+users = {
+    "admin": {
+        "password": secrets["admin"]["password"],
+        "role": secrets["admin"]["role"]
+    },
+    "aftersales": {
+        "password": secrets["aftersales"]["password"],
+        "role": secrets["aftersales"]["role"]
+    },
+    "marketing": {
+        "password": secrets["marketing"]["password"],
+        "role": secrets["marketing"]["role"]
+    },
+    "shopee": {
+        "password": secrets["shopee"]["password"],
+        "role": secrets["shopee"]["role"]
+    }
+}
 
 # ---------------- Session state ----------------
 if "role" not in st.session_state:

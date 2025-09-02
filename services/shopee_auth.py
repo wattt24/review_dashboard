@@ -12,7 +12,8 @@ from utils.config import (
     SHOPEE_PARTNER_SECRET, 
     SHOPEE_REDIRECT_URI
 )
-key_path = os.environ["SERVICE_AC_SHP"]
+#key_path = "data/service_account.json"
+key_path = "/etc/secrets/service_account.json"
 
 scope = [
      "https://spreadsheets.google.com/feeds",
