@@ -119,20 +119,21 @@ def get_token(code: str, shop_id: int):
     payload = {"code": code, "shop_id": int(shop_id)}
 
     # ✅ base_string ใช้แค่นี้
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    base_string = f"{SHOPEE_PARTNER_ID}/api/v2/auth/token/get{timestamp}{code}{shop_id}"
 
     sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        SHOPEE_PARTNER_ID.encode("utf-8"),
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
-    url = (
-        f"{BASE_URL}{path}"
-        f"?partner_id={SHOPEE_PARTNER_ID}"
-        f"&timestamp={timestamp}"
-        f"&sign={sign}"
-    )
+    url = f"https://partner.test-stable.shopeemobile.com/api/v2/auth/token/get?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+
+    payload = {
+        "code": code,
+        "shop_id": shop_id,
+        "partner_id": SHOPEE_PARTNER_ID
+    }
 
     resp = requests.post(url, json=payload)
 
