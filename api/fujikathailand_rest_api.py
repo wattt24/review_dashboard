@@ -9,23 +9,32 @@ from collections import defaultdict
 # -------------------- ฟังก์ชันช่วยแปลงจังหวัดเป็นภูมิภาค --------------------
 def province_to_region(province):
     province = province.strip()
+
+    north = [
+        "เชียงใหม่","เชียงราย","น่าน","แพร่","ลำปาง","ลำพูน","แม่ฮ่องสอน","พะเยา","อุตรดิตถ์",
+        "สุโขทัย","พิษณุโลก","พิจิตร","กำแพงเพชร","เพชรบูรณ์","ตาก","นครสวรรค์","อุทัยธานี"
+    ]
     
-    north = ["Chiang Mai","Chiang Rai","Nan","Phrae","Lampang","Lamphun","Mae Hong Son","Phayao","Uttaradit",
-             "Sukhothai","Phitsanulok","Phichit","Kamphaeng Phet","Phetchabun","Tak","Nakhon Sawan","Uthai Thani"]
+    northeast = [
+        "ขอนแก่น","กาฬสินธุ์","หนองคาย","นครพนม","สกลนคร","อุดรธานี","หนองบัวลำภู",
+        "เลย","มุกดาหาร","อำนาจเจริญ","ยโสธร","ชัยภูมิ","มหาสารคาม","ร้อยเอ็ด",
+        "นครราชสีมา","บุรีรัมย์","สุรินทร์","ศรีสะเกษ","อุบลราชธานี","บึงกาฬ"
+    ]
     
-    northeast = ["Khon Kaen","Kalasin","Nong Khai","Nakhon Phanom","Sakon Nakhon","Udon Thani","Nong Bua Lam Phu",
-                 "Loei","Mukdahan","Amnat Charoen","Yasothon","Chaiyaphum","Maha Sarakham","Roi Et",
-                 "Nakhon Ratchasima","Buri Ram","Surin","Si Sa Ket","Ubon Ratchathani","Bueng Kan"]
+    central = [
+        "กรุงเทพมหานคร","พระนครศรีอยุธยา","อ่างทอง","ชัยนาท","ลพบุรี","สิงห์บุรี","สระบุรี",
+        "นนทบุรี","ปทุมธานี","สมุทรปราการ","สมุทรสาคร","สมุทรสงคราม","นครปฐม",
+        "นครนายก","สุพรรณบุรี"
+    ]
     
-    central = ["Bangkok","Phra Nakhon Si Ayutthaya","Ang Thong","Chai Nat","Lop Buri","Sing Buri","Saraburi",
-               "Nonthaburi","Pathum Thani","Samut Prakan","Samut Sakhon","Samut Songkhram","Nakhon Pathom",
-               "Nakhon Nayok","Suphan Buri"]
+    west = ["กาญจนบุรี","ราชบุรี","เพชรบุรี","ประจวบคีรีขันธ์","ตาก"]
     
-    west = ["Kanchanaburi","Ratchaburi","Phetchaburi","Prachuap Khiri Khan","Tak"]
+    east = ["ชลบุรี","สระแก้ว","ปราจีนบุรี","ฉะเชิงเทรา","ระยอง","ตราด","จันทบุรี"]
     
-    east = ["Chon Buri","Sa Kaeo","Prachin Buri","Chachoengsao","Rayong","Trat","Chanthaburi"]
-    south = ["Krabi","Chumphon","Ranong","Surat Thani","Trang","Nakhon Si Thammarat","Narathiwat","Pattani",
-             "Phangnga","Phatthalung","Phuket","Songkhla","Satun","Yala"]
+    south = [
+        "กระบี่","ชุมพร","ระนอง","สุราษฎร์ธานี","ตรัง","นครศรีธรรมราช","นราธิวาส","ปัตตานี",
+        "พังงา","พัทลุง","ภูเก็ต","สงขลา","สตูล","ยะลา"
+    ]
 
     if province in north:
         return "ภาคเหนือ"
@@ -40,7 +49,7 @@ def province_to_region(province):
     elif province in south:
         return "ภาคใต้"
     else:
-        return "ไม่พบจังหวัด"
+        return "ไม่ทราบ"
 
 # -------------------- ดึงข้อมูลสินค้า --------------------
 def fetch_all_products(per_page=100, timeout=15, max_pages=50):
