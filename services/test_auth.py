@@ -18,7 +18,7 @@ SANDBOX = True
 BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https://partner.shopeemobile.com"
 
 # ---------------- Google Sheets ----------------
-key_path = "/etc/secrets/service_account.json"
+key_path = os.environ["SERVICE_AC_SHP"]
 
 def get_sheet():
     scope = [
