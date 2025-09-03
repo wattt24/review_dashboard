@@ -23,29 +23,20 @@ BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https
 
 # ---------------- Google Sheets ----------------
 key_path = "/etc/secrets/SERVICE_ACCOUNT_JSON.json"
-
 def get_sheet():
-    try:
-        service_json = st.secrets["SERVICE_ACCOUNT_JSON"]
-    except KeyError:
-        st.error("❌ 'SERVICE_ACCOUNT_JSON' not found in st.secrets")
-        st.write("🧪 Available keys:", list(st.secrets.keys()))
-        st.stop()
-
-    sheet_id = st.secrets["GOOGLE_SHEET_ID"]
-
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(
-        json.loads,
-        scope
-    )
+    
+    # โหลด service account จาก st.secrets
+    creds_dict = json.loads(st.secrets["SERVICE_ACCOUNT_JSON"])
+    
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key(sheet_id).sheet1
-    return sheet
 
+    sheet = client.open_by_key(st.secrets["GOOGLE_SHEET_ID"]).sheet1
+    return sheet
 # ---------------- Shopee OAuth & API ----------------
 
 # แยกฟังก์ชันการ generate signature ตามประเภท API เพื่อความชัดเจนและถูกต้อง
