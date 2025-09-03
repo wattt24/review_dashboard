@@ -1,5 +1,6 @@
 # services/test_auth.py
 import os
+import streamlit as st
 import time
 import json # ต้องแน่ใจว่าได้ import json แล้ว
 import hmac
@@ -24,18 +25,20 @@ BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https
 key_path = "/etc/secrets/SERVICE_ACCOUNT_JSON.json"
 
 def get_sheet():
-    service_path = os.environ.get("SERVICE_ACCOUNT_JSON")
-    sheet_id = os.environ.get("GOOGLE_SHEET_ID")
-    if not service_path or not sheet_id:
-        raise ValueError("❌ Environment variable 'service_account' หรือ 'GOOGLE_SHEET_ID' ยังไม่ได้ตั้งค่า")
+    service_json = st.secrets["SERVICE_ACCOUNT_JSON"]
+    sheet_id = st.secrets["GOOGLE_SHEET_ID"]
 
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(service_path, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        json.loads(service_json),
+        scope
+    )
     client = gspread.authorize(creds)
-    return client.open_by_key(sheet_id).sheet1
+    sheet = client.open_by_key(sheet_id).sheet1
+    return sheet
 
 # ---------------- Shopee OAuth & API ----------------
 
