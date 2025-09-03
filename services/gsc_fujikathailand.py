@@ -48,7 +48,7 @@ def get_gsc_data():
         response = webmasters_service.searchanalytics().query(
             siteUrl=SITE_URL, body=request
         ).execute()
-
+        print(response)
         print(f"📅 Fetching GSC data from {start_date} to {end_date}")
         print("🔍 Raw Response:", response)
 
