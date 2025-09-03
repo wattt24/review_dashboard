@@ -9,9 +9,9 @@ from datetime import date, timedelta
 SCOPES = ["https://www.googleapis.com/auth/webmasters.readonly"]
 
 # ✅ ถ้าเป็น domain property ให้ใช้ sc-domain
-SITE_URL = "sc-domain:fujikathailand.com"
+#SITE_URL = "sc-domain:fujikathailand.com"
 # ถ้าเป็น URL-prefix property ให้ใช้:
-# SITE_URL = "https://fujikathailand.com/"
+SITE_URL = "https://fujikathailand.com/"
 
 def get_last_week_dates():
     """คืนค่า start_date, end_date ของสัปดาห์ที่แล้ว (จันทร์–อาทิตย์)"""
