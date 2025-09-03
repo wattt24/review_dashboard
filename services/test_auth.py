@@ -24,16 +24,18 @@ BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https
 key_path = "/etc/secrets/service_account.json"
 
 def get_sheet():
+    service_path = os.environ.get("SERVICE_ACCOUNT_JSON")
+    sheet_id = os.environ.get("GOOGLE_SHEET_ID")
+    if not service_path or not sheet_id:
+        raise ValueError("❌ Environment variable 'service_account' หรือ 'GOOGLE_SHEET_ID' ยังไม่ได้ตั้งค่า")
+
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(
-        os.environ["service_account"], scope
-    )
+    creds = ServiceAccountCredentials.from_json_keyfile_name(service_path, scope)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
-    return sheet
+    return client.open_by_key(sheet_id).sheet1
 
 # ---------------- Shopee OAuth & API ----------------
 
