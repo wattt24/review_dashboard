@@ -39,7 +39,7 @@ def get_sheet():
         "https://www.googleapis.com/auth/drive"
     ]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(
-        json.loads(service_json),
+        json.loads,
         scope
     )
     client = gspread.authorize(creds)
