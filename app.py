@@ -40,7 +40,6 @@ if st.session_state.role is None:
     password_input = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        # loop หา user ตาม email
         user_found = None
         for key, info in users.items():
             if info.get("email") == email_input or key == email_input:
@@ -51,9 +50,10 @@ if st.session_state.role is None:
             st.session_state.role = user_found["role"]
             st.session_state.email = user_found.get("email") or key
             st.success(f"✅ Logged in as {st.session_state.role}")
-            st.experimental_rerun()
+            st.rerun()   # ✅ ใช้ st.rerun() แทน
         else:
             st.error("❌ Email or password incorrect")
+
 
 # ---------------- Dashboard Pages ----------------
 else:
@@ -63,7 +63,8 @@ else:
         if st.button("🚪 Logout"):
             st.session_state.role = None
             st.session_state.email = None
-            st.experimental_rerun()
+            st.rerun()  
+
 
     st.sidebar.info(f"Logged in as: {st.session_state.email} ({st.session_state.role})")
 
