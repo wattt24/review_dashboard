@@ -49,28 +49,31 @@ def app():
         st.subheader("Top Keywords")
             # โหลดข้อมูล GSC
         df = get_gsc_data()
+    
+        st.write("Raw DataFrame:")
+        st.dataframe(df)
 
-        if not df.empty:
-            st.subheader("Top Keywords")
-            st.dataframe(df.sort_values('clicks', ascending=False))
+        # if not df.empty:
+        #     st.subheader("Top Keywords")
+        #     st.dataframe(df.sort_values('clicks', ascending=False))
 
-            df_plot = df.rename(columns={
-                "query": "Keyword",
-                "clicks": "Clicks",
-                "impressions": "Impressions",
-                "ctr": "CTR",
-                "position": "Avg. Position"
-            })
+        #     df_plot = df.rename(columns={
+        #         "query": "Keyword",
+        #         "clicks": "Clicks",
+        #         "impressions": "Impressions",
+        #         "ctr": "CTR",
+        #         "position": "Avg. Position"
+        #     })
 
-            fig = px.bar(
-                df_plot.sort_values('Clicks', ascending=False),
-                x='Keyword',
-                y='Clicks',
-                hover_data=['Impressions', 'CTR', 'Avg. Position']
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("⚠️ ไม่มีข้อมูลจาก Google Search Console")
+        #     fig = px.bar(
+        #         df_plot.sort_values('Clicks', ascending=False),
+        #         x='Keyword',
+        #         y='Clicks',
+        #         hover_data=['Impressions', 'CTR', 'Avg. Position']
+        #     )
+        #     st.plotly_chart(fig, use_container_width=True)
+        # else:
+        #     st.warning("⚠️ ไม่มีข้อมูลจาก Google Search Console")
 
 
 

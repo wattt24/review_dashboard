@@ -74,6 +74,7 @@ def get_gsc_data():
         print(traceback.format_exc())  # แสดง traceback เต็มใน log
         return pd.DataFrame(columns=["query", "clicks", "impressions", "ctr", "position"])
 # 
-df = get_gsc_data()
+
+# df = get_gsc_data()
 # st.write("Raw DataFrame:")
 # st.dataframe(df)
