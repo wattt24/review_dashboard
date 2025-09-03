@@ -29,7 +29,7 @@ def get_sheet():
         "https://www.googleapis.com/auth/drive"
     ]
     creds = ServiceAccountCredentials.from_json_keyfile_name(
-        os.environ["service_account"], scope
+        os.environ["SERVICE_AC_SHP"], scope
     )
     client = gspread.authorize(creds)
     sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
