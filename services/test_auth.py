@@ -25,7 +25,13 @@ BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https
 key_path = "/etc/secrets/SERVICE_ACCOUNT_JSON.json"
 
 def get_sheet():
-    service_json = st.secrets["SERVICE_ACCOUNT_JSON"]
+    try:
+        service_json = st.secrets["SERVICE_ACCOUNT_JSON"]
+    except KeyError:
+        st.error("❌ 'SERVICE_ACCOUNT_JSON' not found in st.secrets")
+        st.write("🧪 Available keys:", list(st.secrets.keys()))
+        st.stop()
+
     sheet_id = st.secrets["GOOGLE_SHEET_ID"]
 
     scope = [
