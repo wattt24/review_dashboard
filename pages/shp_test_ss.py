@@ -72,3 +72,33 @@ def app():
                     "page_size": 5
                 })
                 st.json(orders)
+def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
+    """
+    Generic function to call Shopee Shop API
+    """
+    timestamp = int(time.time())
+    sign = generate_api_sign(path, timestamp, access_token, shop_id)
+
+    url = (
+        f"{BASE_URL}{path}"
+        f"?partner_id={SHOPEE_PARTNER_ID}"
+        f"&timestamp={timestamp}"
+        f"&access_token={access_token}"
+        f"&shop_id={shop_id}"
+        f"&sign={sign}"
+    )
+
+    headers = {"Content-Type": "application/json"}
+
+    if method.upper() == "POST":
+        resp = requests.post(url, headers=headers, json=payload or {})
+    else:
+        resp = requests.get(url, headers=headers, params=payload or {})
+
+    print("==== DEBUG call_shopee_api ====")
+    print("URL:", url)
+    print("Payload:", payload)
+    print("Response:", resp.text)
+
+    return resp.json()
+
