@@ -29,14 +29,14 @@ def get_sheet():
         "https://www.googleapis.com/auth/drive"
     ]
     
-    # โหลด service account จาก st.secrets
-    creds_dict = json.loads(st.secrets["SERVICE_ACCOUNT_JSON"])
+    # ถ้า st.secrets["SERVICE_ACCOUNT_JSON"] เป็น dict อยู่แล้ว → ไม่ต้อง json.loads
+    creds_dict = st.secrets["SERVICE_ACCOUNT_JSON"]
     
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
-
     sheet = client.open_by_key(st.secrets["GOOGLE_SHEET_ID"]).sheet1
     return sheet
+
 # ---------------- Shopee OAuth & API ----------------
 
 # แยกฟังก์ชันการ generate signature ตามประเภท API เพื่อความชัดเจนและถูกต้อง
@@ -45,7 +45,9 @@ def generate_auth_sign(path, timestamp):
     Generates the signature for the initial authorization URL.
     Base string: partner_id + api path + timestamp
     """
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    path = "/api/v2/auth/token/get"
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
+    sign = hmac.new(SHOPEE_PARTNER_SECRET.encode(), base_string.encode(), hashlib.sha256).hexdigest()
     return hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
