@@ -41,13 +41,7 @@ def get_sheet():
 
 # แยกฟังก์ชันการ generate signature ตามประเภท API เพื่อความชัดเจนและถูกต้อง
 def generate_auth_sign(path, timestamp):
-    """
-    Generates the signature for the initial authorization URL.
-    Base string: partner_id + api path + timestamp
-    """
-    path = "/api/v2/auth/token/get"
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
-    sign = hmac.new(SHOPEE_PARTNER_SECRET.encode(), base_string.encode(), hashlib.sha256).hexdigest()
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     return hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
@@ -112,19 +106,13 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
         hashlib.sha256
     ).hexdigest()
 
-# *** แก้ไข get_token() ตรงนี้ ***
-import time
-import hmac
-import hashlib
-import requests
-from datetime import datetime, timezone
 
 def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
     timestamp = int(datetime.now(timezone.utc).timestamp())
 
     # Shopee spec: base_string = partner_id + path + timestamp + code + shop_id
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{int(shop_id)}"
 
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),  # ✅ ใช้ SECRET เป็น key
@@ -155,15 +143,8 @@ def get_token(code: str, shop_id: int):
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
-    
-    payload = {
-        "refresh_token": refresh_token_value,
-        "shop_id": int(shop_id) # ต้องเป็น int
-    }
-    # สำหรับ refresh token API, payload ก็ต้องถูกรวมใน base_string ด้วย
-    sorted_payload_json = json.dumps(payload, sort_keys=True, separators=(',', ':'))
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{sorted_payload_json}"
 
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{refresh_token_value}{int(shop_id)}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode(),
         base_string.encode(),
@@ -171,18 +152,14 @@ def refresh_token(refresh_token_value, shop_id):
     ).hexdigest()
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    payload = {
+        "refresh_token": refresh_token_value,
+        "shop_id": int(shop_id),
+        "partner_id": int(SHOPEE_PARTNER_ID)
+    }
     r = requests.post(url, json=payload)
     return r.json()
 
-def call_shopee_api(path, access_token, shop_id, params=None):
-    timestamp = int(time.time())
-    sign = generate_api_sign(path, timestamp, access_token, shop_id)
-
-    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&access_token={access_token}&shop_id={shop_id}&sign={sign}"
-    r = requests.get(url, params=params)
-    return r.json()
-
-# ---------------- Google Sheets token management ----------------
 def save_token(shop_id, access_token, refresh_token_value, expires_in, refresh_expires_in):
     sheet = get_sheet()  # เรียก function ก่อนใช้
 
@@ -197,6 +174,7 @@ def save_token(shop_id, access_token, refresh_token_value, expires_in, refresh_e
         sheet.update(f"F{row}", datetime.now().isoformat())
     except gspread.exceptions.CellNotFound:
         sheet.append_row([shop_id, access_token, refresh_token_value, expired_at, refresh_expired_at, datetime.now().isoformat()])
+
 
 def get_latest_token(shop_id):
     sheet = get_sheet()  # เรียก function ก่อนใช้
