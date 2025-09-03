@@ -137,6 +137,14 @@ def get_token(code: str, shop_id: int):
     print("Base String:", base_string)
     print("Sign:", sign)
     print("Response:", resp.text)
+    print("DEBUG === get_token() ===")
+    print("partner_id:", SHOPEE_PARTNER_ID)
+    print("shop_id:", shop_id, type(shop_id))
+    print("code:", code)
+    print("base_string:", base_string)
+    print("sign:", sign)
+    print("url:", url)
+
 
     return resp.json()
 
