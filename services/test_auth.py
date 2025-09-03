@@ -14,6 +14,9 @@ from utils.config import (
     SHOPEE_REDIRECT_URI
 )
 
+# code = os.getenv("CODE")   # code จาก callback ที่ได้ตอน authorize
+# shop_id = os.getenv("SHOPEE_SHOP_ID")
+# timestamp = int(time.time())
 SANDBOX = True
 BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https://partner.shopeemobile.com"
 
@@ -116,22 +119,20 @@ def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
     timestamp = int(datetime.now(timezone.utc).timestamp())
 
-    payload = {"code": code, "shop_id": int(shop_id)}
-
-    # ✅ base_string ใช้แค่นี้
-    base_string = f"{SHOPEE_PARTNER_ID}/api/v2/auth/token/get{timestamp}{code}{shop_id}"
+    # Shopee spec: base_string = partner_id + path + timestamp + code + shop_id
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
 
     sign = hmac.new(
-        SHOPEE_PARTNER_ID.encode("utf-8"),
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),  # ✅ ใช้ SECRET เป็น key
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
-    url = f"https://partner.test-stable.shopeemobile.com/api/v2/auth/token/get?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
     payload = {
         "code": code,
-        "shop_id": shop_id,
+        "shop_id": int(shop_id),
         "partner_id": SHOPEE_PARTNER_ID
     }
 
@@ -146,9 +147,6 @@ def get_token(code: str, shop_id: int):
     print("Response:", resp.text)
 
     return resp.json()
-
-
-
 
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
