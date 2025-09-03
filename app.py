@@ -18,14 +18,23 @@ header {visibility: hidden;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-# ---------------- Load Users from Secrets ----------------
-users = {}
-for key, info in st.secrets["users"].items():
-    users[key] = {
-        "password": info["password"],
-        "role": info["role"],
-        "email": info.get("email")  # ถ้า secrets.toml มี email
-    }
+users = st.secrets["users"]
+
+# ดึงข้อมูล admin
+admin_email = users["admin"]["email"]
+admin_password = users["admin"]["password"]
+admin_role = users["admin"]["role"]
+
+st.write(admin_email, admin_role)
+
+# # ---------------- Load Users from Secrets ----------------
+# users = {}
+# for key, info in st.secrets["users"].items():
+#     users[key] = {
+#         "password": info["password"],
+#         "role": info["role"],
+#         "email": info.get("email")  # ถ้า secrets.toml มี email
+#     }
 
 # ---------------- Session State ----------------
 if "role" not in st.session_state:
