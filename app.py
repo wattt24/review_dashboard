@@ -25,7 +25,6 @@ admin_email = users["admin"]["email"]
 admin_password = users["admin"]["password"]
 admin_role = users["admin"]["role"]
 
-st.write(admin_email, admin_role)
 
 # # ---------------- Load Users from Secrets ----------------
 # users = {}
