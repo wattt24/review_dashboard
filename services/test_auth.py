@@ -14,9 +14,9 @@ from utils.config import (
     SHOPEE_REDIRECT_URI
 )
 
-# code = os.getenv("CODE")   # code จาก callback ที่ได้ตอน authorize
-# shop_id = os.getenv("SHOPEE_SHOP_ID")
-# timestamp = int(time.time())
+code = os.getenv("CODE")   # code จาก callback ที่ได้ตอน authorize
+shop_id = os.getenv("SHOPEE_SHOP_ID")
+timestamp = int(time.time())
 SANDBOX = True
 BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https://partner.shopeemobile.com"
 
