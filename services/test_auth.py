@@ -148,11 +148,8 @@ def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
 
-    partner_key = SHOPEE_PARTNER_SECRET
-    if partner_key.startswith("shpk"):
-        partner_key_bytes = bytes.fromhex(partner_key[4:])
-    else:
-        partner_key_bytes = partner_key.encode("utf-8")
+    # ใช้ key ตรงๆ ไม่ต้อง fromhex
+    partner_key_bytes = SHOPEE_PARTNER_SECRET.encode("utf-8")
 
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     sign = hmac.new(partner_key_bytes, base_string.encode("utf-8"), hashlib.sha256).hexdigest()
@@ -173,12 +170,14 @@ def get_token(code, shop_id):
     print("sign:", sign)
     print("url:", url)
     print("payload:", payload)
+    print("secret repr:", repr(SHOPEE_PARTNER_SECRET))  # 🧪 debug ดูค่า key จริง
 
     resp = requests.post(url, json=payload)
     print("response:", resp.text)
     print("==== DEBUG ====")
 
     return resp.json()
+
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
