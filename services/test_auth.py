@@ -111,14 +111,9 @@ def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
     partner_key_bytes = bytes.fromhex(SHOPEE_PARTNER_SECRET[4:])
-    # partner_key_bytes = SHOPEE_PARTNER_SECRET
-    # if partner_key_bytes.startswith("shpk"):
-    #     partner_key_bytes = bytes.fromhex(partner_key_bytes[4:])
-    # else:
-    #     partner_key_bytes = partner_key_bytes.encode("utf-8")
-
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     print("partner_key_bytes length:", len(partner_key_bytes))
+
+    base_string = f"{SHOPEE_PARTNER_ID}/api/v2/auth/token/get{timestamp}"
     sign = hmac.new(partner_key_bytes, base_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
@@ -141,7 +136,7 @@ def get_token(code, shop_id):
 
     resp = requests.post(url, json=payload)
     print("response:", resp.text)
-    print("==== DEBUG 888====")
+    print("==== DEBUG 99====")
 
     return resp.json()
 
