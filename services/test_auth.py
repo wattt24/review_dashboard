@@ -140,7 +140,8 @@ def get_token(code: str, shop_id: int):
     print("url:", url)
     print("payload:", payload)
     print("response:", resp.text)
-
+    print("secret length:", len(SHOPEE_PARTNER_SECRET))
+    print("secret repr:", repr(SHOPEE_PARTNER_SECRET))
     return resp.json()
 
 
@@ -247,5 +248,5 @@ def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
     print("URL:", url)
     print("Payload:", payload)
     print("Response:", resp.text)
-
+    
     return resp.json()
