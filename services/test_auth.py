@@ -118,7 +118,7 @@ def get_token(code: str, shop_id: int):
     }
     partner_key_bytes = bytes.fromhex(SHOPEE_PARTNER_SECRET[4:])
     
-    base_string = f"{SHOPEE_PARTNER_ID}/api/v2/auth/token/get{timestamp}{json.dumps({'code': code,'shop_id': shop_id,'partner_id': int(SHOPEE_PARTNER_ID)}, separators=(',',':'))}"
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{int(shop_id)}"
     sign = hmac.new(
         partner_key_bytes, base_string.encode("utf-8"), 
         hashlib.sha256
