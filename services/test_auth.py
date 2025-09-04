@@ -117,10 +117,8 @@ def get_token(code: str, shop_id: int):
         "partner_id": int(SHOPEE_PARTNER_ID)
     }
 
-    # ✅ ต้องใช้ json.dumps(payload) แบบ compact
     body_str = json.dumps(payload, separators=(',', ':'))
 
-    # ✅ base_string ตาม Shopee spec
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_str}"
 
     sign = hmac.new(
@@ -131,7 +129,7 @@ def get_token(code: str, shop_id: int):
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
-    resp = requests.post(url, data=body_str, headers={"Content-Type": "application/json"})
+    resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
 
     print("==== DEBUG ====")
     print("partner_id:", SHOPEE_PARTNER_ID)
@@ -140,10 +138,11 @@ def get_token(code: str, shop_id: int):
     print("base_string:", base_string)
     print("sign:", sign)
     print("url:", url)
-    print("payload_str:", body_str)
+    print("payload:", payload)
     print("response:", resp.text)
 
     return resp.json()
+
 
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
@@ -239,7 +238,8 @@ def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
     headers = {"Content-Type": "application/json"}
 
     if method.upper() == "POST":
-        resp = requests.post(url, headers=headers, json=payload or {})
+        resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
+
     else:
         resp = requests.get(url, headers=headers, params=payload or {})
 
