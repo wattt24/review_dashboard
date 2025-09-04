@@ -111,40 +111,37 @@ def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
     timestamp = int(datetime.now(timezone.utc).timestamp())
 
-    # Shopee spec: base_string = partner_id + path + timestamp + code + shop_id
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{int(shop_id)}"
+    payload = {
+        "code": code,
+        "shop_id": int(shop_id),
+        "partner_id": int(SHOPEE_PARTNER_ID)
+    }
+
+    # ✅ ต้องใช้ json.dumps(payload) แบบ compact
+    body_str = json.dumps(payload, separators=(',', ':'))
+
+    # ✅ base_string ตาม Shopee spec
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_str}"
 
     sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),  # ✅ ใช้ SECRET เป็น key
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
-    payload = {
-        "code": code,
-        "shop_id": int(shop_id),
-        "partner_id": SHOPEE_PARTNER_ID
-    }
-
-    resp = requests.post(url, json=payload)
+    resp = requests.post(url, data=body_str, headers={"Content-Type": "application/json"})
 
     print("==== DEBUG ====")
-    print("UTC Timestamp:", timestamp)
-    print("URL:", url)
-    print("Payload:", payload)
-    print("Base String:", base_string)
-    print("Sign:", sign)
-    print("Response:", resp.text)
-    print("DEBUG === get_token() ===")
     print("partner_id:", SHOPEE_PARTNER_ID)
     print("shop_id:", shop_id, type(shop_id))
     print("code:", code)
     print("base_string:", base_string)
     print("sign:", sign)
     print("url:", url)
-
+    print("payload_str:", body_str)
+    print("response:", resp.text)
 
     return resp.json()
 
