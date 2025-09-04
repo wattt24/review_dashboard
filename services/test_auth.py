@@ -116,16 +116,14 @@ def get_token(code: str, shop_id: int):
         "shop_id": int(shop_id),
         "partner_id": int(SHOPEE_PARTNER_ID)
     }
-
-    body_str = json.dumps(payload, separators=(',', ':'))
-
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_str}"
-
+    partner_key_bytes = bytes.fromhex(SHOPEE_PARTNER_ID[4:])
+    
+    base_string = f"{SHOPEE_PARTNER_ID}/api/v2/auth/token/get{timestamp}{json.dumps({'code': code,'shop_id': shop_id,'partner_id': int(SHOPEE_PARTNER_ID)}, separators=(',',':'))}"
     sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        base_string.encode("utf-8"),
+        partner_key_bytes, base_string.encode("utf-8"), 
         hashlib.sha256
     ).hexdigest()
+
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
@@ -142,6 +140,8 @@ def get_token(code: str, shop_id: int):
     print("response:", resp.text)
     print("secret length:", len(SHOPEE_PARTNER_SECRET))
     print("secret repr:", repr(SHOPEE_PARTNER_SECRET))
+    print("base_string:", base_string)
+    print("sign:", sign)
     return resp.json()
 
 
