@@ -148,8 +148,11 @@ def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
 
-    # ใช้ key ตรงๆ ไม่ต้อง fromhex
-    partner_key_bytes = bytes.fromhex(SHOPEE_PARTNER_SECRET)
+    partner_key_bytes = SHOPEE_PARTNER_SECRET
+    if partner_key_bytes.startswith("shpk"):
+        partner_key_bytes = bytes.fromhex(partner_key_bytes[4:])
+    else:
+        partner_key_bytes = partner_key_bytes.encode("utf-8")
 
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     sign = hmac.new(partner_key_bytes, base_string.encode("utf-8"), hashlib.sha256).hexdigest()
