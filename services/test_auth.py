@@ -107,54 +107,20 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
     ).hexdigest()
 
 
-# def get_token(code: str, shop_id: int):
-#     path = "/api/v2/auth/token/get"
-#     timestamp = int(datetime.now(timezone.utc).timestamp())
-
-#     payload = {
-#         "code": code,
-#         "shop_id": int(shop_id),
-#         "partner_id": int(SHOPEE_PARTNER_ID)
-#     }
-#     partner_key_bytes = bytes.fromhex(SHOPEE_PARTNER_SECRET[4:])
-    
-#     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{int(shop_id)}"
-#     sign = hmac.new(
-#         partner_key_bytes, base_string.encode("utf-8"), 
-#         hashlib.sha256
-#     ).hexdigest()
-
-
-#     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
-
-#     resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
-
-#     print("==== DEBUG ====")
-#     print("partner_id:", SHOPEE_PARTNER_ID)
-#     print("shop_id:", shop_id, type(shop_id))
-#     print("code:", code)
-#     print("base_string:", base_string)
-#     print("sign:", sign)
-#     print("url:", url)
-#     print("payload:", payload)
-#     print("response:", resp.text)
-#     print("secret length:", len(SHOPEE_PARTNER_SECRET))
-#     print("secret repr:", repr(SHOPEE_PARTNER_SECRET))
-#     print("base_string:", base_string)
-#     print("sign:", sign)
-#     return resp.json()
-
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-
-    partner_key_bytes = SHOPEE_PARTNER_SECRET
-    if partner_key_bytes.startswith("shpk"):
-        partner_key_bytes = bytes.fromhex(partner_key_bytes[4:])
-    else:
-        partner_key_bytes = partner_key_bytes.encode("utf-8")
+    partner_key_bytes = bytes.fromhex(SHOPEE_PARTNER_SECRET[4:])
+    # partner_key_bytes = SHOPEE_PARTNER_SECRET
+    # if partner_key_bytes.startswith("shpk"):
+    #     partner_key_bytes = bytes.fromhex(partner_key_bytes[4:])
+    # else:
+    #     partner_key_bytes = partner_key_bytes.encode("utf-8")
 
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    print("partner_key_bytes length:", len(partner_key_bytes))
+    print("base_string:", base_string)
+    print("sign:", sign)
     sign = hmac.new(partner_key_bytes, base_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
@@ -165,7 +131,7 @@ def get_token(code, shop_id):
         "partner_id": int(SHOPEE_PARTNER_ID)
     }
 
-    print("==== DEBUG ====")
+    print("==== DEBUG888 ====")
     print("partner_id:", SHOPEE_PARTNER_ID)
     print("shop_id:", shop_id, type(shop_id))
     print("code:", code)
@@ -177,7 +143,7 @@ def get_token(code, shop_id):
 
     resp = requests.post(url, json=payload)
     print("response:", resp.text)
-    print("==== DEBUG ====")
+    print("==== DEBUG 888====")
 
     return resp.json()
 
