@@ -154,7 +154,7 @@ def get_token(code, shop_id):
     else:
         partner_key_bytes = partner_key.encode("utf-8")
 
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{int(shop_id)}"
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     sign = hmac.new(partner_key_bytes, base_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
