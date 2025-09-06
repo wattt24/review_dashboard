@@ -2,6 +2,7 @@
 import os
 import sys
 import pandas as pd
+import numpy as np
 import streamlit as st
 import plotly.express as px
 import streamlit as st
@@ -513,6 +514,47 @@ def app():
                     st.warning("Weakness: Low engagement on Facebook posts, consider boosting content or ads")
 
             st.success("Facebook Dashboard loaded successfully!")
+            data = {
+                "ยอดดู": {
+                    "value": 35000, "change": -6.3,
+                    "followers": 2400, "non_followers": 32600,
+                    "trend": np.random.randint(30000, 40000, 7)
+                },
+                "การเข้าถึง": {
+                    "value": 11000, "change": -19.5,
+                    "followers": 184, "non_followers": 10816,
+                    "trend": np.random.randint(10000, 12000, 7)
+                },
+                "การโต้ตอบ": {
+                    "value": 114, "change": 31,
+                    "followers": 8, "non_followers": 106,
+                    "trend": np.random.randint(100, 150, 7)
+                },
+                "การติดตาม": {
+                    "value": 11, "change": -38.9,
+                    "unfollows": 4, "followers": 7,
+                    "trend": np.random.randint(5, 20, 7)
+                },
+            }
+
+            # --- Layout KPI Cards ---
+            cols = st.columns(len(data))
+            for col, (metric, info) in zip(cols, data.items()):
+                with col:
+                    st.metric(label=metric, value=info["value"], delta=f"{info['change']}%")
+                    st.line_chart(info["trend"], height=100)  # Sparkline
+
+                    # แสดง Followers / Non-followers (Pie Chart) หากมี
+                    if "followers" in info and "non_followers" in info:
+                        st.caption("Followers / Non-followers")
+                        st.pie_chart(pd.DataFrame({
+                            "จำนวน": [info["followers"], info["non_followers"]],
+                            "ประเภท": ["Followers", "Non-followers"]
+                        }).set_index("ประเภท"))
+
+                    # แสดง Unfollows หากมี
+                    if "unfollows" in info:
+                        st.caption(f"Unfollows: {info['unfollows']}")
         # --------------------- 7. LINE OA ---------------------
         with tabs[6]:
             st.header("💬 LINE OA Insights")
