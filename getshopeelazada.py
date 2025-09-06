@@ -12,6 +12,26 @@ def shopee_callback(request: Request, code: str = None, shop_id: str = None):
     if request.method == "HEAD":
         return Response(status_code=200)
     return {"code": code, "shop_id": shop_id}
+
+app = FastAPI(title="Fujika Dashboard API")
+
+# ----- Facebook routes -----
+@app.get("/api/facebook/pages")
+async def pages(user_token: str = Query(...)):
+    return JSONResponse(content=get_page_tokens(user_token))
+
+@app.get("/api/facebook/posts/{page_id}")
+async def posts(page_id: str, page_token: str = Query(...)):
+    return JSONResponse(content=get_page_posts(page_id, page_token))
+
+@app.get("/api/facebook/comments/{post_id}")
+async def comments(post_id: str, page_token: str = Query(...)):
+    return JSONResponse(content=get_comments(post_id, page_token))
+
+@app.get("/api/facebook/insights/page/{page_id}")
+async def page_insights(page_id: str, page_token: str = Query(...)):
+    return JSONResponse(content=get_page_insights(page_id, page_token))
+
 # @app.get("/shopee/callback")
 # async def shopee_callback(shop_id: str, code: str | None = Query(default=None)):
 #     try:
@@ -42,25 +62,4 @@ def shopee_callback(request: Request, code: str = None, shop_id: str = None):
 #             "error": str(e),
 #             "trace": traceback.format_exc()
 #         }
-
-
-app = FastAPI(title="Fujika Dashboard API")
-
-# ----- Facebook routes -----
-@app.get("/api/facebook/pages")
-async def pages(user_token: str = Query(...)):
-    return JSONResponse(content=get_page_tokens(user_token))
-
-@app.get("/api/facebook/posts/{page_id}")
-async def posts(page_id: str, page_token: str = Query(...)):
-    return JSONResponse(content=get_posts(page_id, page_token))
-
-@app.get("/api/facebook/comments/{post_id}")
-async def comments(post_id: str, page_token: str = Query(...)):
-    return JSONResponse(content=get_comments(post_id, page_token))
-
-@app.get("/api/facebook/insights/page/{page_id}")
-async def page_insights(page_id: str, page_token: str = Query(...)):
-    return JSONResponse(content=get_page_insights(page_id, page_token))
-
 

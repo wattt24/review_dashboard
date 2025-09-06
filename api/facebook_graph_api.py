@@ -96,6 +96,13 @@ PAGE_IDS = PAGE_IDS.split(",") if PAGE_IDS else []
 
 def get_valid_access_token(platform, account_id, refresh_func):
     return USER_TOKEN
+def get_page_tokens(user_token):
+    """Alias for get_user_pages"""
+    return get_user_pages(user_token)
+
+def get_posts(page_id, page_token):
+    """Alias for get_page_posts"""
+    return get_page_posts(page_id, page_token)
 
 def get_user_pages(user_token):
     url = "https://graph.facebook.com/v18.0/me/accounts"
@@ -137,6 +144,8 @@ def refresh_long_lived_token(app_id, app_secret, current_token):
     }
     response = requests.get(url, params=params)
     return response.json()
+
+
 
 def load_facebook_data():
     user_token = get_valid_access_token("facebook", PAGE_IDS, refresh_long_lived_token)
