@@ -2,12 +2,14 @@
 import requests
 import streamlit as st
 
+# โหลด secrets
 USER_TOKEN = st.secrets["facebook"]["user_token"]
-PAGE_ID = st.secrets["facebook"]["page_id"]
+PAGE_IDS = st.secrets["facebook"].get("page_ids", [])  # รองรับหลายเพจ
 APP_ID = st.secrets["facebook"]["app_id"]
 APP_SECRET = st.secrets["facebook"]["app_secret"]
 
 def get_valid_access_token(platform, account_id, refresh_func):
+    # ตัวอย่าง: คืนค่า token ปัจจุบัน (สามารถต่อยอด refresh ได้)
     return USER_TOKEN
 
 def get_user_pages(user_token):
@@ -52,22 +54,31 @@ def refresh_long_lived_token(app_id, app_secret, current_token):
     return response.json()
 
 def load_facebook_data():
-    user_token = get_valid_access_token("facebook", "PAGE_ID", refresh_long_lived_token)
+    user_token = get_valid_access_token("facebook", PAGE_IDS, refresh_long_lived_token)
     if not user_token:
         st.error("Failed to get Facebook user token")
         return
 
     pages = get_user_pages(user_token)
-    for page in pages:
+    # กรองเฉพาะ page_ids ที่อยู่ใน secrets
+    pages_to_load = [page for page in pages if page["id"] in PAGE_IDS]
+
+    for page in pages_to_load:
         page_id = page["id"]
         page_token = page["access_token"]
 
+        st.write(f"## Page: {page['name']} ({page_id})")
+
+        # ดึง page insights
         page_insights = get_page_insights(page_id, page_token)
-        st.write(f"**Page Insights for {page['name']}**")
+        st.write("**Page Insights:**")
         st.write(page_insights)
 
+        # ดึง posts และ comments
         posts = get_page_posts(page_id, page_token)
         for post in posts:
             comments = get_comments(post["id"], page_token)
-            st.write(f"Post ID: {post['id']}")
+            st.write(f"### Post ID: {post['id']}")
+            st.write(post.get("message", "No message"))
+            st.write("Comments:")
             st.write(comments)
