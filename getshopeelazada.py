@@ -9,19 +9,26 @@ from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments
 app = FastAPI(title="Fujika Dashboard API")
 
 app = FastAPI()
-@app.api_route("/shopee/callback", methods=["GET", "HEAD"])
-def shopee_callback(request: Request, code: str = None, shop_id: str = None):
-    if request.method == "HEAD":
-        return Response(status_code=200)
-    return {"code": code, "shop_id": shop_id}
-# Facebook
-@app.api_route("/shopee/callback", methods=["GET", "HEAD"])
-def shopee_callback(request: Request, code: str = None, shop_id: str = None):
-    if request.method == "HEAD":
-        return Response(status_code=200)
-    return {"code": code, "shop_id": shop_id}
 
-app = FastAPI(title="Fujika Dashboard API")
+@app.get("/")
+async def root():
+    return {"message": "Service is running"}
+
+@app.get("/shopee/callback")
+async def shopee_callback(code: str, shop_id: int):
+    # 1. Log ค่าที่ได้
+    print("Authorization Code:", code)
+    print("Shop ID:", shop_id)
+
+    # 2. เรียก get_token เพื่อแลก access_token
+    token_response = get_token(code, shop_id)
+
+    return {
+        "message": "Shopee callback received",
+        "code": code,
+        "shop_id": shop_id,
+        "token_response": token_response
+    }
 
 # ----- Facebook routes -----
 @app.get("/api/facebook/pages")
