@@ -4,6 +4,7 @@ import sys
 import pandas as pd
 import numpy as np
 import streamlit as st
+import altair as alt
 import plotly.express as px
 import streamlit as st
 import pandas as pd
@@ -547,10 +548,16 @@ def app():
                     # แสดง Followers / Non-followers (Pie Chart) หากมี
                     if "followers" in info and "non_followers" in info:
                         st.caption("Followers / Non-followers")
-                        st.pie_chart(pd.DataFrame({
-                            "จำนวน": [info["followers"], info["non_followers"]],
-                            "ประเภท": ["Followers", "Non-followers"]
-                        }).set_index("ประเภท"))
+                        df_pie = pd.DataFrame({
+                            "ประเภท": ["Followers", "Non-followers"],
+                            "จำนวน": [info["followers"], info["non_followers"]]
+                        })
+                        pie = alt.Chart(df_pie).mark_arc().encode(
+                            theta=alt.Theta(field="จำนวน", type="quantitative"),
+                            color=alt.Color(field="ประเภท", type="nominal"),
+                            tooltip=["ประเภท", "จำนวน"]
+                        ).properties(width=150, height=150)
+                        st.altair_chart(pie)
 
                     # แสดง Unfollows หากมี
                     if "unfollows" in info:
