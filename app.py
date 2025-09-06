@@ -1,3 +1,4 @@
+# app.py
 import streamlit as st
 
 # ---------------- Page Config ----------------
@@ -92,3 +93,19 @@ else:
         shptst.app()
     else:
         st.error(f"❌ Role '{role}' not recognized")
+from api.facebook_graph_api import get_valid_access_token, get_user_pages, get_page_insights, get_comments, get_page_posts, refresh_long_lived_token
+
+user_token = get_valid_access_token("facebook", "PAGE_ID", refresh_long_lived_token)
+pages = get_user_pages(user_token)
+
+for page in pages:
+    page_id = page["id"]
+    page_token = page["access_token"]
+
+    page_insights = get_page_insights(page_id, page_token)
+    print(page_insights)
+
+    posts = get_page_posts(page_id, page_token)
+    for post in posts:
+        comments = get_comments(post["id"], page_token)
+        print(comments)

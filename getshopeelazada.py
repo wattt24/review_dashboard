@@ -2,7 +2,13 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from services.test_auth import get_token, save_token
-
+from fastapi import FastAPI, Query
+from fastapi.responses import JSONResponse
+# Facebook
+from auth.token_manager import get_page_tokens
+from fetchers.posts import get_posts
+from fetchers.comments import get_comments
+from fetchers.insights import get_page_insights
 app = FastAPI()
 @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
 def shopee_callback(request: Request, code: str = None, shop_id: str = None):
@@ -39,3 +45,32 @@ def shopee_callback(request: Request, code: str = None, shop_id: str = None):
 #             "error": str(e),
 #             "trace": traceback.format_exc()
 #         }
+
+
+app = FastAPI(title="Fujika Dashboard API")
+
+# ----- Facebook routes -----
+@app.get("/api/facebook/pages")
+async def pages(user_token: str = Query(...)):
+    return JSONResponse(content=get_page_tokens(user_token))
+
+@app.get("/api/facebook/posts/{page_id}")
+async def posts(page_id: str, page_token: str = Query(...)):
+    return JSONResponse(content=get_posts(page_id, page_token))
+
+@app.get("/api/facebook/comments/{post_id}")
+async def comments(post_id: str, page_token: str = Query(...)):
+    return JSONResponse(content=get_comments(post_id, page_token))
+
+@app.get("/api/facebook/insights/page/{page_id}")
+async def page_insights(page_id: str, page_token: str = Query(...)):
+    return JSONResponse(content=get_page_insights(page_id, page_token))
+
+# ----- Shopee routes -----
+@app.get("/api/shopee/orders")
+async def shopee_orders(shop_id: str = Query(...)):
+    return JSONResponse(content=get_shopee_orders(shop_id))
+
+@app.get("/api/shopee/reviews")
+async def shopee_reviews(shop_id: str = Query(...)):
+    return JSONResponse(content=get_shopee_reviews(shop_id))

@@ -433,14 +433,86 @@ def app():
 
         # --------------------- 6. Facebook Page / Ads ---------------------
         with tabs[5]:
-            st.header("📘 Facebook Page / Ads")
-            # page_insight = facebook_scraper.get_page_insights()
-            # ad_data = facebook_scraper.get_ads_data()
-            # st.subheader("📈 Page Insights")
-            # st.json(page_insight)
-            # st.subheader("💰 Ads Data")
-            # st.dataframe(ad_data)
+            st.title("📈 Fujika Sales & Feedback Dashboard")
 
+                        # app_dashboard_facebook.py
+            import streamlit as st
+            import pandas as pd
+            import plotly.express as px
+            from datetime import datetime
+            from api.facebook_graph_api import (
+                get_valid_access_token as get_fb_token,
+                get_user_pages,
+                get_page_insights,
+                get_page_posts,
+                get_comments,
+                refresh_long_lived_token
+            )
+
+            st.sidebar.header("Filter Options")
+            page_id = st.secrets["facebook"]["page_id"]
+            date_range = st.sidebar.date_input("Select Date Range", [datetime(2025,1,1), datetime.today()])
+
+            # ---------------- Fetch Facebook Data ----------------
+            st.subheader("Fetching Facebook Data...")
+
+            user_token = get_fb_token("facebook", page_id, refresh_long_lived_token)
+            pages = get_user_pages(user_token)
+
+            fb_posts = []
+            fb_comments = []
+
+            for page in pages:
+                page_id = page["id"]
+                page_token = page["access_token"]
+
+                # ดึงโพสต์และคอมเมนต์
+                fb_posts_list = get_page_posts(page_id, page_token)
+                for post in fb_posts_list:
+                    post_comments = get_comments(post["id"], page_token)
+                    for comment in post_comments:
+                        comment["post_id"] = post["id"]
+                    fb_comments.extend(post_comments)
+                fb_posts.extend(fb_posts_list)
+
+            # แปลงเป็น DataFrame
+            fb_posts_df = pd.DataFrame(fb_posts)
+            fb_comments_df = pd.DataFrame(fb_comments)
+
+            # ---------------- Data Overview ----------------
+            st.subheader("Data Overview")
+            if not fb_posts_df.empty:
+                st.write("Facebook Posts Sample:")
+                st.dataframe(fb_posts_df.head())
+            else:
+                st.info("No Facebook posts found")
+
+            if not fb_comments_df.empty:
+                st.write("Facebook Comments Sample:")
+                st.dataframe(fb_comments_df.head())
+            else:
+                st.info("No comments found")
+
+            # ---------------- Data Visualization ----------------
+            st.subheader("Engagement Analysis")
+
+            # 1️⃣ Facebook Post Engagement (Comments Count)
+            if not fb_comments_df.empty:
+                fb_comments_count = fb_comments_df.groupby("post_id").size().reset_index(name='comment_count')
+                fig_comments = px.bar(fb_comments_count, x='post_id', y='comment_count', title="Facebook Post Engagement (Comments)")
+                st.plotly_chart(fig_comments, use_container_width=True)
+
+            # ---------------- Insights ----------------
+            st.subheader("Insights for Decision Making")
+            if not fb_comments_df.empty:
+                avg_comments = fb_comments_df.groupby("post_id").size().mean()
+                st.write(f"💬 Average comments per post: {avg_comments:.1f}")
+                if avg_comments > 5:
+                    st.success("Strength: High engagement on Facebook posts")
+                else:
+                    st.warning("Weakness: Low engagement on Facebook posts, consider boosting content or ads")
+
+            st.success("Facebook Dashboard loaded successfully!")
         # --------------------- 7. LINE OA ---------------------
         with tabs[6]:
             st.header("💬 LINE OA Insights")

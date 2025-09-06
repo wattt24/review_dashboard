@@ -160,61 +160,67 @@ def refresh_token(refresh_token_value, shop_id):
     r = requests.post(url, json=payload)
     return r.json()
 
-def save_token(shop_id, access_token, refresh_token_value, expires_in, refresh_expires_in):
-    sheet = get_sheet()  # เรียก function ก่อนใช้
+def save_token(platform, account_id, access_token, refresh_token_value, expires_in, refresh_expires_in):
+    sheet = get_sheet()
 
-    expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat()
-    refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat()
+    expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
+    refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
 
     try:
-        # ใช้ str(shop_id) เพื่อค้นหาในชีต
-        cell = sheet.find(str(shop_id))
+        cell = sheet.find(str(account_id))
         row = cell.row
-        sheet.update(f"B{row}:E{row}", [[access_token, refresh_token_value, expired_at, refresh_expired_at]])
-        sheet.update(f"F{row}", datetime.now().isoformat())
+        sheet.update(
+            f"A{row}:F{row}",
+            [[platform, account_id, access_token, refresh_token_value, expired_at, refresh_expired_at]]
+        )
+        sheet.update(f"G{row}", datetime.now().isoformat())
     except gspread.exceptions.CellNotFound:
-        sheet.append_row([shop_id, access_token, refresh_token_value, expired_at, refresh_expired_at, datetime.now().isoformat()])
+        sheet.append_row([
+            platform, account_id, access_token, refresh_token_value,
+            expired_at, refresh_expired_at, datetime.now().isoformat()
+        ])
 
-
-def get_latest_token(shop_id):
-    sheet = get_sheet()  # เรียก function ก่อนใช้
-
+def get_latest_token(platform, account_id):
+    sheet = get_sheet()
     records = sheet.get_all_records()
     for record in records:
-        if str(record["shop_id"]) == str(shop_id):
+        if str(record["platform"]) == str(platform) and str(record["account_id"]) == str(account_id):
             return {
                 "access_token": record["access_token"],
-                "refresh_token": record["refresh_token"],
-                "expired_at": record["expired_at"],
-                "refresh_expired_at": record["refresh_expired_at"]
+                "refresh_token": record.get("refresh_token", ""),
+                "expired_at": record.get("expired_at", ""),
+                "refresh_expired_at": record.get("refresh_expired_at", "")
             }
     return None
 
-def get_valid_access_token(shop_id):
-    token = get_latest_token(shop_id)
+def get_valid_access_token(platform, account_id, refresh_func=None):
+    token = get_latest_token(platform, account_id)
     if not token:
         return None
 
-    expired_at = datetime.fromisoformat(token["expired_at"])
-    refresh_expired_at = datetime.fromisoformat(token["refresh_expired_at"])
-
-    if datetime.now() >= expired_at and datetime.now() < refresh_expired_at:
-        new_tokens = refresh_token(token["refresh_token"], shop_id)
-        if "access_token" in new_tokens:
-            save_token(
-                shop_id,
-                new_tokens["access_token"],
-                new_tokens["refresh_token"],
-                new_tokens["expires_in"],
-                new_tokens["refresh_expires_in"]
-            )
-            return new_tokens["access_token"]
-        else:
-            return None
-    elif datetime.now() < expired_at:
-        return token["access_token"]
+    if token["expired_at"]:
+        expired_at = datetime.fromisoformat(token["expired_at"])
     else:
+        return token["access_token"]  # ไม่มีวันหมดอายุ เช่น Facebook long-lived
+
+    if datetime.now() >= expired_at:
+        if refresh_func and token["refresh_token"] and token["refresh_expired_at"]:
+            refresh_expired_at = datetime.fromisoformat(token["refresh_expired_at"])
+            if datetime.now() < refresh_expired_at:
+                new_tokens = refresh_func(token["refresh_token"], account_id)
+                if "access_token" in new_tokens:
+                    save_token(
+                        platform, account_id,
+                        new_tokens["access_token"],
+                        new_tokens.get("refresh_token", ""),
+                        new_tokens.get("expires_in"),
+                        new_tokens.get("refresh_expires_in")
+                    )
+                    return new_tokens["access_token"]
         return None
+    else:
+        return token["access_token"]
+
 def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
     """
     Generic function to call Shopee Shop API
