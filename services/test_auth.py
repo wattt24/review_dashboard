@@ -128,6 +128,12 @@ def get_token(code, shop_id):
 
     resp = requests.post(url, json=payload)
     print("response:", resp.text)
+    print("partner_id:", SHOPEE_PARTNER_ID)
+    print("partner_key:", SHOPEE_PARTNER_SECRET)
+    print("base_string:", base_string)
+    print("sign:", sign)
+    print("url:", url)
+    print("payload:", payload)
     return resp.json()
 
 def refresh_token(refresh_token_value, shop_id):
