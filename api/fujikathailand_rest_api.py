@@ -1,11 +1,15 @@
 # scraping/fujikathailand_scraper.py
-
+import os
 import requests
 from utils.province_mapping import province_code_map
 from requests.auth import HTTPBasicAuth
-from utils.config import WOOCOMMERCE_URL, WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET,FUJIKA_WP_USER,FUJIKA_WP_PASSWORD,FUJIKA_WP_APP_PASSWORD_API_ACCESS
+# from utils.config import WOOCOMMERCE_URL, WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET,FUJIKA_WP_USER,FUJIKA_WP_PASSWORD,FUJIKA_WP_APP_PASSWORD_API_ACCESS
 from collections import defaultdict
-
+WOOCOMMERCE_URL = os.getenv("WOOCOMMERCE_URL")
+WOOCOMMERCE_CONSUMER_KEY = os.getenv("WOOCOMMERCE_CONSUMER_KEY")
+WOOCOMMERCE_CONSUMER_SECRET = os.getenv("WOOCOMMERCE_CONSUMER_SECRET")
+FUJIKA_WP_USER = os.getenv("FUJIKA_WP_USER")
+FUJIKA_WP_APP_PASSWORD_API_ACCESS = os.getenv("FUJIKA_WP_APP_PASSWORD_API_ACCESS")
 # -------------------- ฟังก์ชันช่วยแปลงจังหวัดเป็นภูมิภาค --------------------
 def province_to_region(province):
     province = province.strip()
