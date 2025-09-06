@@ -4,7 +4,18 @@ import sys
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+import streamlit as st
+import pandas as pd
 import plotly.express as px
+from datetime import datetime
+from api.facebook_graph_api import (
+                get_valid_access_token as get_fb_token,
+                get_user_pages,
+                get_page_insights,
+                get_page_posts,
+                get_comments,
+                refresh_long_lived_token
+            )
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -436,18 +447,7 @@ def app():
             st.title("📈 Fujika Sales & Feedback Dashboard")
 
                         # app_dashboard_facebook.py
-            import streamlit as st
-            import pandas as pd
-            import plotly.express as px
-            from datetime import datetime
-            from api.facebook_graph_api import (
-                get_valid_access_token as get_fb_token,
-                get_user_pages,
-                get_page_insights,
-                get_page_posts,
-                get_comments,
-                refresh_long_lived_token
-            )
+    
 
             st.sidebar.header("Filter Options")
             page_id = st.secrets["facebook"]["page_id"]
