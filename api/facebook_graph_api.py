@@ -88,11 +88,11 @@ import os
 # import streamlit as st
 
 # ดึงจาก Render Environment Variable
-USER_TOKEN = os.getenv("FACEBOOK_USER_TOKEN")
-APP_ID = os.getenv("FACEBOOK_APP_ID")
-APP_SECRET = os.getenv("FACEBOOK_APP_SECRET")
+USER_TOKEN = os.getenv("FACEBOOK_USER_TOKEN") or st.secrets["facebook"].get("user_token")
+APP_ID = os.getenv("FACEBOOK_APP_ID") or st.secrets["facebook"].get("app_id")
+APP_SECRET = os.getenv("FACEBOOK_APP_SECRET") or st.secrets["facebook"].get("app_secret")
 PAGE_IDS = os.getenv("FACEBOOK_PAGE_IDS", "")
-PAGE_IDS = PAGE_IDS.split(",") if PAGE_IDS else []
+PAGE_IDS = PAGE_IDS.split(",") if PAGE_IDS else st.secrets["facebook"].get("page_ids", [])
 
 def get_valid_access_token(platform, account_id, refresh_func):
     return USER_TOKEN
