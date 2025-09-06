@@ -1,12 +1,20 @@
 # getshopeelazada.py
+# getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from services.test_auth import get_token, save_token
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
-# Facebook
 from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments, get_page_insights, get_post_insights
+app = FastAPI(title="Fujika Dashboard API")
+
 app = FastAPI()
+@app.api_route("/shopee/callback", methods=["GET", "HEAD"])
+def shopee_callback(request: Request, code: str = None, shop_id: str = None):
+    if request.method == "HEAD":
+        return Response(status_code=200)
+    return {"code": code, "shop_id": shop_id}
+# Facebook
 @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
 def shopee_callback(request: Request, code: str = None, shop_id: str = None):
     if request.method == "HEAD":
