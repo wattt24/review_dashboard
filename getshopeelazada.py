@@ -5,10 +5,7 @@ from services.test_auth import get_token, save_token
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 # Facebook
-from auth.token_manager import get_page_tokens
-from fetchers.posts import get_posts
-from fetchers.comments import get_comments
-from fetchers.insights import get_page_insights
+from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments, get_page_insights, get_post_insights
 app = FastAPI()
 @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
 def shopee_callback(request: Request, code: str = None, shop_id: str = None):
@@ -66,11 +63,4 @@ async def comments(post_id: str, page_token: str = Query(...)):
 async def page_insights(page_id: str, page_token: str = Query(...)):
     return JSONResponse(content=get_page_insights(page_id, page_token))
 
-# ----- Shopee routes -----
-@app.get("/api/shopee/orders")
-async def shopee_orders(shop_id: str = Query(...)):
-    return JSONResponse(content=get_shopee_orders(shop_id))
 
-@app.get("/api/shopee/reviews")
-async def shopee_reviews(shop_id: str = Query(...)):
-    return JSONResponse(content=get_shopee_reviews(shop_id))

@@ -110,11 +110,13 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-    partner_key_bytes = bytes.fromhex(SHOPEE_PARTNER_SECRET[4:])
-    print("partner_key_bytes length:", len(partner_key_bytes))
 
-    base_string = f"{SHOPEE_PARTNER_ID}/api/v2/auth/token/get{timestamp}"
-    sign = hmac.new(partner_key_bytes, base_string.encode("utf-8"), hashlib.sha256).hexdigest()
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),   # ใช้ encode ตรงๆ
+        base_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
@@ -124,20 +126,8 @@ def get_token(code, shop_id):
         "partner_id": int(SHOPEE_PARTNER_ID)
     }
 
-    print("==== DEBUG888 ====")
-    print("partner_id:", SHOPEE_PARTNER_ID)
-    print("shop_id:", shop_id, type(shop_id))
-    print("code:", code)
-    print("base_string:", base_string)
-    print("sign:", sign)
-    print("url:", url)
-    print("payload:", payload)
-    print("secret repr:", repr(SHOPEE_PARTNER_SECRET))  # 🧪 debug ดูค่า key จริง
-
     resp = requests.post(url, json=payload)
     print("response:", resp.text)
-    print("==== DEBUG 99====")
-
     return resp.json()
 
 def refresh_token(refresh_token_value, shop_id):
