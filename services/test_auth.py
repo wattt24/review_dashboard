@@ -106,7 +106,8 @@ def get_token(code, shop_id):
     print("path:", path)
     print("timestamp:", timestamp)
     print("base_string:", base_string)
-    print("key used:", SHOPEE_PARTNER_KEY)   # ต้องเป็น shpk_xxx
+    print("key used:", SHOPEE_PARTNER_KEY) 
+    print(repr(SHOPEE_PARTNER_KEY))  
     print("sign:", sign)
     return resp.json()
 
