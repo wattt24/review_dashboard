@@ -68,18 +68,18 @@ def get_authorization_url():
     )
     return url
 
-def generate_token_sign(path, timestamp, body_dict):
+def generate_token_sign(path, timestamp):
     """
     Generates the signature for /api/v2/auth/token/get
-    Base string: partner_id + path + timestamp + request_body(JSON string)
+    Base string: partner_id + path + timestamp
     """
-    body_str = json.dumps(body_dict, separators=(',', ':'))  # compact JSON
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_str}"
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     return hmac.new(
-        SHOPEE_PARTNER_SECRET.encode(),
-        base_string.encode(),
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
         hashlib.sha256
-    ).hexdigest(), body_str
+    ).hexdigest()
+
 
 
 def generate_api_sign(path, timestamp, access_token, shop_id):
@@ -111,12 +111,7 @@ def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
 
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),   # ใช้ encode ตรงๆ
-        base_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
+    sign = generate_token_sign(path, timestamp)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
@@ -130,7 +125,7 @@ def get_token(code, shop_id):
     print("response:", resp.text)
     print("partner_id:", SHOPEE_PARTNER_ID)
     print("partner_key:", SHOPEE_PARTNER_SECRET)
-    print("base_string:", base_string)
+    print("base_string:", f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
     print("sign:", sign)
     print("url:", url)
     print("payload:", payload)
