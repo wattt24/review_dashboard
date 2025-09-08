@@ -105,39 +105,15 @@ def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
         hashlib.sha256
     ).hexdigest()
 
-def get_token(code: str, shop_id: int):
-    path = "/api/v2/auth/token/get"
-    timestamp = int(datetime.now(timezone.utc).timestamp())
-
-    payload = {"code": code, "shop_id": int(shop_id)}
-
-    # ✅ base_string ใช้แค่นี้
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-
-    sign = hmac.new(
-        SHOPEE_PARTNER_KEY.encode("utf-8"),
-        base_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-
-    url = (
-        f"{BASE_URL}{path}"
-        f"?partner_id={SHOPEE_PARTNER_ID}"
-        f"&timestamp={timestamp}"
-        f"&sign={sign}"
-    )
-
-    resp = requests.post(url, json=payload)
-
-    print("==== DEBUG ====")
-    print("UTC Timestamp:", timestamp)
-    print("URL:", url)
-    print("Payload:", payload)
-    print("Base String:", base_string)
-    print("Sign:", sign)
-    print("Response:", resp.text)
-
-    return resp.json()
+def get_token(code, shop_id):
+    # Sandbox mode → return fake access token
+    print("Sandbox mode: returning fake token")
+    return {
+        "access_token": "sandbox_access_token_123",
+        "refresh_token": "sandbox_refresh_token_123",
+        "expires_in": 3600,
+        "refresh_expires_in": 86400
+    }
 
 
 
