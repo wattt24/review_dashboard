@@ -74,10 +74,10 @@ def get_authorization_url():
     return url
 
 def get_token(code, shop_id):
-    """Exchange auth code for access & refresh tokens"""
     path = "/api/v2/auth/token/get"
-    timestamp = int(datetime.now(timezone.utc).timestamp())  # ใช้ UTC timestamp
-    sign = generate_token_sign(path, timestamp)
+    timestamp = int(datetime.now(timezone.utc).timestamp())
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    sign = generate_sign(base_string)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
@@ -88,12 +88,13 @@ def get_token(code, shop_id):
 
     resp = requests.post(url, json=payload)
     print("==== DEBUG get_token ====")
-    print("base_string:", f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
+    print("base_string:", base_string)
     print("sign:", sign)
     print("url:", url)
     print("payload:", payload)
     print("response:", resp.text)
     return resp.json()
+
 
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
