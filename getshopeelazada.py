@@ -15,36 +15,29 @@ async def root():
     return {"message": "Service is running"}
 @app.get("/shopee/callback")
 async def shopee_callback(code: str, shop_id: int):
-    # 1. Log ค่า callback
     print("Authorization Code:", code)
     print("Shop ID:", shop_id)
 
-    # 2. จำลองแลก token (sandbox mock)
-    token_response = {
-        "access_token": "sandbox_access_token_123",
-        "refresh_token": "sandbox_refresh_token_123",
-        "expires_in": 3600,
-        "refresh_expires_in": 86400
-    }
+    # 1. แลก token จริง
+    token_response = get_token(code, shop_id)
 
-    # 3. ทดลองเรียก API จริง
-    resp = call_shopee_api(
-        path="/api/v2/shop/get",
-        shop_id=shop_id,
-        access_token=token_response["access_token"],
-        debug=True
-    )
+    # 2. ถ้ามี access_token จริง → ลองเรียก shop/get
+    shop_info = {}
+    if "access_token" in token_response:
+        shop_info = call_shopee_api(
+            path="/api/v2/shop/get",
+            shop_id=shop_id,
+            access_token=token_response["access_token"],
+            debug=True
+        )
 
-    # 4. ส่งผลลัพธ์ออกไปดู
     return {
         "message": "Shopee callback received",
         "code": code,
         "shop_id": shop_id,
         "token_response": token_response,
-        "shop_info": resp
+        "shop_info": shop_info
     }
-
-
 # @app.get("/shopee/callback")
 # async def shopee_callback(code: str, shop_id: int):
 #     # 1. Log ค่าที่ได้
@@ -60,37 +53,6 @@ async def shopee_callback(code: str, shop_id: int):
 #         "shop_id": shop_id,
 #         "token_response": token_response
 #     }
-
-@app.get("/")
-async def root():
-    return {"message": "Service is running"}
-
-@app.get("/shopee/callback")
-async def shopee_callback(code: str, shop_id: int):
-    # 1. Log ค่าที่ได้
-    print("Authorization Code:", code)
-    print("Shop ID:", shop_id)
-
-    # 2. เรียก get_token เพื่อแลก access_token (Sandbox จะ mock token)
-    token_response = get_token(code, shop_id)
-
-    # 3. ทดสอบเรียก API ของ Shopee (เช่น /shop/get)
-    resp = call_shopee_api(
-        path="/api/v2/shop/get",
-        shop_id=shop_id,
-        access_token=token_response["access_token"]
-    )
-    print("==== DEBUG /api/v2/shop/get ====")
-    print(resp)
-
-    # 4. ส่งผลลัพธ์กลับ browser
-    return {
-        "message": "Shopee callback received",
-        "code": code,
-        "shop_id": shop_id,
-        "token_response": token_response,
-        "shop_info": resp
-    }
 
 
 # ----- Facebook routes -----
