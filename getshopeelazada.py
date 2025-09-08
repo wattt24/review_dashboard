@@ -27,8 +27,7 @@ async def shopee_callback(code: str, shop_id: int):
         shop_info = call_shopee_api(
             path="/api/v2/shop/get",
             shop_id=shop_id,
-            access_token=token_response["access_token"],
-            debug=True
+            access_token=token_response["access_token"]
         )
 
     return {
