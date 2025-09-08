@@ -147,14 +147,15 @@ def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
     return resp.json()
 
 
+from datetime import datetime, timezone
+
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
-    timestamp = int(time.time())
-
+    # ใช้ UTC timestamp แทน
+    timestamp = int(datetime.now(timezone.utc).timestamp())
     sign = generate_token_sign(path, timestamp)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
-
     payload = {
         "code": code,
         "shop_id": int(shop_id),
@@ -162,14 +163,14 @@ def get_token(code, shop_id):
     }
 
     resp = requests.post(url, json=payload)
-    print("response:", resp.text)
-    print("partner_id:", SHOPEE_PARTNER_ID)
-    print("partner_key:", SHOPEE_PARTNER_SECRET)
+    print("==== DEBUG get_token ====")
     print("base_string:", f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
     print("sign:", sign)
     print("url:", url)
     print("payload:", payload)
+    print("response:", resp.text)
     return resp.json()
+
 
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
