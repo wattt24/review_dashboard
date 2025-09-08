@@ -98,6 +98,13 @@ def get_token(code, shop_id):
     print("url:", url)
     print("payload:", payload)
     print("response:", resp.text)
+    print("==== DEBUG SIGN ====")
+    print("partner_id:", SHOPEE_PARTNER_ID)
+    print("path:", path)
+    print("timestamp:", timestamp)
+    print("base_string:", base_string)
+    print("key used:", SHOPEE_PARTNER_KEY)   # ต้องเป็น shpk_xxx
+    print("sign:", sign)
     return resp.json()
 
 
