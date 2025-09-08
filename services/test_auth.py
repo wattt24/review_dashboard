@@ -1,21 +1,20 @@
-# services/test_auth.py
-import os
-import streamlit as st
 import time
 import hmac
 import hashlib
 import requests
+import streamlit as st
 import gspread
-from datetime import datetime, timedelta, timezone
 from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime, timedelta, timezone
+
 from utils.config import (
     SHOPEE_PARTNER_ID,
-    SHOPEE_PARTNER_SECRET,
-    SHOPEE_PARTNER_KEY,       # <-- เพิ่ม key สำหรับ sandbox
-    SHOPEE_REDIRECT_URI
+    SHOPEE_PARTNER_KEY,      # Sandbox ใช้ค่า key ที่ขึ้นต้นด้วย shpk...
+    SHOPEE_PARTNER_SECRET,   # Production ใช้ secret จริง
+    SHOPEE_REDIRECT_URI,
 )
 
-# ---------------- Shopee Base URL ----------------
+# ---------------- Config ----------------
 SANDBOX = True
 BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https://partner.shopeemobile.com"
 
@@ -23,7 +22,7 @@ BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https
 def get_sheet():
     scope = [
         "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive"
+        "https://www.googleapis.com/auth/drive",
     ]
     creds_dict = st.secrets["SERVICE_ACCOUNT_JSON"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
@@ -33,6 +32,9 @@ def get_sheet():
 
 # ---------------- Signature Utils ----------------
 def generate_sign(base_string: str) -> str:
+    """
+    Generate signature with correct key depending on environment
+    """
     key = SHOPEE_PARTNER_KEY if SANDBOX else SHOPEE_PARTNER_SECRET
     if not key:
         raise ValueError("Missing Shopee Partner Key/Secret")
@@ -43,12 +45,10 @@ def generate_sign(base_string: str) -> str:
     ).hexdigest()
 
 def generate_auth_sign(path, timestamp):
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    return generate_sign(base_string)
+    return generate_sign(f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
 
 def generate_token_sign(path, timestamp):
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    return generate_sign(base_string)
+    return generate_sign(f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
 
 def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{refresh_token_value}{int(shop_id)}"
@@ -60,43 +60,49 @@ def generate_api_sign(path, timestamp, access_token, shop_id):
 
 # ---------------- OAuth Flow ----------------
 def get_authorization_url():
+    """
+    Step 1: สร้าง URL ให้ร้าน authorize
+    """
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
     sign = generate_auth_sign(path, timestamp)
 
-    url = (
+    return (
         f"{BASE_URL}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
         f"&timestamp={timestamp}"
         f"&sign={sign}"
         f"&redirect={SHOPEE_REDIRECT_URI}"
     )
-    return url
 
 def get_token(code, shop_id):
+    """
+    Step 2: แลก code → access_token, refresh_token
+    """
     path = "/api/v2/auth/token/get"
     timestamp = int(datetime.now(timezone.utc).timestamp())
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    sign = generate_sign(base_string)
+    sign = generate_token_sign(path, timestamp)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
         "code": code,
         "shop_id": int(shop_id),
-        "partner_id": int(SHOPEE_PARTNER_ID)
+        "partner_id": int(SHOPEE_PARTNER_ID),
     }
 
     resp = requests.post(url, json=payload)
     print("==== DEBUG get_token ====")
-    print("base_string:", base_string)
+    print("base_string:", f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
     print("sign:", sign)
     print("url:", url)
     print("payload:", payload)
     print("response:", resp.text)
     return resp.json()
 
-
 def refresh_token(refresh_token_value, shop_id):
+    """
+    Step 3: ใช้ refresh_token แลก access_token ใหม่
+    """
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
     sign = generate_refresh_sign(path, timestamp, refresh_token_value, shop_id)
@@ -105,7 +111,7 @@ def refresh_token(refresh_token_value, shop_id):
     payload = {
         "refresh_token": refresh_token_value,
         "shop_id": int(shop_id),
-        "partner_id": int(SHOPEE_PARTNER_ID)
+        "partner_id": int(SHOPEE_PARTNER_ID),
     }
 
     resp = requests.post(url, json=payload)
@@ -116,6 +122,9 @@ def refresh_token(refresh_token_value, shop_id):
 
 # ---------------- Generic API Call ----------------
 def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
+    """
+    ใช้เรียก Shopee Shop API ทั่วไป
+    """
     timestamp = int(time.time())
     sign = generate_api_sign(path, timestamp, access_token, shop_id)
 
@@ -140,10 +149,12 @@ def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
     print("Response:", resp.text)
     return resp.json()
 
-
+# ---------------- Token Persistence ----------------
 def save_token(platform, account_id, access_token, refresh_token_value, expires_in, refresh_expires_in):
+    """
+    บันทึก token ลง Google Sheet
+    """
     sheet = get_sheet()
-
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
 
@@ -152,7 +163,7 @@ def save_token(platform, account_id, access_token, refresh_token_value, expires_
         row = cell.row
         sheet.update(
             f"A{row}:F{row}",
-            [[platform, account_id, access_token, refresh_token_value, expired_at, refresh_expired_at]]
+            [[platform, account_id, access_token, refresh_token_value, expired_at, refresh_expired_at]],
         )
         sheet.update(f"G{row}", datetime.now().isoformat())
     except gspread.exceptions.CellNotFound:
@@ -160,4 +171,3 @@ def save_token(platform, account_id, access_token, refresh_token_value, expires_
             platform, account_id, access_token, refresh_token_value,
             expired_at, refresh_expired_at, datetime.now().isoformat()
         ])
-
