@@ -77,7 +77,8 @@ def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
     base_string = f"{int(SHOPEE_PARTNER_ID)}{path}{timestamp}"
-    sign = generate_sign(base_string, use_secret=True)  # ใช้ partner_secret
+    # Sandbox: ใช้ partner_key ไม่ใช่ partner_secret
+    sign = generate_sign(base_string, use_secret=False)  
     
     url = (
         f"{BASE_URL}{path}"
