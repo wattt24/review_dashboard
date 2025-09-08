@@ -78,7 +78,9 @@ def get_authorization_url():
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+
+    # make sure partner_id is int when generating base_string
+    base_string = f"{int(SHOPEE_PARTNER_ID)}{path}{timestamp}"
     sign = generate_sign(base_string)
 
     print("==== DEBUG get_token ====")
@@ -88,7 +90,13 @@ def get_token(code, shop_id):
     print("base_string:", base_string)
     print("sign:", sign)
 
-    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    url = (
+        f"{BASE_URL}{path}"
+        f"?partner_id={int(SHOPEE_PARTNER_ID)}"
+        f"&timestamp={timestamp}"
+        f"&sign={sign}"
+    )
+
     payload = {
         "code": code,
         "shop_id": int(shop_id),
