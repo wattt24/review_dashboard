@@ -99,6 +99,7 @@ def get_token(code, shop_id):
     print("base_string:", base_string)
     print("sign:", sign)
     print("url:", url)
+    print("Local timestamp:", int(time.time()))
     print("payload:", payload)
     print("response:", resp.text)
     print("==== DEBUG SIGN ====")
