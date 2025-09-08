@@ -2,7 +2,7 @@
 # getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from services.test_auth import get_token, save_token
+from services.test_auth import get_token, save_token,call_shopee_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments, get_page_insights, get_post_insights
@@ -14,21 +14,53 @@ app = FastAPI()
 async def root():
     return {"message": "Service is running"}
 
+# @app.get("/shopee/callback")
+# async def shopee_callback(code: str, shop_id: int):
+#     # 1. Log ค่าที่ได้
+#     print("Authorization Code:", code)
+#     print("Shop ID:", shop_id)
+
+#     # 2. เรียก get_token เพื่อแลก access_token
+#     token_response = get_token(code, shop_id)
+
+#     return {
+#         "message": "Shopee callback received",
+#         "code": code,
+#         "shop_id": shop_id,
+#         "token_response": token_response
+#     }
+
+@app.get("/")
+async def root():
+    return {"message": "Service is running"}
+
 @app.get("/shopee/callback")
 async def shopee_callback(code: str, shop_id: int):
     # 1. Log ค่าที่ได้
     print("Authorization Code:", code)
     print("Shop ID:", shop_id)
 
-    # 2. เรียก get_token เพื่อแลก access_token
+    # 2. เรียก get_token เพื่อแลก access_token (Sandbox จะ mock token)
     token_response = get_token(code, shop_id)
 
+    # 3. ทดสอบเรียก API ของ Shopee (เช่น /shop/get)
+    resp = call_shopee_api(
+        path="/api/v2/shop/get",
+        shop_id=shop_id,
+        access_token=token_response["access_token"]
+    )
+    print("==== DEBUG /api/v2/shop/get ====")
+    print(resp)
+
+    # 4. ส่งผลลัพธ์กลับ browser
     return {
         "message": "Shopee callback received",
         "code": code,
         "shop_id": shop_id,
-        "token_response": token_response
+        "token_response": token_response,
+        "shop_info": resp
     }
+
 
 # ----- Facebook routes -----
 @app.get("/api/facebook/pages")

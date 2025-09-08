@@ -116,8 +116,6 @@ def get_token(code, shop_id):
     }
 
 
-
-
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
