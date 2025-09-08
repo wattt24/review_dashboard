@@ -13,6 +13,37 @@ app = FastAPI()
 @app.get("/")
 async def root():
     return {"message": "Service is running"}
+@app.get("/shopee/callback")
+async def shopee_callback(code: str, shop_id: int):
+    # 1. Log ค่า callback
+    print("Authorization Code:", code)
+    print("Shop ID:", shop_id)
+
+    # 2. จำลองแลก token (sandbox mock)
+    token_response = {
+        "access_token": "sandbox_access_token_123",
+        "refresh_token": "sandbox_refresh_token_123",
+        "expires_in": 3600,
+        "refresh_expires_in": 86400
+    }
+
+    # 3. ทดลองเรียก API จริง
+    resp = call_shopee_api(
+        path="/api/v2/shop/get",
+        shop_id=shop_id,
+        access_token=token_response["access_token"],
+        debug=True
+    )
+
+    # 4. ส่งผลลัพธ์ออกไปดู
+    return {
+        "message": "Shopee callback received",
+        "code": code,
+        "shop_id": shop_id,
+        "token_response": token_response,
+        "shop_info": resp
+    }
+
 
 # @app.get("/shopee/callback")
 # async def shopee_callback(code: str, shop_id: int):
