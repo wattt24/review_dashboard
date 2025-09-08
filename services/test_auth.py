@@ -33,9 +33,9 @@ def get_sheet():
 
 # ---------------- Signature Utils ----------------
 def generate_sign(base_string: str) -> str:
-    """Generic HMAC-SHA256 signature generator"""
-    # Sandbox ใช้ Partner Key / Production ใช้ Secret
     key = SHOPEE_PARTNER_KEY if SANDBOX else SHOPEE_PARTNER_SECRET
+    if not key:
+        raise ValueError("Missing Shopee Partner Key/Secret")
     return hmac.new(
         key.encode("utf-8"),
         base_string.encode("utf-8"),
