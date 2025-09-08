@@ -1,13 +1,13 @@
 # services/test_auth.py
+# services/test_auth.py
 import os
 import streamlit as st
 import time
-import json # ต้องแน่ใจว่าได้ import json แล้ว
 import hmac
 import hashlib
 import requests
-from datetime import datetime, timedelta, timezone # เพิ่ม timezone ตรงนี้ถ้ายังไม่มี
 import gspread
+from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 from utils.config import (
     SHOPEE_PARTNER_ID,
@@ -15,50 +15,58 @@ from utils.config import (
     SHOPEE_REDIRECT_URI
 )
 
-code = os.getenv("CODE")   # code จาก callback ที่ได้ตอน authorize
-shop_id = os.getenv("SHOPEE_SHOP_ID")
-timestamp = int(time.time())
+# Shopee Base URL
 SANDBOX = True
 BASE_URL = "https://partner.test-stable.shopeemobile.com" if SANDBOX else "https://partner.shopeemobile.com"
 
 # ---------------- Google Sheets ----------------
-key_path = "/etc/secrets/SERVICE_ACCOUNT_JSON.json"
 def get_sheet():
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    
-    # ถ้า st.secrets["SERVICE_ACCOUNT_JSON"] เป็น dict อยู่แล้ว → ไม่ต้อง json.loads
     creds_dict = st.secrets["SERVICE_ACCOUNT_JSON"]
-    
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
     sheet = client.open_by_key(st.secrets["GOOGLE_SHEET_ID"]).sheet1
     return sheet
 
-# ---------------- Shopee OAuth & API ----------------
-
-# แยกฟังก์ชันการ generate signature ตามประเภท API เพื่อความชัดเจนและถูกต้อง
-def generate_auth_sign(path, timestamp):
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+# ---------------- Signature Utils ----------------
+def generate_sign(base_string: str) -> str:
+    """Generic HMAC-SHA256 signature generator"""
     return hmac.new(
-        SHOPEE_PARTNER_SECRET.encode(),
-        base_string.encode(),
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
+def generate_auth_sign(path, timestamp):
+    """Sign for auth step (/shop/auth_partner)"""
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    return generate_sign(base_string)
+
+def generate_token_sign(path, timestamp):
+    """Sign for /auth/token/get"""
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    return generate_sign(base_string)
+
+def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
+    """Sign for /auth/access_token/get"""
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{refresh_token_value}{int(shop_id)}"
+    return generate_sign(base_string)
+
+def generate_api_sign(path, timestamp, access_token, shop_id):
+    """Sign for general shop APIs"""
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{int(shop_id)}"
+    return generate_sign(base_string)
+
+# ---------------- OAuth Flow ----------------
 def get_authorization_url():
-    """
-    Generates the URL for shop authorization (login).
-    """
+    """Generate shop authorization URL"""
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
-
-    # Use the specific function for generating auth signature
     sign = generate_auth_sign(path, timestamp)
 
-    # Build the authorization URL
     url = (
         f"{BASE_URL}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
@@ -68,43 +76,75 @@ def get_authorization_url():
     )
     return url
 
-def generate_token_sign(path, timestamp):
-    """
-    Generates the signature for /api/v2/auth/token/get
-    Base string: partner_id + path + timestamp
-    """
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    return hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        base_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
+def get_token(code, shop_id):
+    """Exchange auth code for access & refresh tokens"""
+    path = "/api/v2/auth/token/get"
+    timestamp = int(time.time())
+    sign = generate_token_sign(path, timestamp)
 
+    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    payload = {
+        "code": code,
+        "shop_id": int(shop_id),
+        "partner_id": int(SHOPEE_PARTNER_ID)
+    }
 
+    resp = requests.post(url, json=payload)
+    print("==== DEBUG get_token ====")
+    print("base_string:", f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
+    print("sign:", sign)
+    print("url:", url)
+    print("payload:", payload)
+    print("response:", resp.text)
+    return resp.json()
 
-def generate_api_sign(path, timestamp, access_token, shop_id):
-    """
-    Generates the signature for general Shop API calls (GET/POST with URL params).
-    Base string: partner_id + api path + timestamp + access_token + shop_id
-    """
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}"
-    return hmac.new(
-        SHOPEE_PARTNER_SECRET.encode(),
-        base_string.encode(),
-        hashlib.sha256
-    ).hexdigest()
+def refresh_token(refresh_token_value, shop_id):
+    """Refresh access token"""
+    path = "/api/v2/auth/access_token/get"
+    timestamp = int(time.time())
+    sign = generate_refresh_sign(path, timestamp, refresh_token_value, shop_id)
 
-def generate_refresh_sign(path, timestamp, refresh_token_value, shop_id):
-    """
-    Generates the signature for refresh token API.
-    Base string: partner_id + api path + timestamp + refresh_token + shop_id
-    """
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{refresh_token_value}{int(shop_id)}" # shop_id ต้องเป็น int ใน base_string
-    return hmac.new(
-        SHOPEE_PARTNER_SECRET.encode(),
-        base_string.encode(),
-        hashlib.sha256
-    ).hexdigest()
+    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    payload = {
+        "refresh_token": refresh_token_value,
+        "shop_id": int(shop_id),
+        "partner_id": int(SHOPEE_PARTNER_ID)
+    }
+
+    resp = requests.post(url, json=payload)
+    print("==== DEBUG refresh_token ====")
+    print("payload:", payload)
+    print("response:", resp.text)
+    return resp.json()
+
+# ---------------- Generic API Call ----------------
+def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
+    """Call any Shopee shop API"""
+    timestamp = int(time.time())
+    sign = generate_api_sign(path, timestamp, access_token, shop_id)
+
+    url = (
+        f"{BASE_URL}{path}"
+        f"?partner_id={SHOPEE_PARTNER_ID}"
+        f"&timestamp={timestamp}"
+        f"&access_token={access_token}"
+        f"&shop_id={int(shop_id)}"
+        f"&sign={sign}"
+    )
+
+    headers = {"Content-Type": "application/json"}
+
+    if method.upper() == "POST":
+        resp = requests.post(url, json=payload, headers=headers)
+    else:
+        resp = requests.get(url, headers=headers, params=payload or {})
+
+    print("==== DEBUG call_shopee_api ====")
+    print("URL:", url)
+    print("Payload:", payload)
+    print("Response:", resp.text)
+
+    return resp.json()
 
 
 def get_token(code, shop_id):
@@ -211,34 +251,3 @@ def get_valid_access_token(platform, account_id, refresh_func=None):
         return None
     else:
         return token["access_token"]
-
-def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
-    """
-    Generic function to call Shopee Shop API
-    """
-    timestamp = int(time.time())
-    sign = generate_api_sign(path, timestamp, access_token, shop_id)
-
-    url = (
-        f"{BASE_URL}{path}"
-        f"?partner_id={SHOPEE_PARTNER_ID}"
-        f"&timestamp={timestamp}"
-        f"&access_token={access_token}"
-        f"&shop_id={shop_id}"
-        f"&sign={sign}"
-    )
-
-    headers = {"Content-Type": "application/json"}
-
-    if method.upper() == "POST":
-        resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
-
-    else:
-        resp = requests.get(url, headers=headers, params=payload or {})
-
-    print("==== DEBUG call_shopee_api ====")
-    print("URL:", url)
-    print("Payload:", payload)
-    print("Response:", resp.text)
-    
-    return resp.json()
