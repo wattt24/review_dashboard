@@ -76,24 +76,26 @@ def get_authorization_url():
     )
 
 def get_token(code, shop_id):
-    """
-    Step 2: แลก code → access_token, refresh_token
-    """
     path = "/api/v2/auth/token/get"
-    timestamp = int(datetime.now(timezone.utc).timestamp())
-    sign = generate_token_sign(path, timestamp)
+    timestamp = int(time.time())
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    sign = generate_sign(base_string)
+
+    print("==== DEBUG get_token ====")
+    print("partner_id:", SHOPEE_PARTNER_ID, type(SHOPEE_PARTNER_ID))
+    print("partner_key (first 6):", SHOPEE_PARTNER_KEY[:6])
+    print("timestamp:", timestamp, datetime.utcfromtimestamp(timestamp))
+    print("base_string:", base_string)
+    print("sign:", sign)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
         "code": code,
         "shop_id": int(shop_id),
-        "partner_id": int(SHOPEE_PARTNER_ID),
+        "partner_id": int(SHOPEE_PARTNER_ID)
     }
 
     resp = requests.post(url, json=payload)
-    print("==== DEBUG get_token ====")
-    print("base_string:", f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
-    print("sign:", sign)
     print("url:", url)
     print("payload:", payload)
     print("response:", resp.text)
