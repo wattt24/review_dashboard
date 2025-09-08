@@ -31,11 +31,8 @@ def get_sheet():
     return sheet
 
 # ---------------- Signature Utils ----------------
-def generate_sign(base_string: str) -> str:
-    """
-    Generate signature with correct key depending on environment
-    """
-    key = SHOPEE_PARTNER_KEY if SANDBOX else SHOPEE_PARTNER_SECRET
+def generate_sign(base_string: str, use_secret=False) -> str:
+    key = SHOPEE_PARTNER_SECRET if use_secret else SHOPEE_PARTNER_KEY
     if not key:
         raise ValueError("Missing Shopee Partner Key/Secret")
     return hmac.new(
@@ -43,6 +40,7 @@ def generate_sign(base_string: str) -> str:
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
+
 
 def generate_auth_sign(path, timestamp):
     return generate_sign(f"{SHOPEE_PARTNER_ID}{path}{timestamp}")
@@ -78,36 +76,29 @@ def get_authorization_url():
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-
-    # make sure partner_id is int when generating base_string
     base_string = f"{int(SHOPEE_PARTNER_ID)}{path}{timestamp}"
-    sign = generate_sign(base_string)
-
-    print("==== DEBUG get_token ====")
-    print("partner_id:", SHOPEE_PARTNER_ID, type(SHOPEE_PARTNER_ID))
-    print("partner_key (first 6):", SHOPEE_PARTNER_KEY[:6])
-    print("timestamp:", timestamp, datetime.utcfromtimestamp(timestamp))
-    print("base_string:", base_string)
-    print("sign:", sign)
-
+    sign = generate_sign(base_string, use_secret=True)  # ใช้ partner_secret
+    
     url = (
         f"{BASE_URL}{path}"
         f"?partner_id={int(SHOPEE_PARTNER_ID)}"
         f"&timestamp={timestamp}"
         f"&sign={sign}"
     )
-
     payload = {
         "code": code,
         "shop_id": int(shop_id),
         "partner_id": int(SHOPEE_PARTNER_ID)
     }
-
     resp = requests.post(url, json=payload)
+    print("==== DEBUG get_token ====")
+    print("base_string:", base_string)
+    print("sign:", sign)
     print("url:", url)
     print("payload:", payload)
     print("response:", resp.text)
     return resp.json()
+
 
 def refresh_token(refresh_token_value, shop_id):
     """
