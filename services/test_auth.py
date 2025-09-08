@@ -155,7 +155,7 @@ def call_shopee_api(path, shop_id, access_token, method="GET", payload=None):
     if method.upper() == "POST":
         resp = requests.post(url, json=payload, headers=headers)
     else:
-        resp = requests.get(url, headers=headers, params=payload or {})
+        resp = requests.post(url, headers=headers, params=payload or {})
 
     print("==== DEBUG call_shopee_api ====")
     print("URL:", url)
