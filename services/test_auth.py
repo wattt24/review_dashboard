@@ -78,33 +78,37 @@ def get_token(code, shop_id):
     timestamp = int(time.time())
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     sign = hmac.new(
-        SHOPEE_PARTNER_KEY.encode("utf-8"),
+        SHOPEE_PARTNER_ID.encode("utf-8"),
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
     url = (
         f"{BASE_URL}{path}"
-        f"?partner_id={SHOPEE_PARTNER_ID}"
+        f"?partner_id={int(SHOPEE_PARTNER_ID)}"
         f"&timestamp={timestamp}"
         f"&sign={sign}"
     )
     payload = {
         "code": code,
-        "shop_id": shop_id,
-        "partner_id": SHOPEE_PARTNER_ID
+        "shop_id": int(shop_id),
+        "partner_id": int(SHOPEE_PARTNER_ID)
     }
-    headers = {"Content-Type": "application/json"}
-
-    resp = requests.post(url, json=payload, headers=headers)
+    resp = requests.post(url, json=payload)
     print("==== DEBUG get_token ====")
     print("base_string:", base_string)
     print("sign:", sign)
     print("url:", url)
     print("payload:", payload)
     print("response:", resp.text)
+    print("==== DEBUG SIGN ====")
+    print("partner_id:", SHOPEE_PARTNER_ID)
+    print("path:", path)
+    print("timestamp:", timestamp)
+    print("base_string:", base_string)
+    print("key used:", SHOPEE_PARTNER_KEY)   # ต้องเป็น shpk_xxx
+    print("sign:", sign)
     return resp.json()
-
 
 
 def refresh_token(refresh_token_value, shop_id):
