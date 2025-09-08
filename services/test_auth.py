@@ -76,10 +76,13 @@ def get_authorization_url():
 def get_token(code, shop_id):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-    base_string = f"{int(SHOPEE_PARTNER_ID)}{path}{timestamp}"
-    # Sandbox: ใช้ partner_key ไม่ใช่ partner_secret
-    sign = generate_sign(base_string, use_secret=False)  
-    
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_ID.encode("utf-8"),
+        base_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
     url = (
         f"{BASE_URL}{path}"
         f"?partner_id={int(SHOPEE_PARTNER_ID)}"
