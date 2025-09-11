@@ -540,6 +540,8 @@ def app():
             }
 
             # --- Layout KPI Cards ---
+             # --- Layout KPI Cards ---
+              # --- Layout KPI Cards ---
             cols = st.columns(len(data))
             for col, (metric, info) in zip(cols, data.items()):
                 with col:
