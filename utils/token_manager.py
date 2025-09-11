@@ -4,6 +4,7 @@ import os
 import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
+import streamlit as st
 
 # ===== Google Sheet Setup =====
 scope = [
@@ -13,7 +14,7 @@ scope = [
 
 def get_gspread_client():
     """คืนค่า gspread client โดย auto-detect ระหว่างไฟล์ (Render) และ st.secrets (Streamlit)"""
-    key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/service_account.json"
+    key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
     creds = None
 
     if os.path.exists(key_path):
