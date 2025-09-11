@@ -2,26 +2,27 @@
 # getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from services.test_auth import get_token, save_token,call_shopee_api
+from services.shopee_auth import get_token, save_token,call_shopee_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments, get_page_insights, get_post_insights
 app = FastAPI(title="Fujika Dashboard API")
 
-app = FastAPI()
-
 @app.get("/")
 async def root():
     return {"message": "Service is running"}
-@app.get("/shopee/callback")
-async def shopee_callback(code: str, shop_id: int):
+@app.api_route("/shopee/callback", methods=["GET", "HEAD"])
+async def shopee_callback(code: str = None, shop_id: int = None):
+    if not code or not shop_id:
+        return {"message": "Shopee callback ping"}
+
     print("Authorization Code:", code)
     print("Shop ID:", shop_id)
 
-    # 1. แลก token จริง
+    # 1. แลก token จริงจาก Shopee
     token_response = get_token(code, shop_id)
 
-    # 2. ถ้ามี access_token จริง → ลองเรียก shop/get
+    # 2. ถ้ามี access_token → เรียก shop/get
     shop_info = {}
     if "access_token" in token_response:
         shop_info = call_shopee_api(
@@ -37,6 +38,7 @@ async def shopee_callback(code: str, shop_id: int):
         "token_response": token_response,
         "shop_info": shop_info
     }
+
 # @app.get("/shopee/callback")
 # async def shopee_callback(code: str, shop_id: int):
 #     # 1. Log ค่าที่ได้
@@ -52,7 +54,6 @@ async def shopee_callback(code: str, shop_id: int):
 #         "shop_id": shop_id,
 #         "token_response": token_response
 #     }
-
 
 # ----- Facebook routes -----
 @app.get("/api/facebook/pages")
@@ -70,35 +71,4 @@ async def comments(post_id: str, page_token: str = Query(...)):
 @app.get("/api/facebook/insights/page/{page_id}")
 async def page_insights(page_id: str, page_token: str = Query(...)):
     return JSONResponse(content=get_page_insights(page_id, page_token))
-
-# @app.get("/shopee/callback")
-# async def shopee_callback(shop_id: str, code: str | None = Query(default=None)):
-#     try:
-#         if code is None:
-#             return {"status": "error", "detail": "Missing code parameter"}
-
-#         tokens = get_token(code, shop_id)
-
-#         if not tokens:
-#             return {"status": "error", "detail": "get_token returned None"}
-
-#         if "access_token" in tokens:
-#             save_token(
-#                 shop_id,
-#                 tokens["access_token"],
-#                 tokens["refresh_token"],
-#                 tokens["expires_in"],
-#                 tokens["refresh_expires_in"]
-#             )
-#             return {"status": "ok", "shop_id": shop_id}
-#         else:
-#             return {"status": "error", "detail": tokens}
-
-#     except Exception as e:
-#         import traceback
-#         return {
-#             "status": "exception",
-#             "error": str(e),
-#             "trace": traceback.format_exc()
-#         }
 

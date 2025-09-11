@@ -27,5 +27,5 @@ params = {
 # 🚀 เรียก API
 response = call_shopee_api(path, access_token, shop_id, params)
 
-print("Shopee Sandbox Response:")
+
 print(response)

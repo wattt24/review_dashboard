@@ -3,7 +3,10 @@ import unicodedata
 import hmac
 import hashlib
 import time
-
+import requests
+import os
+from datetime import datetime
+from utils.config import FACEBOOK_APP_SECRET,FACEBOOK_APP_ID
 def sanitize_shopee_secret(secret_raw: str) -> str:
     """
     คืนค่าเป็น hex string ที่สะอาด (lowercase, ไม่มี whitespace/zero-width/BOM)
@@ -50,7 +53,7 @@ def shopee_sign_example(partner_id: int, path: str, key_hex: str, ts=None) -> st
 if __name__ == "__main__":
     # ---- วาง Partner Key ของคุณตรงนี้ ----
     secret_raw = """
-    4d584f7250797a6f576d4a7854554261735a6c4962666f41494445796670
+    746161577650576364596f5657646c596b49705772546b4a52446a416b42
     """
 
     try:
@@ -70,3 +73,54 @@ if __name__ == "__main__":
 
     except ValueError as e:
         print(str(e))
+
+
+FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID")
+FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET") 
+
+def check_token_expiry(access_token: str):
+    """
+    ตรวจสอบ Access Token ของ Facebook ว่าเป็น Long-Lived หรือ Short-Lived
+    และบอกวันหมดอายุ
+    """
+    # App Access Token (APP_ID|APP_SECRET)
+    app_access_token = f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"
+
+    url = "https://graph.facebook.com/debug_token"
+    params = {
+        "input_token": access_token,
+        "access_token": app_access_token
+    }
+
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    if "data" not in data:
+        return {"error": data}
+
+    token_info = data["data"]
+    result = {
+        "app_id": token_info.get("app_id"),
+        "type": token_info.get("type"),
+        "application": token_info.get("application"),
+        "is_valid": token_info.get("is_valid"),
+        "scopes": token_info.get("scopes"),
+    }
+
+    # วันหมดอายุ
+    expires_at = token_info.get("expires_at")
+    if expires_at:
+        expiry_date = datetime.fromtimestamp(expires_at)
+        result["expires_at"] = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
+        
+        # เช็คว่า Long-Lived หรือ Short-Lived
+        days_left = (expiry_date - datetime.now()).days
+        if days_left > 7:  # ถ้าเกิน 7 วัน ถือว่า Long-Lived
+            result["token_type"] = "Long-Lived"
+        else:
+            result["token_type"] = "Short-Lived"
+    else:
+        result["expires_at"] = "ไม่พบวันหมดอายุ"
+        result["token_type"] = "Unknown"
+
+    return result

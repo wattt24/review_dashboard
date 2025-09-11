@@ -2,7 +2,6 @@
 import requests
 from requests.auth import HTTPBasicAuth
 import os
-from urllib.parse import urlencode
 from dotenv import load_dotenv
 
 # โหลด .env
