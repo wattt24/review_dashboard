@@ -6,17 +6,33 @@ from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ===== Google Sheet Setup =====
-key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
 
-if not os.path.exists(key_path):
-    raise FileNotFoundError(f"Credential file not found at {key_path}")
+def get_gspread_client():
+    """คืนค่า gspread client โดย auto-detect ระหว่างไฟล์ (Render) และ st.secrets (Streamlit)"""
+    key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/service_account.json"
+    creds = None
 
-credentials = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
-client = gspread.authorize(credentials)
+    if os.path.exists(key_path):
+        # ✅ Render/Docker → ใช้ไฟล์ JSON
+        creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+    else:
+        # ✅ Streamlit Cloud → ใช้ st.secrets
+        try:
+            service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(service_account_info), scope)
+        except Exception as e:
+            raise FileNotFoundError(
+                f"❌ ไม่พบ Service Account JSON ทั้งในไฟล์ ({key_path}) และใน st.secrets"
+            ) from e
+
+    return gspread.authorize(creds)
+
+# สร้าง client และเชื่อมต่อ Google Sheet
+client = get_gspread_client()
 sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
 
 # ===== Token Manager =====
