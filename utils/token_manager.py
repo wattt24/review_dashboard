@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ===== Google Sheet Setup =====
-key_path = "/etc/secrets/service_account.json"
+key_path = "/etc/secrets/SERVICE_ACCOUNT_JSON.json"
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
