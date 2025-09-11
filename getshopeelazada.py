@@ -2,10 +2,11 @@
 # getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from services.shopee_auth import get_token, save_token,call_shopee_api
+from services.shopee_auth import get_token,call_shopee_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
-from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments, get_page_insights, get_post_insights
+from utils.token_manager import *
+from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments, get_page_insights
 app = FastAPI(title="Fujika Dashboard API")
 
 @app.get("/")
