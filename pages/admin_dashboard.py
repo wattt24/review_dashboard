@@ -453,7 +453,7 @@ def app():
     
 
             st.sidebar.header("Filter Options")
-            page_id = st.secrets["facebook"]["page_id"]
+            page_id = st.secrets["facebook"]["FACEBOOK_PAGE_IDS"]
             date_range = st.sidebar.date_input("Select Date Range", [datetime(2025,1,1), datetime.today()])
 
             # ---------------- Fetch Facebook Data ----------------
