@@ -10,7 +10,7 @@ USER_TOKEN = os.getenv("FACEBOOK_USER_TOKEN") or st.secrets["facebook"].get("use
 APP_ID = os.getenv("FACEBOOK_APP_ID") or st.secrets["facebook"].get("app_id")
 APP_SECRET = os.getenv("FACEBOOK_APP_SECRET") or st.secrets["facebook"].get("app_secret")
 PAGE_IDS = os.getenv("FACEBOOK_PAGE_IDS", "")
-PAGE_IDS = PAGE_IDS.split(",") if PAGE_IDS else st.secrets["facebook"].get("FACEBOOK_PAGE_IDS", [])
+PAGE_IDS = PAGE_IDS.split(",") if PAGE_IDS else st.secrets["facebook"].get("page_ids", [])
 
 # ===== Token Handler =====
 def get_valid_access_token(platform, account_id, refresh_func):

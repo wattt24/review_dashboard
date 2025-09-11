@@ -453,7 +453,7 @@ def app():
     
 
             st.sidebar.header("Filter Options")
-            page_id = st.secrets["facebook"]["FACEBOOK_PAGE_IDS"]
+            page_id = st.secrets["facebook"][st.secrets("FACEBOOK_PAGE_IDS")]
             date_range = st.sidebar.date_input("Select Date Range", [datetime(2025,1,1), datetime.today()])
 
             # ---------------- Fetch Facebook Data ----------------
@@ -569,11 +569,11 @@ def app():
             st.title("📊 Facebook Pages Dashboard")
 
             # ----- Loop ทุก Page -----
-            for page_id in os.getenv("FACEBOOK_PAGE_IDS"):
+            for page_id in st.secrets("FACEBOOK_PAGE_IDS"):
                 st.header(f"Page ID: {page_id}")
 
                 # ดึง token ของเพจจาก user token
-                pages = get_user_pages(os.getenv("FACEBOOK_USER_TOKEN"))
+                pages = get_user_pages(st.secrets("FACEBOOK_USER_TOKEN"))
                 page = next((p for p in pages if p["id"]==page_id), None)
                 if not page:
                     st.warning(f"ไม่พบเพจ {page_id} หรือ access denied")
