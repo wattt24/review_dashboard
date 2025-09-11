@@ -16,7 +16,8 @@ from api.facebook_graph_api import (
                 get_page_insights,
                 get_page_posts,
                 get_comments,
-                refresh_long_lived_token
+                refresh_long_lived_token,
+                get_page_info
             )
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
@@ -562,6 +563,47 @@ def app():
                     # แสดง Unfollows หากมี
                     if "unfollows" in info:
                         st.caption(f"Unfollows: {info['unfollows']}")
+            st.set_page_config(page_title="Facebook Pages Dashboard", layout="wide")
+            st.title("📊 Facebook Pages Dashboard")
+
+            # ----- Loop ทุก Page -----
+            for page_id in os.getenv("FACEBOOK_PAGE_IDS"):
+                st.header(f"Page ID: {page_id}")
+
+                # ดึง token ของเพจจาก user token
+                pages = get_user_pages(os.getenv("FACEBOOK_USER_TOKEN"))
+                page = next((p for p in pages if p["id"]==page_id), None)
+                if not page:
+                    st.warning(f"ไม่พบเพจ {page_id} หรือ access denied")
+                    continue
+                page_token = page["access_token"]
+
+                # ดึงข้อมูลเพจ
+                page_info = get_page_info(page_id, page_token)
+                st.subheader(f"Page Info: {page_info.get('name')}")
+                st.write(page_info)
+
+                # ดึง Page Insights
+                insights = get_page_insights(page_id, page_token)
+                st.subheader("Page Insights")
+                st.write(insights)
+
+                # ดึง Post ล่าสุด 5 โพสต์
+                posts = get_page_posts(page_id, page_token)
+                st.subheader("Recent Posts")
+                for post in posts:
+                    st.markdown(f"**Post ID:** {post['id']}")
+                    st.write(post.get("message", "No message"))
+                    st.write(f"Created Time: {post['created_time']}")
+                    
+                    # ดึงคอมเมนต์
+                    comments = get_comments(post["id"], page_token)
+                    st.write("Comments:")
+                    if comments:
+                        for c in comments:
+                            st.write(f"- {c['from']['name']}: {c['message']}")
+                    else:
+                        st.write("No comments")           
         # --------------------- 7. LINE OA ---------------------
         with tabs[6]:
             st.header("💬 LINE OA Insights")

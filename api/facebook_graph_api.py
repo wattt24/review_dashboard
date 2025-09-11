@@ -66,6 +66,11 @@ def get_page_posts(page_id, page_token):
     params = {"fields": "id,message,created_time", "access_token": page_token}
     response = requests.get(url, params=params)
     return response.json().get("data", [])
+def get_page_info(page_id, page_token):
+    url = f"https://graph.facebook.com/v18.0/{page_id}"
+    params = {"fields": "id,name,about", "access_token": page_token}
+    response = requests.get(url, params=params)
+    return response.json()
 
 def get_comments(post_id, page_token):
     url = f"https://graph.facebook.com/v18.0/{post_id}/comments"
@@ -149,9 +154,26 @@ def load_facebook_data():
 
         # Posts + Comments
         posts = get_page_posts(page_id, page_token)
-        for post in posts:
-            comments = get_comments(post["id"], page_token)
-            st.write(f"### Post ID: {post['id']}")
-            st.write(post.get("message", "No message"))
-            st.write("Comments:")
-            st.write(comments)
+        for page in pages_to_load:
+            page_id = page["id"]
+            page_token = page["token"]
+
+            # ดึงชื่อเพจ
+            page_info = get_page_info(page_id, page_token)
+            page_name = page_info.get("name", page_id)
+
+            st.write(f"## Page: {page_name} (ID: {page_id})")
+
+            # Page Insights
+            page_insights = get_page_insights(page_id, page_token)
+            st.write("**Page Insights:**")
+            st.write(page_insights)
+
+            # Posts + Comments
+            posts = get_page_posts(page_id, page_token)
+            for post in posts:
+                comments = get_comments(post["id"], page_token)
+                st.write(f"### Post from {page_name} - ID: {post['id']}")
+                st.write(post.get("message", "No message"))
+                st.write("Comments:")
+                st.write(comments)
