@@ -49,14 +49,19 @@ def get_token(code: str, shop_id: int):
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
 
-    if "access_token" in data:
-        token_manager.save_token(
-            "shopee", shop_id,
-            data["access_token"], data["refresh_token"],
-            data["expires_in"], data["refresh_expires_in"]
-        )
+    # ตรวจสอบ error ก่อน
+    if "error" in data:
+        raise ValueError(f"Shopee API Error: {data['error']} - {data.get('message','')}")
+
+    # save token
+    token_manager.save_token(
+        "shopee", shop_id,
+        data["access_token"], data["refresh_token"],
+        data["expires_in"], data["refresh_expires_in"]
+    )
 
     return data
+
 
 # ========== STEP 3: Refresh Token ==========
 def refresh_token(refresh_token_value, shop_id):
