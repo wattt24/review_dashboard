@@ -17,7 +17,7 @@ scope = [
 ]
 
 def get_gspread_client():
-    key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
+    key_path = st.secrets("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
     creds = None
 
     if os.path.exists(key_path):
