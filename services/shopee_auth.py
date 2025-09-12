@@ -5,7 +5,7 @@ from utils.config import (
     SHOPEE_PARTNER_SECRET,
     SHOPEE_REDIRECT_URI
 )
-from utils.token_manager import *
+from utils.token_manager import save_token
 
 
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
@@ -58,7 +58,7 @@ def get_token(code: str, shop_id: int):
         )
     print("Shopee token response:", data)
     # save token
-    token_manager.save_token(
+    save_token(
         "shopee", shop_id,
         data["access_token"], 
         data["refresh_token"],
