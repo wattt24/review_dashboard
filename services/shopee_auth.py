@@ -55,11 +55,14 @@ def get_token(code: str, shop_id: int):
         raise ValueError(
             f"Shopee API Error: {data.get('error')} - {data.get('message', '')} | full_response={data}"
         )
+    print("Shopee token response:", data)
     # save token
     token_manager.save_token(
         "shopee", shop_id,
-        data["access_token"], data["refresh_token"],
-        data["expires_in"], data["refresh_expires_in"]
+        data["access_token"], 
+        data["refresh_token"],
+        data.get("expire_in", 0),          # ใช้ expire_in แทน expires_in
+        data.get("refresh_expires_in", 0)  # อาจไม่มี ให้ default=0
     )
 
     return data
