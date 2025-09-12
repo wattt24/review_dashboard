@@ -48,11 +48,13 @@ def get_token(code: str, shop_id: int):
 
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
-
+    print("=== Shopee get_token response ===")
+    print(data)
     # ตรวจสอบ error ก่อน
-    if "error" in data:
-        raise ValueError(f"Shopee API Error: {data['error']} - {data.get('message','')}")
-
+    if data.get("error"):
+        raise ValueError(
+            f"Shopee API Error: {data.get('error')} - {data.get('message', '')} | full_response={data}"
+        )
     # save token
     token_manager.save_token(
         "shopee", shop_id,
