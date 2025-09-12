@@ -3,6 +3,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from services.shopee_auth import get_token,call_shopee_api
+from services.lazada_auth import get_lazada_token, call_lazada_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from utils.token_manager import *
@@ -50,6 +51,42 @@ async def shopee_callback(code: str = None, shop_id: int = None):
         "shop_info": shop_info
     })
 
+@app.api_route("/lazada/callback", methods=["GET", "HEAD"])
+async def lazada_callback(code: str = None, country: str = None):
+    if not code:
+        return {"message": "Lazada callback ping"}
+
+    print("Authorization Code:", code)
+    print("Country:", country)
+
+    # 1. แลก token จริงจาก Lazada
+    token_response = get_lazada_token(code)
+
+    # 2. บันทึก token ลง Google Sheet
+    account_id = token_response.get("account_id") or country  # ใช้ account_id หรือ country แทน
+    save_token(
+        platform="lazada",
+        account_id=account_id,
+        access_token=token_response["access_token"],
+        refresh_token=token_response.get("refresh_token"),
+        expires_in=token_response.get("expires_in"),
+    )
+
+    # 3. auto refresh ถ้าหมดอายุ
+    access_token = auto_refresh_token("lazada", account_id)
+
+    # 4. ตัวอย่างเรียก API lazada (เช่น get seller info)
+    seller_info = call_lazada_api(
+        path="/seller/get",
+        access_token=access_token
+    )
+
+    return JSONResponse({
+        "message": "Lazada callback received and token saved",
+        "account_id": account_id,
+        "token_response": token_response,
+        "seller_info": seller_info
+    })
 # ----- Facebook routes -----
 @app.get("/api/facebook/pages")
 async def pages(user_token: str = Query(...)):
