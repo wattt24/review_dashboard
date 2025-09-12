@@ -5,7 +5,8 @@ from utils.config import (
     SHOPEE_PARTNER_SECRET,
     SHOPEE_REDIRECT_URI
 )
-from utils.token_manager import token_manager
+from utils.token_manager import *
+
 
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
 BASE_URL = "https://partner.shopeemobile.com"
