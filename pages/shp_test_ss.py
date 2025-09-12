@@ -1,7 +1,7 @@
 import streamlit as st
 from api.shopee_api import get_top_selling_items
 from services.shopee_auth import call_shopee_api_auto
-from utils.config import SHOPEE_SHOP_ID
+from utils.config import SS_SHOP_ID
 def app():
     if "role" not in st.session_state or st.session_state["role"] != "shopee_test":
         st.error("⛔ คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
@@ -12,7 +12,7 @@ def app():
     with st.spinner("กำลังดึงข้อมูลจาก Shopee..."):
         try:
             # ดึงสินค้าขายดี
-            top_items = get_top_selling_items(shop_id=SHOPEE_SHOP_ID, limit=top_n)
+            top_items = get_top_selling_items(shop_id=SS_SHOP_ID, limit=top_n)
 
             for idx, item in enumerate(top_items, start=1):
                 st.subheader(f"{idx}. {item['name']}")
