@@ -5,8 +5,8 @@ import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 import streamlit as st
-from services.shopee_auth import refresh_token as shopee_refresh_token
-from services.lazada_auth import refresh_token as lazada_refresh_token
+
+
 # Facebook ใช้ long-lived token แทน refresh_token
 # สามารถเพิ่ม API สำหรับ refresh ได้ถ้าจำเป็น
 
@@ -90,6 +90,7 @@ def auto_refresh_token(platform, account_id):
     # หมดอายุ → refresh token ตาม platform
     try:
         if platform == "shopee":
+            from services.shopee_auth import refresh_token as shopee_refresh_token
             new_data = shopee_refresh_token(token_data["refresh_token"], account_id)
             save_token(platform, account_id,
                        new_data["access_token"],
@@ -99,6 +100,7 @@ def auto_refresh_token(platform, account_id):
             return new_data["access_token"]
 
         elif platform == "lazada":
+            from services.lazada_auth import lazada_refresh_token as lazada_refresh_token
             new_data = lazada_refresh_token(token_data["refresh_token"], account_id)
             save_token(platform, account_id,
                        new_data["access_token"],

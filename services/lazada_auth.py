@@ -61,7 +61,7 @@ def get_lazada_token(code: str, country: str = "th"):
     return data
 
 
-def refresh_lazada_token(refresh_token: str, country: str = "th"):
+def lazada_refresh_token(refresh_token: str, country: str = "th"):
     """
     รีเฟรช Access Token จาก Refresh Token
     """
