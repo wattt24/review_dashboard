@@ -1,4 +1,4 @@
-# getshopeelazada.py
+
 # getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
@@ -23,38 +23,32 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     # 1. แลก token จริงจาก Shopee
     token_response = get_token(code, shop_id)
 
-    # 2. ถ้ามี access_token → เรียก shop/get
-    shop_info = {}
-    if "access_token" in token_response:
-        shop_info = call_shopee_api(
-            path="/api/v2/shop/get",
-            shop_id=shop_id,
-            access_token=token_response["access_token"]
-        )
+    # 2. บันทึก token ลง Google Sheet
+    save_token(
+        platform="shopee",
+        account_id=shop_id,
+        access_token=token_response["access_token"],
+        refresh_token=token_response["refresh_token"],
+        expires_in=token_response.get("expire_in"),             # Shopee ใช้ expire_in
+        refresh_expires_in=token_response.get("refresh_expires_in")
+    )
 
-    return {
-        "message": "Shopee callback received",
-        "code": code,
+    # 3. เรียก shop/get ด้วย access_token ล่าสุด (auto-refresh ถ้าหมดอายุ)
+    access_token = auto_refresh_token("shopee", shop_id)
+
+    # เรียก API ด้วย access_token ล่าสุด
+    shop_info = call_shopee_api(
+        path="/api/v2/shop/get",
+        shop_id=shop_id,
+        access_token=access_token
+    )
+
+    return JSONResponse({
+        "message": "Shopee callback received and token saved",
         "shop_id": shop_id,
         "token_response": token_response,
         "shop_info": shop_info
-    }
-
-# @app.get("/shopee/callback")
-# async def shopee_callback(code: str, shop_id: int):
-#     # 1. Log ค่าที่ได้
-#     print("Authorization Code:", code)
-#     print("Shop ID:", shop_id)
-
-#     # 2. เรียก get_token เพื่อแลก access_token
-#     token_response = get_token(code, shop_id)
-
-#     return {
-#         "message": "Shopee callback received",
-#         "code": code,
-#         "shop_id": shop_id,
-#         "token_response": token_response
-#     }
+    })
 
 # ----- Facebook routes -----
 @app.get("/api/facebook/pages")

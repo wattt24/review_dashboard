@@ -1,10 +1,14 @@
-# เอาไว้จัดการ Google Sheet เป็นศูนย์กลาง token ของทุกแพลตฟอร์ม (Shopee, Lazada, Facebook ฯลฯ)
+# เอาไว้เก็บลง Google Sheet เป็นศูนย์กลาง token ของทุกแพลตฟอร์ม (Shopee, Lazada, Facebook ฯลฯ) 
 # utils/token_manager.py
 import os
 import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 import streamlit as st
+from services.shopee_auth import refresh_token as shopee_refresh_token
+from services.lazada_auth import refresh_token as lazada_refresh_token
+# Facebook ใช้ long-lived token แทน refresh_token
+# สามารถเพิ่ม API สำหรับ refresh ได้ถ้าจำเป็น
 
 # ===== Google Sheet Setup =====
 scope = [
@@ -13,39 +17,31 @@ scope = [
 ]
 
 def get_gspread_client():
-    """คืนค่า gspread client โดย auto-detect ระหว่างไฟล์ (Render) และ st.secrets (Streamlit)"""
     key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
     creds = None
 
     if os.path.exists(key_path):
-        # ✅ Render/Docker → ใช้ไฟล์ JSON
         creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
     else:
-        # ✅ Streamlit Cloud → ใช้ st.secrets
         try:
             service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
             creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(service_account_info), scope)
         except Exception as e:
-            raise FileNotFoundError(
-                f"❌ ไม่พบ Service Account JSON ทั้งในไฟล์ ({key_path}) และใน st.secrets"
-            ) from e
+            raise FileNotFoundError(f"❌ ไม่พบ Service Account JSON") from e
 
     return gspread.authorize(creds)
 
-# สร้าง client และเชื่อมต่อ Google Sheet
 client = get_gspread_client()
 sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
 
 # ===== Token Manager =====
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
-    """บันทึกหรืออัปเดต token ลง Google Sheet"""
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
 
     try:
-        # หา row เดิมจาก account_id + platform
         records = sheet.get_all_records()
-        for idx, record in enumerate(records, start=2):  # row 2 เป็นต้นไป (row1 header)
+        for idx, record in enumerate(records, start=2):
             if record["platform"] == platform and str(record["account_id"]) == str(account_id):
                 sheet.update(f"A{idx}:G{idx}", [[
                     platform, account_id, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
@@ -62,7 +58,6 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
 
 
 def get_latest_token(platform, account_id):
-    """ดึง token ล่าสุดของ platform + account_id"""
     try:
         records = sheet.get_all_records()
         for record in records:
@@ -75,5 +70,47 @@ def get_latest_token(platform, account_id):
                 }
     except Exception as e:
         print("❌ get_latest_token error:", str(e))
-
     return None
+
+
+# ===== Auto-refresh token =====
+def auto_refresh_token(platform, account_id):
+    token_data = get_latest_token(platform, account_id)
+    if not token_data:
+        print(f"❌ No token found for {platform}:{account_id}")
+        return None
+
+    expired_at = token_data.get("expired_at")
+    if expired_at:
+        expired_at_dt = datetime.fromisoformat(expired_at)
+        if expired_at_dt > datetime.now():
+            # ยังไม่หมดอายุ
+            return token_data["access_token"]
+
+    # หมดอายุ → refresh token ตาม platform
+    try:
+        if platform == "shopee":
+            new_data = shopee_refresh_token(token_data["refresh_token"], account_id)
+            save_token(platform, account_id,
+                       new_data["access_token"],
+                       new_data["refresh_token"],
+                       new_data.get("expire_in", 0),
+                       new_data.get("refresh_expires_in", 0))
+            return new_data["access_token"]
+
+        elif platform == "lazada":
+            new_data = lazada_refresh_token(token_data["refresh_token"], account_id)
+            save_token(platform, account_id,
+                       new_data["access_token"],
+                       new_data["refresh_token"],
+                       new_data.get("expires_in", 0),
+                       new_data.get("refresh_expires_in", 0))
+            return new_data["access_token"]
+
+        else:
+            print(f"❌ Auto-refresh not implemented for {platform}")
+            return token_data["access_token"]
+
+    except Exception as e:
+        print(f"❌ Auto-refresh failed for {platform}:{account_id} - {str(e)}")
+        return token_data["access_token"]
