@@ -5,8 +5,7 @@ from utils.config import (
     SHOPEE_PARTNER_SECRET,
     SHOPEE_REDIRECT_URI
 )
-from utils.token_manager import save_token
-
+from utils.token_manager import save_token,auto_refresh_token
 
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
 BASE_URL = "https://partner.shopeemobile.com"
@@ -100,3 +99,11 @@ def call_shopee_api(path, access_token, shop_id, params=None):
     )
     resp = requests.get(url, params=params, timeout=30)
     return resp.json()
+# ====== Wrapper สำหรับเรียก Shopee API แบบอัตโนมัติ  ======
+def call_shopee_api_auto(path, shop_id, params=None):
+    # ดึง access_token และต่ออายุให้อัตโนมัติ
+    access_token = auto_refresh_token("shopee", shop_id)
+
+    from .shopee_auth import call_shopee_api
+    resp = call_shopee_api(path, access_token, shop_id, params)
+    return resp
