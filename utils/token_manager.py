@@ -17,7 +17,7 @@ scope = [
 ]
 
 def get_gspread_client():
-    key_path = st.secrets("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
+    key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
     creds = None
 
     if os.path.exists(key_path):
@@ -32,7 +32,7 @@ def get_gspread_client():
     return gspread.authorize(creds)
 
 client = get_gspread_client()
-sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"]).sheet1
+sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
 
 # ===== Token Manager =====
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
