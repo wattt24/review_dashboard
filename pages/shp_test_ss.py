@@ -25,7 +25,7 @@ def app():
                     "pagination_offset": 0,
                     "pagination_entries_per_page": 5
                 }
-                reviews_resp = call_shopee_api_auto(path_review, SHOPEE_SHOP_ID, params_review)
+                reviews_resp = call_shopee_api_auto(path_review, SS_SHOP_ID, params_review)
                 reviews = reviews_resp.get("reviews", [])
                 if reviews:
                     st.write("รีวิวล่าสุด:")
