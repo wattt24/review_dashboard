@@ -14,7 +14,7 @@ def app():
         try:
             # ดึงสินค้าขายดี
             top_items = get_top_selling_items(shop_id=SS_SHOP_ID, limit=top_n)
-
+            st.write("Debug top_items:", top_items) 
             for idx, item in enumerate(top_items, start=1):
                 st.subheader(f"{idx}. {item['name']}")
                 st.write(f"ยอดขายรวม: {item.get('historical_sold', 0)}")
