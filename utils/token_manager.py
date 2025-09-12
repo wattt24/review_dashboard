@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 import streamlit as st
 from services.shopee_auth import refresh_token as shopee_refresh_token
-from services.lazada_auth import refresh_token as lazada_refresh_token
 # Facebook ใช้ long-lived token แทน refresh_token
 # สามารถเพิ่ม API สำหรับ refresh ได้ถ้าจำเป็น
 
