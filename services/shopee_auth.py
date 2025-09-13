@@ -21,6 +21,7 @@ def generate_sign(path, timestamp, extra_string=""):
 
 # ========== STEP 1: Authorization URL ==========
 def get_authorization_url():
+    
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
     sign = generate_sign(path, timestamp, SHOPEE_REDIRECT_URI)

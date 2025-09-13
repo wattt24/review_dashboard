@@ -75,6 +75,7 @@ def get_latest_token(platform, account_id):
 
 # ===== Auto-refresh token =====
 def auto_refresh_token(platform, account_id):
+    print(f"[{datetime.now().isoformat()}] ⚡ Checking token for {platform}:{account_id}")
     token_data = get_latest_token(platform, account_id)
     if not token_data:
         print(f"❌ No token found for {platform}:{account_id}")
@@ -97,6 +98,7 @@ def auto_refresh_token(platform, account_id):
                        new_data["refresh_token"],
                        new_data.get("expire_in", 0),
                        new_data.get("refresh_expires_in", 0))
+            print(f"[{datetime.now().isoformat()}] ✅ Shopee token refreshed")
             return new_data["access_token"]
 
         elif platform == "lazada":
