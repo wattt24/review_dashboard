@@ -121,7 +121,7 @@ def call_shopee_api_auto(path, shop_id, params=None):
         )
 
     # เรียก API ครั้งแรก
-    resp = call_shopee_api("/api/v2/shop/get_shop_info", shop_id)
+    resp = call_shopee_api("/api/v2/shop/get_shop_info", access_token, shop_id)
 
     # ถ้า Shopee แจ้งว่า token หมดอายุ (error code 10008) — ลอง refresh อีกครั้งแล้ว retry หนึ่งรอบ
     if resp and resp.get("error") == 10008:
@@ -129,6 +129,6 @@ def call_shopee_api_auto(path, shop_id, params=None):
         access_token = auto_refresh_token("shopee", shop_id)
         if not access_token:
             raise RuntimeError("❌ ไม่สามารถต่ออายุ access_token ได้ — กรุณา authorize ใหม่ตามขั้นตอน")
-        resp = call_shopee_api("/api/v2/shop/get_shop_info", shop_id)
+        resp = call_shopee_api("/api/v2/shop/get_shop_info", access_token, shop_id)
 
     return resp
