@@ -1,10 +1,10 @@
 import streamlit as st
 from api.shopee_api import get_top_selling_items
 from services.shopee_auth import call_shopee_api_auto
-from utils.config import SS_SHOP_ID # FUJIKA Official shop_id
+ # FUJIKA Official shop_id
 TOP_N_ITEMS = 5         # จำนวนสินค้าตัวอย่างที่จะแสดง
 REVIEWS_PER_ITEM = 5    # รีวิวล่าสุดต่อสินค้า
-
+SS_SHOP_ID = 57360480
 def app():
     if "role" not in st.session_state or st.session_state["role"] != "shopee_test":
         st.error("⛔ คุณไม่มีสิทธิ์เข้าถึงหน้านี้")
