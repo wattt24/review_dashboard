@@ -2,7 +2,7 @@
 # getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from services.shopee_auth import get_token,check_shop_type,call_shopee_api_auto
+from services.shopee_auth import shopee_get_authorization_url,get_token,check_shop_type,call_shopee_api_auto
 from services.lazada_auth import get_lazada_token, call_lazada_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
@@ -13,6 +13,13 @@ app = FastAPI(title="Fujika Dashboard API")
 @app.get("/")
 async def root():
     return {"message": "Service is running"}
+@app.get("/shopee/authorize")
+async def shopee_authorize():
+    """
+    คืน URL ให้ร้านค้ากด authorize
+    """
+    url = shopee_get_authorization_url()
+    return {"authorization_url": url}
 @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
 async def shopee_callback(code: str = None, shop_id: int = None):
     if not code or not shop_id:

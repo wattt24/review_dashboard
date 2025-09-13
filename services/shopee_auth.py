@@ -6,38 +6,44 @@ from utils.config import (
     SHOPEE_REDIRECT_URI
 )
 from utils.token_manager import save_token,auto_refresh_token
+import urllib.parse
+redirect = urllib.parse.quote(SHOPEE_REDIRECT_URI)
 
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
 BASE_URL = "https://partner.shopeemobile.com"
 
 # ========== SIGN GENERATOR ==========
-def generate_sign(path, timestamp, extra_string=""):
+def shopee_generate_sign(path, timestamp, extra_string=""):
+    """
+    สร้าง HMAC SHA256 sign ตาม Shopee API
+    """
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{extra_string}"
     return hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
-
 # ========== STEP 1: Authorization URL ==========
-def get_authorization_url():
+def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
-    sign = generate_sign(path, timestamp, SHOPEE_REDIRECT_URI)
+    redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI)
+    sign = shopee_generate_sign(path, timestamp, SHOPEE_REDIRECT_URI)
 
-    return (
+    url = (
         f"{BASE_URL}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
         f"&timestamp={timestamp}"
         f"&sign={sign}"
-        f"&redirect={SHOPEE_REDIRECT_URI}"
+        f"&redirect={redirect_encoded}"
     )
+    return url
 
 # ========== STEP 2: Get Token ==========
 def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-    sign = generate_sign(path, timestamp)
+    sign = shopee_generate_sign(path, timestamp)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
@@ -72,7 +78,7 @@ def get_token(code: str, shop_id: int):
 def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
-    sign = generate_sign(path, timestamp)
+    sign = shopee_generate_sign(path, timestamp)
 
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
     payload = {
@@ -87,7 +93,7 @@ def refresh_token(refresh_token_value, shop_id):
 # ========== STEP 4: Call Shopee API ==========
 def call_shopee_api(path, access_token, shop_id, params=None):
     timestamp = int(time.time())
-    sign = generate_sign(path, timestamp, access_token + str(shop_id))
+    sign = shopee_generate_sign(path, timestamp, access_token + str(shop_id))
 
     url = (
         f"{BASE_URL}{path}"
@@ -112,7 +118,7 @@ def call_shopee_api_auto(path, shop_id, params=None):
     if not access_token:
         # ให้ผู้ใช้ไป authorize ก่อน (ครั้งแรกต้องไปกดหน้า authorize ของ Shopee)
         try:
-            auth_url = get_authorization_url()
+            auth_url = shopee_get_authorization_url()
         except Exception:
             auth_url = "ไม่สามารถสร้าง authorization url ได้ — ตรวจสอบ config"
         raise RuntimeError(
