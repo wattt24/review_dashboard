@@ -82,13 +82,15 @@ def auto_refresh_token(platform, account_id):
         return None
 
     expired_at = token_data.get("expired_at")
+    expired = True
     if expired_at:
         expired_at_dt = datetime.fromisoformat(expired_at)
-        if expired_at_dt > datetime.now():
-            # ยังไม่หมดอายุ
-            return token_data["access_token"]
+        expired = expired_at_dt <= datetime.now()
 
-    # หมดอายุ → refresh token ตาม platform
+    if not expired:
+        return token_data["access_token"]
+
+    # หมดอายุ → refresh
     try:
         if platform == "shopee":
             from services.shopee_auth import refresh_token as shopee_refresh_token
@@ -109,6 +111,18 @@ def auto_refresh_token(platform, account_id):
                        new_data["refresh_token"],
                        new_data.get("expires_in", 0),
                        new_data.get("refresh_expires_in", 0))
+            print(f"[{datetime.now().isoformat()}] ✅ Lazada token refreshed")
+            return new_data["access_token"]
+
+        elif platform in ["facebook", "facebook_page"]:
+            from api.facebook_graph_api import refresh_facebook_token
+            new_data = refresh_facebook_token(token_data["access_token"])
+            
+            save_token(platform, account_id,
+                       new_data["access_token"],
+                       "",  # ไม่มี refresh token
+                       new_data.get("expires_in", 0))
+            print(f"[{datetime.now().isoformat()}] ✅ Facebook token refreshed")
             return new_data["access_token"]
 
         else:

@@ -177,3 +177,19 @@ def load_facebook_data():
                 st.write(post.get("message", "No message"))
                 st.write("Comments:")
                 st.write(comments)
+
+def refresh_facebook_token(long_lived_token):
+    """
+    ต่ออายุ Long-Lived User Token (60 วัน)
+    """
+    url = "https://graph.facebook.com/v17.0/oauth/access_token"
+    params = {
+        "grant_type": "fb_exchange_token",
+        "client_id": APP_ID,
+        "client_secret": APP_SECRET,
+        "fb_exchange_token": long_lived_token
+    }
+    resp = requests.get(url, params=params).json()
+    access_token = resp.get("access_token")
+    expires_in = resp.get("expires_in", 0)  # วินาที
+    return {"access_token": access_token, "expires_in": expires_in}
