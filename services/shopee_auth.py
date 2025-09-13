@@ -14,21 +14,23 @@ BASE_URL = "https://partner.shopeemobile.com"
 
 # ========== SIGN GENERATOR ==========
 def shopee_generate_sign(path, timestamp, extra_string=""):
-    """
-    สร้าง HMAC SHA256 sign ตาม Shopee API
-    """
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{extra_string}"
     return hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
-# ========== STEP 1: Authorization URL ==========
+
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
-    redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI)
-    sign = shopee_generate_sign(path, timestamp, SHOPEE_REDIRECT_URI)
+
+    # 1️⃣ ใช้ root domain สำหรับ sign ตามที่ Shopee อนุญาต
+    redirect_for_sign = SHOPEE_REDIRECT_URI  # ตัวอย่าง: "https://review-dashboard-project.onrender.com"
+    sign = shopee_generate_sign(path, timestamp, redirect_for_sign)
+
+    # 2️⃣ encode callback endpoint /shopee/callback สำหรับ query param
+    redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI + "/shopee/callback")
 
     url = (
         f"{BASE_URL}{path}"
@@ -38,7 +40,6 @@ def shopee_get_authorization_url():
         f"&redirect={redirect_encoded}"
     )
     return url
-
 # ========== STEP 2: Get Token ==========
 def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
