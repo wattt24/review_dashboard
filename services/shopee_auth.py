@@ -27,12 +27,9 @@ def shopee_get_authorization_url():
 
     # ✅ ใช้ redirect URL แบบเต็ม (callback endpoint) ทั้ง sign และ URL query
     redirect_full = SHOPEE_REDIRECT_URI + "shopee/callback"
-
+    redirect_encoded = urllib.parse.quote(redirect_full, safe='')
     # สร้าง sign
     sign = shopee_generate_sign(path, timestamp, redirect_full)
-
-    # encode สำหรับ URL query
-    redirect_encoded = urllib.parse.quote(redirect_full)
 
     url = (
         f"{BASE_URL}{path}"
@@ -41,7 +38,6 @@ def shopee_get_authorization_url():
         f"&sign={sign}"
         f"&redirect={redirect_encoded}"
     )
-    return url
 # ========== STEP 2: Get Token ==========
 def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
