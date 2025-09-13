@@ -19,25 +19,26 @@ import time, hmac, hashlib
 import urllib.parse
 import time, hmac, hashlib
 
-def shopee_generate_sign(path, timestamp, extra_string=""):
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{extra_string}"
+def shopee_generate_sign(path, timestamp, body=""):
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body}"
     return hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
+
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
 
-    # ✅ ต่อ callback path เข้าไป
+    # ✅ full redirect url (callback ของคุณ)
     redirect_full = SHOPEE_REDIRECT_URI.rstrip("/") + "/shopee/callback"
 
-    # สร้าง sign ใช้ raw redirect_full
-    sign = shopee_generate_sign(path, timestamp, redirect_full)
+    # ❌ ไม่ต้องใส่ redirect_full ใน base_string
+    sign = shopee_generate_sign(path, timestamp)
 
-    # encode ทุกตัวให้ Shopee รับได้
+    # ✅ encode redirect URI ให้ Shopee รับได้
     redirect_encoded = urllib.parse.quote(redirect_full, safe='')
 
     url = (
