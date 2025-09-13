@@ -1,6 +1,6 @@
 import streamlit as st
 from api.shopee_api import get_top_selling_items
-from services.shopee_auth import call_shopee_api_auto
+from services.shopee_auth import call_shopee_api_auto,check_shop_type
  # FUJIKA Official shop_id
 TOP_N_ITEMS = 5         # จำนวนสินค้าตัวอย่างที่จะแสดง
 REVIEWS_PER_ITEM = 5    # รีวิวล่าสุดต่อสินค้า
@@ -61,3 +61,10 @@ def app():
 
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาด: {e}")
+        
+        shop_info = check_shop_type(SS_SHOP_ID)
+        st.write("Shop info:", shop_info)
+        if shop_info.get("is_sip"):
+            st.success("ร้านนี้เป็น Shopee Partner")
+        else:
+            st.info("ร้านนี้ไม่ใช่ Shopee Partner")

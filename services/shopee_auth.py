@@ -132,3 +132,24 @@ def call_shopee_api_auto(path, shop_id, params=None):
         resp = call_shopee_api("/api/v2/shop/get_shop_info", access_token, shop_id)
 
     return resp
+def check_shop_type(shop_id: int):
+    """
+    ตรวจสอบประเภทร้านและสถานะร้าน
+    คืนค่า dict เช่น:
+    {
+        "shop_name": "FUJIKA Official",
+        "is_sip": False,
+        "status": "NORMAL",
+        "shop_fulfillment_flag": "Others"
+    }
+    """
+    try:
+        shop_info = call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
+        return {
+            "shop_name": shop_info.get("shop_name"),
+            "is_sip": shop_info.get("is_sip"),
+            "status": shop_info.get("status"),
+            "shop_fulfillment_flag": shop_info.get("shop_fulfillment_flag"),
+        }
+    except Exception as e:
+        return {"error": str(e)}

@@ -2,7 +2,7 @@
 # getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from services.shopee_auth import get_token,call_shopee_api,call_shopee_api_auto
+from services.shopee_auth import get_token,check_shop_type,call_shopee_api_auto
 from services.lazada_auth import get_lazada_token, call_lazada_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
@@ -50,6 +50,10 @@ async def shopee_callback(code: str = None, shop_id: int = None):
         "shop_info": shop_info
     })
 
+@app.get("/shopee/check_shop")
+async def shopee_check_shop(shop_id: int):
+    info = check_shop_type(shop_id)
+    return info
 
 @app.get("/shopee/shop_info")
 async def shopee_shop_info(shop_id: int):
