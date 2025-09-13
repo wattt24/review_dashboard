@@ -53,8 +53,11 @@ async def shopee_callback(code: str = None, shop_id: int = None):
 
 @app.get("/shopee/shop_info")
 async def shopee_shop_info(shop_id: int):
-    return call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
-
+    try:
+        resp = call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
+        return JSONResponse(resp)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 @app.get("/shopee/products")
 async def shopee_products(shop_id: int, page_size: int = 10):
     return call_shopee_api_auto(
@@ -62,6 +65,10 @@ async def shopee_products(shop_id: int, page_size: int = 10):
         shop_id,
         params={"page_size": page_size}
     )
+
+
+
+
 @app.api_route("/lazada/callback", methods=["GET", "HEAD"])
 async def lazada_callback(code: str = None, country: str = None):
     if not code:
