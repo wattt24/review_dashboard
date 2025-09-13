@@ -20,6 +20,7 @@ async def shopee_authorize():
     """
     url = shopee_get_authorization_url()
     return {"authorization_url": url}
+
 @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
 async def shopee_callback(code: str = None, shop_id: int = None):
     if not code or not shop_id:

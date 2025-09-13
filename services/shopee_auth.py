@@ -13,6 +13,9 @@ redirect = urllib.parse.quote(SHOPEE_REDIRECT_URI)
 BASE_URL = "https://partner.shopeemobile.com"
 
 # ========== SIGN GENERATOR ==========
+import urllib.parse
+import time, hmac, hashlib
+
 def shopee_generate_sign(path, timestamp, extra_string=""):
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{extra_string}"
     return hmac.new(
@@ -25,14 +28,14 @@ def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
 
-    # ตรวจสอบ slash ให้เรียบร้อย
+    # redirect full callback endpoint
     redirect_full = SHOPEE_REDIRECT_URI.rstrip("/") + "/shopee/callback"
 
-    # encode ทุกตัว
-    redirect_encoded = urllib.parse.quote(redirect_full, safe='')
-
-    # สร้าง sign (ใช้ raw redirect_full)
+    # ✅ สร้าง sign ใช้ raw redirect_full
     sign = shopee_generate_sign(path, timestamp, redirect_full)
+
+    # ✅ encode ทุกตัว (รวม : /) ให้ Shopee รับได้
+    redirect_encoded = urllib.parse.quote(redirect_full, safe='')
 
     url = (
         f"{BASE_URL}{path}"
@@ -42,6 +45,7 @@ def shopee_get_authorization_url():
         f"&redirect={redirect_encoded}"
     )
     return url
+
 # ========== STEP 2: Get Token ==========
 def get_token(code: str, shop_id: int):
     path = "/api/v2/auth/token/get"
