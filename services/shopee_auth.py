@@ -21,7 +21,6 @@ def generate_sign(path, timestamp, extra_string=""):
 
 # ========== STEP 1: Authorization URL ==========
 def get_authorization_url():
-    
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
     sign = generate_sign(path, timestamp, SHOPEE_REDIRECT_URI)
@@ -103,44 +102,33 @@ def call_shopee_api(path, access_token, shop_id, params=None):
 # ====== Wrapper สำหรับเรียก Shopee API แบบอัตโนมัติ  ======
 def call_shopee_api_auto(path, shop_id, params=None):
     """
-    Wrapper: ดึง/ต่ออายุ access_token อัตโนมัติ จาก Google Sheet แล้วเรียก Shopee API
-    ตรวจสอบกรณี shop_id เป็น None และกรณียังไม่มี token (ให้ลิงก์ authorize)
+    Wrapper: ดึง/ต่ออายุ access_token อัตโนมัติจาก Google Sheet แล้วเรียก Shopee API
+    จะ raise error ที่อ่านง่ายถ้าไม่มี token (กรณีครั้งแรกยังไม่ได้ authorize)
     """
-    # ตรวจสอบ shop_id
-    if not shop_id:
-        raise RuntimeError(
-            "❌ shop_id ไม่ถูกต้อง (None). กำหนด SHOPEE_SHOP_ID ใน utils.config หรือส่ง shop_id เป็นพารามิเตอร์"
-        )
-
-    # ดึง access_token (auto refresh ถาจำเป็น) จาก token_manager
+    # ดึง token (และต่ออายุถ้าจำเป็น)
     access_token = auto_refresh_token("shopee", shop_id)
 
-    # ถ้าไม่มี token ให้แนะนำวิธี authorize (ครั้งแรก)
+    # ถ้าไม่มี token ให้บอกทางแก้ชัดเจน
     if not access_token:
-        # พยายามสร้าง authorization URL เพื่อให้ผู้ใช้ไป authorize
+        # ให้ผู้ใช้ไป authorize ก่อน (ครั้งแรกต้องไปกดหน้า authorize ของ Shopee)
         try:
             auth_url = get_authorization_url()
-        except Exception as e:
-            # กรณีสร้าง URL ไม่ได้ (ขาด config) — แจ้งข้อผิดพลาดชัดเจน
-            raise RuntimeError(
-                "❌ ไม่มี access_token และไม่สามารถสร้าง authorization url ได้ — "
-                "ตรวจสอบค่า env/config: SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_REDIRECT_URI\n"
-                f"รายละเอียด error: {e}"
-            )
-        # ถ้าสร้างได้ ให้บอกขั้นตอน
+        except Exception:
+            auth_url = "ไม่สามารถสร้าง authorization url ได้ — ตรวจสอบ config"
         raise RuntimeError(
             f"❌ ไม่มี access_token สำหรับร้าน {shop_id}.\n"
             f"ขั้นตอนแก้ไข: เปิด URL นี้เพื่อ authorize ร้าน แล้วนำ `code` ที่ได้มาเรียก get_token(code, shop_id)\n\n{auth_url}"
         )
 
-    # เรียก API
-    resp = call_shopee_api(path, access_token, shop_id, params)
+    # เรียก API ครั้งแรก
+    resp = call_shopee_api("/api/v2/shop/get_shop_info", shop_id)
 
-    # ถ้า Shopee แจ้งว่า token หมดอายุ (error code 10008) -> พยายาม refresh แล้ว retry หนึ่งครั้ง
+    # ถ้า Shopee แจ้งว่า token หมดอายุ (error code 10008) — ลอง refresh อีกครั้งแล้ว retry หนึ่งรอบ
     if resp and resp.get("error") == 10008:
+        # พยายามต่ออายุอีกครั้ง (auto_refresh_token จะพยายาม refresh)
         access_token = auto_refresh_token("shopee", shop_id)
         if not access_token:
             raise RuntimeError("❌ ไม่สามารถต่ออายุ access_token ได้ — กรุณา authorize ใหม่ตามขั้นตอน")
-        resp = call_shopee_api(path, access_token, shop_id, params)
+        resp = call_shopee_api("/api/v2/shop/get_shop_info", shop_id)
 
     return resp
