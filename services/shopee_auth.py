@@ -26,7 +26,7 @@ def shopee_get_authorization_url():
     timestamp = int(time.time())
 
     # ✅ ใช้ redirect URL แบบเต็ม (callback endpoint) ทั้ง sign และ URL query
-    redirect_full = SHOPEE_REDIRECT_URI + "/shopee/callback"
+    redirect_full = SHOPEE_REDIRECT_URI + "shopee/callback"
 
     # สร้าง sign
     sign = shopee_generate_sign(path, timestamp, redirect_full)
