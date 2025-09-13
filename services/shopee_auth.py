@@ -25,12 +25,14 @@ def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())
 
-    # 1️⃣ ใช้ root domain สำหรับ sign ตามที่ Shopee อนุญาต
-    redirect_for_sign = SHOPEE_REDIRECT_URI  # ตัวอย่าง: "https://review-dashboard-project.onrender.com"
-    sign = shopee_generate_sign(path, timestamp, redirect_for_sign)
+    # ✅ ใช้ redirect URL แบบเต็ม (callback endpoint) ทั้ง sign และ URL query
+    redirect_full = SHOPEE_REDIRECT_URI + "/shopee/callback"
 
-    # 2️⃣ encode callback endpoint /shopee/callback สำหรับ query param
-    redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI + "/shopee/callback")
+    # สร้าง sign
+    sign = shopee_generate_sign(path, timestamp, redirect_full)
+
+    # encode สำหรับ URL query
+    redirect_encoded = urllib.parse.quote(redirect_full)
 
     url = (
         f"{BASE_URL}{path}"
