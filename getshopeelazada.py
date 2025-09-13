@@ -34,26 +34,26 @@ async def shopee_callback(code: str = None, shop_id: int = None):
         refresh_expires_in=token_response.get("refresh_expires_in")
     )
 
-    # 3. เรียก shop/get ด้วย access_token ล่าสุด (auto-refresh ถ้าหมดอายุ)
-    access_token = auto_refresh_token("shopee", shop_id)
+    # 3. ลองเรียก shop_info ด้วย auto-refresh token
+    try:
+        shop_info = call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
+        print("shop_info:", shop_info)
+    except Exception as e:
+        print("Error calling Shopee API:", e)
+        shop_info = {"error": str(e)}
 
-    # เรียก API ด้วย access_token ล่าสุด
-    shop_info = call_shopee_api(
-        path="/api/v2/shop/get",
-        shop_id=shop_id,
-        access_token=access_token
-    )
-
+    # ✅ ไม่ว่าจะ error หรือไม่ ต้อง return ออกไป
     return JSONResponse({
         "message": "Shopee callback received and token saved",
         "shop_id": shop_id,
         "token_response": token_response,
         "shop_info": shop_info
     })
+
+
 @app.get("/shopee/shop_info")
 async def shopee_shop_info(shop_id: int):
     return call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
-
 
 @app.get("/shopee/products")
 async def shopee_products(shop_id: int, page_size: int = 10):
