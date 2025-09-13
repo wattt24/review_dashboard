@@ -8,30 +8,33 @@ def app():
         st.stop()
 
     st.title("🛒 Shopee Test Dashboard")
-    top_n = 10  # จำนวนสินค้าที่ต้องการแสดง
+    top_n = 5
 
     with st.spinner("กำลังดึงข้อมูลจาก Shopee..."):
         try:
-            # ดึงสินค้าขายดี
-            top_items = get_top_selling_items(shop_id=SS_SHOP_ID, limit=top_n)
-            st.write("Debug top_items:", top_items) 
-            for idx, item in enumerate(top_items, start=1):
-                st.subheader(f"{idx}. {item['name']}")
+            items = get_top_selling_items(shop_id=SS_SHOP_ID, limit=top_n)
+            if not items:
+                st.warning("ไม่พบสินค้า (ลองเช็คว่า shop_id ถูกต้องและมีสินค้าไหม)")
+                return
+
+            for idx, item in enumerate(items, start=1):
+                st.subheader(f"{idx}. {item.get('item_name', 'N/A')}")
                 st.write(f"ยอดขายรวม: {item.get('historical_sold', 0)}")
 
-                # ดึงรีวิวล่าสุด 5 รีวิว
-                path_review = "/api/v2/shop/product/review/get"
+                # 3) ดึงรีวิวล่าสุด
+                path_review = "/api/v2/item/get_ratings"
                 params_review = {
                     "item_id": item["item_id"],
-                    "pagination_offset": 0,
-                    "pagination_entries_per_page": 5
+                    "offset": 0,
+                    "page_size": 5
                 }
                 reviews_resp = call_shopee_api_auto(path_review, SS_SHOP_ID, params_review)
-                reviews = reviews_resp.get("reviews", [])
+                reviews = reviews_resp.get("response", {}).get("item_rating", {}).get("rating_list", [])
+
                 if reviews:
                     st.write("รีวิวล่าสุด:")
                     for r in reviews:
-                        st.write(f"- คะแนน: {r.get('rating')}, ความคิดเห็น: {r.get('comment')}")
+                        st.write(f"- ⭐ {r.get('rating_star')} : {r.get('comment')}")
                 else:
                     st.write("ยังไม่มีรีวิว")
 
