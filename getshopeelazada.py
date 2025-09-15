@@ -9,7 +9,8 @@ from fastapi.responses import JSONResponse
 from utils.token_manager import *
 from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments, get_page_insights
 app = FastAPI(title="Fujika Dashboard API")
-
+import requests
+from utils.token_manager import auto_refresh_token
 @app.get("/")
 async def root():
     return {"message": "Service is running"}
@@ -135,3 +136,20 @@ async def comments(post_id: str, page_token: str = Query(...)):
 async def page_insights(page_id: str, page_token: str = Query(...)):
     return JSONResponse(content=get_page_insights(page_id, page_token))
 
+
+page_ids_str = st.secrets.get("FACEBOOK_PAGE_IDS", os.getenv("FACEBOOK_PAGE_IDS", ""))
+page_ids = [pid.strip() for pid in page_ids_str.split(",") if pid.strip()]
+
+for page_id in page_ids:
+    access_token = auto_refresh_token("facebook", account_id=page_id)
+
+    if not access_token:
+        st.error(f"⚠️ Facebook token สำหรับเพจ {page_id} ไม่พร้อมใช้งาน")
+        continue
+
+    # ตัวอย่างเรียก Graph API → ดึง account ที่ user มีสิทธิ์
+    url = "https://graph.facebook.com/v17.0/me/accounts"
+    resp = requests.get(url, params={"access_token": access_token}).json()
+
+    st.subheader(f"เพจ {page_id}")
+    st.json(resp)

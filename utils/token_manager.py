@@ -139,4 +139,5 @@ def auto_refresh_token(platform, account_id):
 
     except Exception as e:
         print(f"❌ Auto-refresh failed for {platform}:{account_id} - {str(e)}")
-        return token_data["access_token"]
+        return None
+
