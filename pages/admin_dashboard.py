@@ -10,15 +10,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-from api.facebook_graph_api import (
-                get_valid_access_token as get_fb_token,
-                get_user_pages,
-                get_page_insights,
-                get_page_posts,
-                get_comments,
-                refresh_long_lived_token,
-                get_page_info
-            )
+
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -456,123 +448,7 @@ def app():
 
             # ----- Sidebar Filter -----
             st.sidebar.header("Filter Options")
-            date_range = st.sidebar.date_input(
-                "Select Date Range", 
-                [datetime(2025,1,1), datetime.today()]
-            )
-
-            # ----- Facebook Pages -----
-            page_ids_str = st.secrets["facebook"]["FACEBOOK_PAGE_IDS"]
-            page_ids = [pid.strip() for pid in page_ids_str.split(",") if pid.strip()]
-            user_token = st.secrets["facebook"]["user_token"]
-
-            for page_id in page_ids:
-                st.header(f"Facebook Page ID: {page_id}")
-
-                # ดึง token ของเพจ
-                pages = get_user_pages(user_token)
-                page = next((p for p in pages if p["id"]==page_id), None)
-                if not page:
-                    st.warning(f"ไม่พบเพจ {page_id} หรือ access denied")
-                    continue
-                page_token = page["access_token"]
-
-                # ข้อมูลเพจ
-                page_info = get_page_info(page_id, page_token)
-                st.subheader(f"Page Info: {page_info.get('name')}")
-                st.write(page_info)
-
-                # Page Insights
-                insights = get_page_insights(page_id, page_token)
-                st.subheader("Page Insights")
-                st.write(insights)
-
-                # Posts + Comments
-                posts = get_page_posts(page_id, page_token)
-                fb_posts = []
-                fb_comments = []
-
-                for post in posts:
-                    post_id = post["id"]
-                    post_message = post.get("message", "")
-                    post_time = post["created_time"]
-                    fb_posts.append({
-                        "id": post_id,
-                        "message": post_message,
-                        "created_time": post_time
-                    })
-
-                    comments = get_comments(post_id, page_token)
-                    for c in comments:
-                        c["post_id"] = post_id
-                    fb_comments.extend(comments)
-
-                fb_posts_df = pd.DataFrame(fb_posts)
-                fb_comments_df = pd.DataFrame(fb_comments)
-
-                # ----- Data Overview -----
-                st.subheader("Data Overview")
-                if not fb_posts_df.empty:
-                    st.write("Facebook Posts Sample:")
-                    st.dataframe(fb_posts_df.head())
-                else:
-                    st.info("No Facebook posts found")
-
-                if not fb_comments_df.empty:
-                    st.write("Facebook Comments Sample:")
-                    st.dataframe(fb_comments_df.head())
-                else:
-                    st.info("No comments found")
-
-                # ----- Engagement Analysis -----
-                st.subheader("Engagement Analysis")
-                if not fb_comments_df.empty:
-                    fb_comments_count = fb_comments_df.groupby("post_id").size().reset_index(name='comment_count')
-                    fig_comments = px.bar(
-                        fb_comments_count, 
-                        x='post_id', y='comment_count', 
-                        title="Facebook Post Engagement (Comments)"
-                    )
-                    st.plotly_chart(fig_comments, use_container_width=True)
-
-                    avg_comments = fb_comments_df.groupby("post_id").size().mean()
-                    st.write(f"💬 Average comments per post: {avg_comments:.1f}")
-                    if avg_comments > 5:
-                        st.success("Strength: High engagement on Facebook posts")
-                    else:
-                        st.warning("Weakness: Low engagement on Facebook posts")
-
-                st.success("Facebook Dashboard loaded successfully!")
-
-                # ----- KPI Mock Data -----
-                data = {
-                    "ยอดดู": {"value": 35000, "change": -6.3, "followers": 2400, "non_followers": 32600, "trend": np.random.randint(30000,40000,7)},
-                    "การเข้าถึง": {"value": 11000, "change": -19.5, "followers": 184, "non_followers": 10816, "trend": np.random.randint(10000,12000,7)},
-                    "การโต้ตอบ": {"value": 114, "change": 31, "followers": 8, "non_followers": 106, "trend": np.random.randint(100,150,7)},
-                    "การติดตาม": {"value": 11, "change": -38.9, "unfollows": 4, "followers": 7, "trend": np.random.randint(5,20,7)},
-                }
-
-                cols = st.columns(len(data))
-                for col, (metric, info) in zip(cols, data.items()):
-                    with col:
-                        st.metric(label=metric, value=info["value"], delta=f"{info['change']}%")
-                        st.line_chart(info["trend"], height=100)
-
-                        if "followers" in info and "non_followers" in info:
-                            st.caption("Followers / Non-followers")
-                            df_pie = pd.DataFrame({
-                                "ประเภท": ["Followers","Non-followers"],
-                                "จำนวน": [info["followers"], info["non_followers"]]
-                            })
-                            pie = alt.Chart(df_pie).mark_arc().encode(
-                                theta=alt.Theta(field="จำนวน", type="quantitative"),
-                                color=alt.Color(field="ประเภท", type="nominal"),
-                                tooltip=["ประเภท","จำนวน"]
-                            ).properties(width=150,height=150)
-                            st.altair_chart(pie)
-
-                        if "unfollows" in info:
-                            st.caption(f"Unfollows: {info['unfollows']}")
+            
         # --------------------- 7. LINE OA ---------------------
         with tabs[6]:
             st.header("💬 LINE OA Insights")
