@@ -1,8 +1,8 @@
 import requests
 from utils.token_manager import save_token
-import os
+import os, streamlit as st
 from datetime import datetime
-
+from utils.token_manager import auto_refresh_token, save_token
 def refresh_facebook_token(current_token, account_id):
     url = "https://graph.facebook.com/v17.0/oauth/access_token"
     params = {
@@ -25,21 +25,35 @@ def refresh_facebook_token(current_token, account_id):
         return data
     else:
         raise Exception(f"Facebook token refresh failed: {data}")
-def get_page_token(user_access_token, page_id, account_id):
-    url = f"https://graph.facebook.com/v17.0/{page_id}"
-    params = {"fields": "access_token", "access_token": user_access_token}
-    resp = requests.get(url, params=params).json()
-    if "access_token" in resp:
-        save_token(
-            platform="facebook_page",
-            account_id=account_id,
-            access_token=resp["access_token"],
-            refresh_token="",
-            expires_in=60*24*60*60  # ปกติ page token ไม่มีวันหมดอายุแบบ short-lived
-        )
-        return resp["access_token"]
-    else:
-        raise Exception(f"Get Page Token failed: {resp}")
+def get_all_page_tokens():
+    """
+    คืนค่า dict {page_id: access_token} สำหรับทุกเพจ (หลาย account)
+    auto-refresh token ถ้าหมดอายุ
+    """
+    page_ids_str = st.secrets.get("FACEBOOK_PAGE_IDS", os.environ.get("FACEBOOK_PAGE_IDS", ""))
+    page_ids = [pid.strip() for pid in page_ids_str.split(",") if pid.strip()]
+    
+    page_tokens = {}
+    
+    for page_id in page_ids:
+        # ดึง token ของ user/account
+        user_token = auto_refresh_token("facebook", account_id=page_id)
+        if not user_token:
+            print(f"⚠️ Facebook token สำหรับเพจ/ยูส {page_id} ไม่พร้อมใช้งาน")
+            continue
+        
+        # ดึง page token ถ้าเป็นเพจ
+        url = f"https://graph.facebook.com/v17.0/{page_id}"
+        params = {"fields": "access_token", "access_token": user_token}
+        resp = requests.get(url, params=params).json()
+        if "access_token" in resp:
+            page_tokens[page_id] = resp["access_token"]
+            # บันทึกลง Google Sheet
+            save_token("facebook_page", page_id, resp["access_token"], "", expires_in=60*24*60*60)
+        else:
+            print(f"❌ ไม่สามารถดึง token ของเพจ {page_id}: {resp}")
+    
+    return page_tokens
 def validate_token(access_token):
     url = "https://graph.facebook.com/debug_token"
     params = {

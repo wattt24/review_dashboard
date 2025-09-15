@@ -7,7 +7,7 @@ from services.lazada_auth import get_lazada_token, call_lazada_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from utils.token_manager import *
-
+from services.facebook_auth import get_all_page_tokens
 app = FastAPI(title="Fujika Dashboard API")
 import requests
 from utils.token_manager import auto_refresh_token
@@ -122,19 +122,10 @@ async def lazada_callback(code: str = None, country: str = None):
 
 #
 
-page_ids_str = st.secrets.get("FACEBOOK_PAGE_IDS", os.getenv("FACEBOOK_PAGE_IDS", ""))
-page_ids = [pid.strip() for pid in page_ids_str.split(",") if pid.strip()]
+page_tokens = get_all_page_tokens()
 
-for page_id in page_ids:
-    access_token = auto_refresh_token("facebook", account_id=page_id)
-
-    if not access_token:
-        st.error(f"⚠️ Facebook token สำหรับเพจ {page_id} ไม่พร้อมใช้งาน")
-        continue
-
-    # ตัวอย่างเรียก Graph API → ดึง account ที่ user มีสิทธิ์
+for page_id, token in page_tokens.items():
     url = "https://graph.facebook.com/v17.0/me/accounts"
-    resp = requests.get(url, params={"access_token": access_token}).json()
-
+    resp = requests.get(url, params={"access_token": token}).json()
     st.subheader(f"เพจ {page_id}")
     st.json(resp)
