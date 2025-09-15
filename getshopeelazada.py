@@ -7,7 +7,7 @@ from services.lazada_auth import get_lazada_token, call_lazada_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from utils.token_manager import *
-from api.facebook_graph_api import get_page_tokens, get_page_posts, get_comments, get_page_insights
+
 app = FastAPI(title="Fujika Dashboard API")
 import requests
 from utils.token_manager import auto_refresh_token
@@ -119,24 +119,7 @@ async def lazada_callback(code: str = None, country: str = None):
         "token_response": token_response,
         "seller_info": seller_info
     })
-# ----- Facebook routes -----
-@app.get("/api/facebook/pages")
-async def pages(user_token: str = Query(...)):
-    return JSONResponse(content=get_page_tokens(user_token))
-
-@app.get("/api/facebook/posts/{page_id}")
-async def posts(page_id: str, page_token: str = Query(...)):
-    return JSONResponse(content=get_page_posts(page_id, page_token))
-
-@app.get("/api/facebook/comments/{post_id}")
-async def comments(post_id: str, page_token: str = Query(...)):
-    return JSONResponse(content=get_comments(post_id, page_token))
-
-@app.get("/api/facebook/insights/page/{page_id}")
-async def page_insights(page_id: str, page_token: str = Query(...)):
-    return JSONResponse(content=get_page_insights(page_id, page_token))
-
-
+#
 page_ids_str = st.secrets.get("FACEBOOK_PAGE_IDS", os.getenv("FACEBOOK_PAGE_IDS", ""))
 page_ids = [pid.strip() for pid in page_ids_str.split(",") if pid.strip()]
 
