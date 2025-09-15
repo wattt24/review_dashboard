@@ -116,14 +116,22 @@ def auto_refresh_token(platform, account_id):
 
         elif platform in ["facebook", "facebook_page"]:
             from api.facebook_graph_api import refresh_facebook_token
-            new_data = refresh_facebook_token(token_data["access_token"])
-            
-            save_token(platform, account_id,
-                       new_data["access_token"],
-                       "",  # ไม่มี refresh token
-                       new_data.get("expires_in", 0))
-            print(f"[{datetime.now().isoformat()}] ✅ Facebook token refreshed")
-            return new_data["access_token"]
+            new_data = refresh_facebook_token(token_data["access_token"], account_id)
+
+            if "access_token" in new_data:
+                # สำหรับ Facebook Page หลาย account ใช้ token เดียวกัน → update ทุก row
+                records = sheet.get_all_records()
+                for idx, record in enumerate(records, start=2):
+                    if record["platform"] == platform and record["access_token"] == token_data["access_token"]:
+                        sheet.update(f"C{idx}", new_data["access_token"])
+                        if "expires_in" in new_data:
+                            expired_at = (datetime.now() + timedelta(seconds=new_data["expires_in"])).isoformat()
+                            sheet.update(f"E{idx}", expired_at)
+                        sheet.update(f"G{idx}", datetime.now().isoformat())
+
+                print(f"[{datetime.now().isoformat()}] ✅ Facebook token refreshed for all related accounts")
+                return new_data["access_token"]
+
 
         else:
             print(f"❌ Auto-refresh not implemented for {platform}")

@@ -12,41 +12,6 @@ APP_SECRET = os.getenv("FACEBOOK_APP_SECRET") or st.secrets["facebook"].get("app
 PAGE_IDS = os.getenv("FACEBOOK_PAGE_IDS", "")
 PAGE_IDS = PAGE_IDS.split(",") if PAGE_IDS else st.secrets["facebook"].get("page_ids", [])
 
-# ===== Token Handler =====
-def get_valid_access_token(platform, account_id, refresh_func):
-    """
-    คืนค่า access token ที่ใช้ได้จริงจาก Google Sheet
-    ถ้า token หมดอายุ → refresh อัตโนมัติ
-    platform: "facebook" (user) หรือ "facebook_page"
-    account_id: user_id หรือ page_id
-    refresh_func: ฟังก์ชัน refresh token (app_id, app_secret, current_token)
-    """
-    token_data = get_latest_token(platform, account_id)
-
-    if token_data:
-        access_token = token_data["access_token"]
-        expired_at = token_data.get("expired_at")
-
-        # ถ้ามี expired_at → ตรวจสอบว่าเลยเวลาหรือยัง
-        if expired_at:
-            expired_time = datetime.datetime.fromisoformat(expired_at)
-            if datetime.datetime.now() >= expired_time:
-                # ถ้าหมดอายุ → refresh token
-                refreshed = refresh_func(APP_ID, APP_SECRET, access_token)
-                if "access_token" in refreshed:
-                    new_token = refreshed["access_token"]
-                    expires_in = refreshed.get("expires_in", 60*60*24*60)  # default 60 วัน
-                    save_token(platform, account_id, new_token, "", expires_in)
-                    return new_token
-                else:
-                    return None
-        return access_token
-
-    # fallback → ถ้าไม่มี token ใน Sheet
-    if platform == "facebook":
-        return USER_TOKEN
-    return None
-
 # ===== Facebook API Aliases =====
 def get_page_tokens(user_token):
     return get_user_pages(user_token)
