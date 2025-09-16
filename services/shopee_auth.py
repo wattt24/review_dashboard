@@ -116,7 +116,6 @@ def call_shopee_api(path, access_token, shop_id, params=None):
     )
     resp = requests.get(url, params=params, timeout=30)
     return resp.json()
-
 # ====== Wrapper สำหรับเรียก Shopee API แบบอัตโนมัติ  ======
 def call_shopee_api_auto(path, shop_id, params=None):
     # ถ้า shop_id เป็น dict ให้ดึงค่าออก
