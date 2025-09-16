@@ -87,13 +87,14 @@ def get_latest_token(platform, account_id):
         account_id_str = str(account_id).strip()
         for idx, record in enumerate(records, start=2):
             if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
-                and str(record.get("account_id", "")).strip() == str(account_id).strip():
+            and str(record.get("account_id", "")).strip() == account_id_str:
                 return {
                     "access_token": record.get("access_token", ""),
                     "refresh_token": record.get("refresh_token", ""),
                     "expired_at": record.get("expired_at"),
                     "refresh_expired_at": record.get("refresh_expired_at")
                 }
+
     except Exception as e:
         print("❌ get_latest_token error:", str(e))
     return None
