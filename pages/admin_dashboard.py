@@ -2,7 +2,6 @@
 import os
 import sys
 import pandas as pd
-import pandas as pd
 import numpy as np
 import streamlit as st
 import altair as alt
@@ -275,6 +274,7 @@ def app():
                 st.plotly_chart(fig_region, use_container_width=True)
                 
             st.subheader("🗺️ ผู้ซื้อแยกตามจังหวัด (Choropleth Map)")
+            st.write("✅ type(pd) =", type(pd))
             df = pd.DataFrame(buyers_list)
 
             # สร้าง province_counts
