@@ -117,6 +117,7 @@ def call_shopee_api(path, access_token, shop_id, params=None):
         f"&shop_id={shop_id}"
         f"&sign={sign}"
     )
+
     print("👉 Shopee request URL:", url)  # debug
     resp = requests.get(url, params=params, timeout=30)
     return resp.json()
@@ -156,7 +157,8 @@ def check_shop_type(shop_id: int):
         if isinstance(shop_id, dict):
             shop_id = shop_id.get("shop_id")
 
-        shop_info = call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
+        shop_info = call_shopee_api_auto("/shop/get_shop_info", shop_id)
+
         return {
             "shop_name": shop_info.get("shop_name"),
             "is_sip": shop_info.get("is_sip"),

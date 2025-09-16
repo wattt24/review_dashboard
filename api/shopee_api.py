@@ -31,3 +31,8 @@ for item in items['item_list']:
     print("Image:", item['image'])
     print("---")
 
+products = call_shopee_api_auto("/product/get_item_list", shop_id, params={
+    "pagination_offset": 0,
+    "pagination_entries_per_page": 10,
+    "item_status": "NORMAL"
+})
