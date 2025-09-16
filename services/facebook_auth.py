@@ -8,8 +8,8 @@ def refresh_facebook_token(current_token, account_id):
     url = "https://graph.facebook.com/v17.0/oauth/access_token"
     params = {
         "grant_type": "fb_exchange_token",
-        "client_id": os.environ["FB_APP_ID"],
-        "client_secret": os.environ["FB_APP_SECRET"],
+        "client_id": os.environ["FACEBOOK_APP_ID"],
+        "client_secret": os.environ["FACEBOOK_APP_SECRET"],
         "fb_exchange_token": current_token
     }
     resp = requests.get(url, params=params)
@@ -59,7 +59,7 @@ def validate_token(access_token):
     url = "https://graph.facebook.com/debug_token"
     params = {
         "input_token": access_token,
-        "access_token": f"{os.environ['FB_APP_ID']}|{os.environ['FB_APP_SECRET']}"
+        "access_token": f"{os.environ['FACEBOOK_APP_ID']}|{os.environ['FACEBOOK_APP_SECRET']}"
     }
     resp = requests.get(url, params=params).json()
     return resp
