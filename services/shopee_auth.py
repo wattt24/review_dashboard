@@ -118,37 +118,24 @@ def call_shopee_api(path, access_token, shop_id, params=None):
     return resp.json()
 # ====== Wrapper สำหรับเรียก Shopee API แบบอัตโนมัติ  ======
 def call_shopee_api_auto(path, shop_id, params=None):
-    """
-    Wrapper: ดึง/ต่ออายุ access_token อัตโนมัติจาก Google Sheet แล้วเรียก Shopee API
-    จะ raise error ที่อ่านง่ายถ้าไม่มี token (กรณีครั้งแรกยังไม่ได้ authorize)
-    """
-    # ดึง token (และต่ออายุถ้าจำเป็น)
+    # ถ้า shop_id เป็น dict ให้ดึงค่าออก
+    if isinstance(shop_id, dict):
+        shop_id = shop_id.get("shop_id")
+    shop_id = int(shop_id)
+    
     access_token = auto_refresh_token("shopee", shop_id)
-
-    # ถ้าไม่มี token ให้บอกทางแก้ชัดเจน
     if not access_token:
-        # ให้ผู้ใช้ไป authorize ก่อน (ครั้งแรกต้องไปกดหน้า authorize ของ Shopee)
-        try:
-            auth_url = shopee_get_authorization_url()
-        except Exception:
-            auth_url = "ไม่สามารถสร้าง authorization url ได้ — ตรวจสอบ config"
-        raise RuntimeError(
-            f"❌ ไม่มี access_token สำหรับร้าน {shop_id}.\n"
-            f"ขั้นตอนแก้ไข: เปิด URL นี้เพื่อ authorize ร้าน แล้วนำ `code` ที่ได้มาเรียก get_token(code, shop_id)\n\n{auth_url}"
-        )
+        auth_url = shopee_get_authorization_url()
+        raise RuntimeError(f"❌ ไม่มี access_token สำหรับร้าน {shop_id}.\n{auth_url}")
 
-    # เรียก API ครั้งแรก
-    resp = call_shopee_api("/api/v2/shop/get_shop_info", access_token, shop_id)
-
-    # ถ้า Shopee แจ้งว่า token หมดอายุ (error code 10008) — ลอง refresh อีกครั้งแล้ว retry หนึ่งรอบ
+    resp = call_shopee_api(path, access_token, shop_id, params)
     if resp and resp.get("error") == 10008:
-        # พยายามต่ออายุอีกครั้ง (auto_refresh_token จะพยายาม refresh)
         access_token = auto_refresh_token("shopee", shop_id)
         if not access_token:
-            raise RuntimeError("❌ ไม่สามารถต่ออายุ access_token ได้ — กรุณา authorize ใหม่ตามขั้นตอน")
-        resp = call_shopee_api("/api/v2/shop/get_shop_info", access_token, shop_id)
-
+            raise RuntimeError("❌ ไม่สามารถต่ออายุ access_token ได้ — กรุณา authorize ใหม่")
+        resp = call_shopee_api(path, access_token, shop_id, params)
     return resp
+
 def check_shop_type(shop_id: int):
     """
     ตรวจสอบประเภทร้านและสถานะร้าน
