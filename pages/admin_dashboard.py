@@ -441,17 +441,28 @@ def app():
                         params={"pagination_offset": 0, "pagination_entries_per_page": 50, "item_status": "NORMAL"}
                     )
 
-                    item_ids = [item["item_id"] for item in items.get("response", {}).get("item", [])]
+                    item_list = items.get("response", {}).get("item", [])
+                    item_ids = [item["item_id"] for item in item_list]
 
-                    # Step 2: ดึงรายละเอียดสินค้า
-                    if item_ids:
+                    st.subheader(f"🛒 Shopee Shop ID: {shop_id}")
+                    if not item_ids:
+                        st.info("ไม่มีสินค้าในร้านนี้")
+                    else:
+                        # Step 2: ดึงรายละเอียดสินค้า
                         product_info = call_shopee_api_auto(
                             "/product/get_item_base_info",
                             shop_id,
                             params={"item_id_list": ",".join(map(str, item_ids))}
                         )
-                        print(product_info)
 
+                        # แสดงผลเป็น DataFrame
+                        item_details = product_info.get("response", {}).get("item", [])
+                        if item_details:
+                            import pandas as pd
+                            df = pd.DataFrame(item_details)
+                            st.dataframe(df)  # แสดงเป็นตาราง
+                        else:
+                            st.info("ไม่สามารถดึงรายละเอียดสินค้าได้")
         # --------------------- 5. Lazada ---------------------
         with tabs[4]:
             st.header("📦 Lazada Orders")
