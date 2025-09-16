@@ -47,22 +47,6 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     except ValueError as e:
         # log และ return response แบบ user-friendly
         return {"error": "Invalid authorization code. Please try again.", "details": str(e)}
-    # # 3. ลองเรียก shop_info ด้วย auto-refresh token
-    # try:
-    #     shop_info = call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
-    #     print("shop_info:", shop_info)
-    # except Exception as e:
-    #     print("Error calling Shopee API:", e)
-    #     shop_info = {"error": str(e)}
-
-    # # ✅ ไม่ว่าจะ error หรือไม่ ต้อง return ออกไป
-    # return JSONResponse({
-    #     "message": "Shopee callback received and token saved",
-    #     "shop_id": shop_id,
-    #     "token_response": token_response,
-    #     "shop_info": shop_info
-    # })
-
 @app.get("/shopee/check_shop")
 async def shopee_check_shop(shop_id: int):
     info = check_shop_type(shop_id)
