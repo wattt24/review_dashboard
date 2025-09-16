@@ -104,7 +104,7 @@ def refresh_token(refresh_token_value, shop_id):
 # ========== STEP 4: Call Shopee API ==========
 def call_shopee_api(path, access_token, shop_id, params=None):
     timestamp = int(time.time())
-    sign = shopee_generate_sign(path, timestamp, access_token + str(shop_id))
+    sign = shopee_generate_sign("/api/v2/" + path, timestamp, access_token + str(shop_id))
 
     url = (
         f"{BASE_URL}{path}"
@@ -116,6 +116,7 @@ def call_shopee_api(path, access_token, shop_id, params=None):
     )
     resp = requests.get(url, params=params, timeout=30)
     return resp.json()
+
 # ====== Wrapper สำหรับเรียก Shopee API แบบอัตโนมัติ  ======
 def call_shopee_api_auto(path, shop_id, params=None):
     # ถ้า shop_id เป็น dict ให้ดึงค่าออก
