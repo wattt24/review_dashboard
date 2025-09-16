@@ -459,7 +459,6 @@ def app():
                         # แสดงผลเป็น DataFrame
                         item_details = product_info.get("response", {}).get("item", [])
                         if item_details:
-                            import pandas as pd
                             df = pd.DataFrame(item_details)
                             st.dataframe(df)  # แสดงเป็นตาราง
                         else:
