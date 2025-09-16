@@ -8,6 +8,7 @@ import altair as alt
 import plotly.express as px
 from datetime import datetime
 from utils.token_manager import sheet, auto_refresh_token
+from services.shopee_auth import call_shopee_api_auto
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -421,9 +422,56 @@ def app():
         # --------------------- 4. Shopee ---------------------
         with tabs[3]:
             st.header("🛍️ รีวิว Shopee")
-            # reviews = shopee_api.get_reviews()
-            # st.dataframe(reviews)
+            st.title("📦 Shopee Shops & Products Dashboard")
+            # ดึง Shop ID ของทุกร้านจาก Google Sheet
+            records = sheet.get_all_records()
+            shopee_shops = [r for r in records if r["platform"].lower() == "shopee"]
 
+            if not shopee_shops:
+                st.warning("❌ ไม่มี Shopee Shop ใน Google Sheet")
+            else:
+                for record in shopee_shops:
+                    shop_id = record["account_id"]
+                    access_token = auto_refresh_token("shopee", shop_id)
+
+                    if not access_token:
+                        st.error(f"❌ ไม่สามารถดึง token สำหรับ Shop ID: {shop_id}")
+                        continue
+
+                    # ดึงข้อมูลร้าน
+                    shop_info = call_shopee_api_auto('shop/get_shop_info', {"shop_id": int(shop_id)})
+                    shop_name = shop_info.get("shop_name", "")
+                    shop_logo = shop_info.get("shop_logo", "")
+
+                    st.subheader(f"{shop_name} (Shop ID: {shop_id})")
+                    if shop_logo:
+                        st.image(shop_logo, width=100)
+
+                    # ดึงสินค้า
+                    items = call_shopee_api_auto('items/get', {"shop_id": int(shop_id), "pagination_offset": 0, "pagination_entries_per_page": 50})
+                    item_list = items.get("item_list", [])
+
+                    if not item_list:
+                        st.info("ไม่มีสินค้าในร้านนี้")
+                        continue
+
+                    # แสดงสินค้าแบบ Table
+                    data = []
+                    for item in item_list:
+                        data.append({
+                            "Item ID": item.get("item_id"),
+                            "Name": item.get("name"),
+                            "Price": item.get("price"),
+                            "Stock": item.get("stock"),
+                            "Image": item.get("image")
+                        })
+
+                    for d in data:
+                        st.markdown(f"**{d['Name']}** (ID: {d['Item ID']})")
+                        st.write(f"Price: {d['Price']}, Stock: {d['Stock']}")
+                        if d['Image']:
+                            st.image(d['Image'], width=150)
+                        st.markdown("---")
         # --------------------- 5. Lazada ---------------------
         with tabs[4]:
             st.header("📦 Lazada Orders")
