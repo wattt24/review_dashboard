@@ -16,23 +16,23 @@ shop_id = int(shop_ids[1])  # skip header
 print("Using Shop ID:", shop_id)
 
 # ------------------ ดึงข้อมูลร้าน ------------------
-shop_info = call_shopee_api_auto('shop/get_shop_info', {"shop_id": shop_id})
-print("Shop ID:", shop_info['shop_id'])
-print("Shop Name:", shop_info['shop_name'])
-print("Shop Logo:", shop_info['shop_logo'])
+shop_info = call_shopee_api_auto("/shop/get_shop_info", shop_id)
+print("Shop ID:", shop_info.get('shop_id'))
+print("Shop Name:", shop_info.get('shop_name'))
+print("Shop Logo:", shop_info.get('shop_logo'))
 
 # ------------------ ดึงสินค้าของร้าน ------------------
-items = call_shopee_api_auto('items/get', {"shop_id": shop_id, "pagination_offset": 0, "pagination_entries_per_page": 50})
-for item in items['item_list']:
-    print("Item ID:", item['item_id'])
-    print("Name:", item['name'])
-    print("Price:", item['price'])
-    print("Stock:", item['stock'])
-    print("Image:", item['image'])
-    print("---")
-
-products = call_shopee_api_auto("/product/get_item_list", shop_id, params={
+params = {
     "pagination_offset": 0,
-    "pagination_entries_per_page": 10,
+    "pagination_entries_per_page": 50,
     "item_status": "NORMAL"
-})
+}
+products = call_shopee_api_auto("/product/get_item_list", shop_id, params=params)
+
+for item in products.get('items', []):
+    print("Item ID:", item.get('item_id'))
+    print("Name:", item.get('name'))
+    print("Price:", item.get('price'))
+    print("Stock:", item.get('stock'))
+    print("Image:", item.get('image'))
+    print("---")
