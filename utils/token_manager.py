@@ -61,9 +61,10 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
 def get_latest_token(platform, account_id):
     try:
         records = sheet.get_all_records()
-        for record in records:
+        account_id_str = str(account_id).strip()
+        for idx, record in enumerate(records, start=2):
             if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
-               and str(record.get ("account_id", "")).strip() == int(account_id).strip():
+               and str(record.get("account_id", "")).strip() == account_id_str:
                 return {
                     "access_token": record.get("access_token", ""),
                     "refresh_token": record.get("refresh_token", ""),
@@ -73,6 +74,7 @@ def get_latest_token(platform, account_id):
     except Exception as e:
         print("❌ get_latest_token error:", str(e))
     return None
+
 
 # ===== Auto-refresh token =====
 def auto_refresh_token(platform, account_id):
