@@ -1,23 +1,41 @@
 import gspread
-from datetime import datetime
-import os
+from oauth2client.service_account import ServiceAccountCredentials
+from services.shopee_auth import call_shopee_api_auto
 
-# ใช้ Service Account JSON (โหลดจาก st.secrets หรือไฟล์)
-SERVICE_ACCOUNT_FILE = "service_account.json"  # หรือใช้ st.secrets["gcp_service_account"]
+# ------------------ Google Sheet setup ------------------
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+client = gspread.authorize(creds)
 
-SHEET_NAME = "tokens"  # ชื่อ Google Sheet
-WORKSHEET_NAME = "Sheet1"  # แผ่นงาน
+sheet = client.open("ShopList").worksheet("Shopee")  # ชื่อ Sheet ของ Shopee
+shop_ids = sheet.col_values(2)  # สมมติ Shop_ID อยู่คอลัมน์ B (index=2)
 
-def get_token(platform: str, account_id: str = None):
-    gc = gspread.service_account(filename=SERVICE_ACCOUNT_FILE)
-    sh = gc.open(SHEET_NAME)
-    ws = sh.worksheet(WORKSHEET_NAME)
-    records = ws.get_all_records()
+# เอา shop_id แรกมาใช้งาน (skip header)
+shop_id = int(shop_ids[1])
 
-    # filter platform + account_id
-    for row in records:
-        if row["platform"] == platform:
-            if account_id is None or str(row["account_id"]) == str(account_id):
-                return row["access_token"]
+# ------------------ ดึงข้อมูลร้าน ------------------
+shop_info = call_shopee_api_auto('shop/get_shop_info', {"shop_id": shop_id})
+shop_data = {
+    "shop_id": shop_info.get("shop_id"),
+    "shop_name": shop_info.get("shop_name"),
+    "shop_logo": shop_info.get("shop_logo")
+}
 
-    raise ValueError(f"❌ ไม่พบ token ของ {platform} (account_id={account_id})")
+# ------------------ ดึงสินค้าของร้าน ------------------
+items_response = call_shopee_api_auto('items/get', {
+    "shop_id": shop_id,
+    "pagination_offset": 0,
+    "pagination_entries_per_page": 50
+})
+
+item_list = []
+for item in items_response.get("item_list", []):
+    item_list.append({
+        "item_id": item.get("item_id"),
+        "name": item.get("name"),
+        "price": item.get("price"),
+        "stock": item.get("stock"),
+        "image": item.get("image")
+    })
+
+# ตอนนี้ shop_data กับ item_list สามารถเอาไปใช้ใน Streamlit หรือส่วนอื่นๆ ได้เลย
