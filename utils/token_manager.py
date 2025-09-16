@@ -116,7 +116,7 @@ def auto_refresh_token(platform, account_id):
             print(f"[{datetime.now().isoformat()}] ✅ Lazada token refreshed")
             return new_data["access_token"]
 
-        elif platform in ["facebook", "facebook_page"]:
+        elif platform in ["facebook", "facebook"]:
             from services.facebook_auth import refresh_facebook_token
             new_data = refresh_facebook_token(token_data["access_token"], account_id)
 
