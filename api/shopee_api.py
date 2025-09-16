@@ -1,18 +1,10 @@
 # api/shopee_api.py
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 from services.shopee_auth import call_shopee_api_auto
+from utils.token_manager import auto_refresh_token, sheet
 
-# ------------------ Google Sheet setup ------------------
-scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
-client = gspread.authorize(creds)
-
-sheet = client.open("ShopList").worksheet("Shopee")  # ชื่อ Sheet ของ Shopee
-shop_ids = sheet.col_values(2)  # สมมติ Shop_ID อยู่คอลัมน์ B (index=2)
-
-# เอา shop_id แรกมาใช้งาน
-shop_id = int(shop_ids[1])  # skip header
+# ------------------ ใช้ Shop ID จาก Sheet เดียวกับ token_manager ------------------
+shop_ids = sheet.col_values(2)  # สมมติ Shop_ID อยู่คอลัมน์ B
+shop_id = int(shop_ids[1])      # skip header
 print("Using Shop ID:", shop_id)
 
 # ------------------ ดึงข้อมูลร้าน ------------------
@@ -27,6 +19,7 @@ params = {
     "pagination_entries_per_page": 100,
     "item_status": "ALL"
 }
+
 # Step 1: ดึงรายการ item_id ทั้งหมด
 items = call_shopee_api_auto(
     "/product/get_item_list",
