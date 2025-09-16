@@ -120,12 +120,16 @@ async def lazada_callback(code: str = None, country: str = None):
         "seller_info": seller_info
     })
 
-#
+#facebook
 
-page_tokens = get_all_page_tokens()
+@app.get("/facebook/pages")
+def get_facebook_pages():
+    page_tokens = get_all_page_tokens()
+    result = {}
 
-for page_id, token in page_tokens.items():
-    url = "https://graph.facebook.com/v17.0/me/accounts"
-    resp = requests.get(url, params={"access_token": token}).json()
-    st.subheader(f"เพจ {page_id}")
-    st.json(resp)
+    for page_id, token in page_tokens.items():
+        url = "https://graph.facebook.com/v17.0/me/accounts"
+        resp = requests.get(url, params={"access_token": token}).json()
+        result[page_id] = resp
+
+    return JSONResponse(result)
