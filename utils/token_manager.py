@@ -36,13 +36,14 @@ sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_S
 
 # ===== Token Manager =====
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
+    
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
-
+    
     try:
         records = sheet.get_all_records()
         for idx, record in enumerate(records, start=2):
-            if record["platform"] == platform and str(record["account_id"]) == str(account_id):
+            if record["platform"] == platform and str(record["account_id"]) == int(account_id):
                 sheet.update(f"A{idx}:G{idx}", [[
                     platform, account_id, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
                 ]])
@@ -62,7 +63,7 @@ def get_latest_token(platform, account_id):
         records = sheet.get_all_records()
         for record in records:
             if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
-               and str(record.get("account_id", "")).strip() == str(account_id).strip():
+               and str(record.get ("account_id", "")).strip() == int(account_id).strip():
                 return {
                     "access_token": record.get("access_token", ""),
                     "refresh_token": record.get("refresh_token", ""),
@@ -72,8 +73,6 @@ def get_latest_token(platform, account_id):
     except Exception as e:
         print("❌ get_latest_token error:", str(e))
     return None
-
-
 
 # ===== Auto-refresh token =====
 def auto_refresh_token(platform, account_id):
@@ -130,7 +129,7 @@ def auto_refresh_token(platform, account_id):
                             expired_at = (datetime.now() + timedelta(seconds=new_data["expires_in"])).isoformat()
                             sheet.update(f"E{idx}", expired_at)
                         sheet.update(f"G{idx}", datetime.now().isoformat())
-
+                print(f"Updating token for {platform}:{account_id} at row {idx}")
                 print(f"[{datetime.now().isoformat()}] ✅ Facebook token refreshed for all related accounts")
                 return new_data["access_token"]
 
