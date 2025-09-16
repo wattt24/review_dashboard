@@ -24,15 +24,8 @@ print("Shop Logo:", shop_info.get('shop_logo'))
 # ------------------ ดึงสินค้าของร้าน ------------------
 params = {
     "pagination_offset": 0,
-    "pagination_entries_per_page": 50,
-    "item_status": "NORMAL"
+    "pagination_entries_per_page": 100,
+    "item_status": "ALL"
 }
-products = call_shopee_api_auto("/product/get_item_list", shop_id, params=params)
-
-for item in products.get('items', []):
-    print("Item ID:", item.get('item_id'))
-    print("Name:", item.get('name'))
-    print("Price:", item.get('price'))
-    print("Stock:", item.get('stock'))
-    print("Image:", item.get('image'))
-    print("---")
+items = call_shopee_api_auto("/product/get_item_list", shop_id, params=params)
+print(items)
