@@ -7,7 +7,7 @@ import streamlit as st
 import altair as alt
 import plotly.express as px
 from datetime import datetime
-from utils.token_manager import auto_refresh_token
+from utils.token_manager import sheet, auto_refresh_token
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -436,44 +436,48 @@ def app():
 
         # --------------------- 6. Facebook Page / Ads ---------------------
         with tabs[5]:
-            st.title("📈 Fujika Sales & Feedback Dashboard")
+            records = sheet.get_all_records()
+            fb_pages = [r["account_id"] for r in records if r["platform"] == "facebook"]
 
-                        # app_dashboard_facebook.py
-    
+            if not fb_pages:
+                st.error("❌ ไม่พบเพจ Facebook ใน Google Sheet")
+                return
 
-            st.title("📈 Fujika Sales & Feedback Dashboard")
+            st.title("📘 Facebook Pages Overview")
 
-            page_id = st.sidebar.text_input("ใส่ Page ID", "123456789")
+            for page_id in fb_pages:
+                ACCESS_TOKEN = auto_refresh_token("facebook", page_id)
+                if not ACCESS_TOKEN:
+                    st.warning(f"⚠️ ไม่มี token สำหรับเพจ {page_id}")
+                    continue
 
-            ACCESS_TOKEN = auto_refresh_token("facebook", page_id)
+                # --- ดึงข้อมูลเพจ ---
+                url = f"https://graph.facebook.com/v19.0/{page_id}"
+                params = {
+                    "fields": "id,name,picture{url}",
+                    "access_token": ACCESS_TOKEN
+                }
+                res = requests.get(url, params=params).json()
 
-            # --- ดึงข้อมูลเพจ ---
-            url = f"https://graph.facebook.com/v19.0/{page_id}"
-            params = {
-                "fields": "id,name,picture{url}",
-                "access_token": ACCESS_TOKEN
-            }
-            res = requests.get(url, params=params).json()
-
-            if "error" in res:
-                st.error(f"⚠️ Error: {res['error']['message']}")
-            else:
-                st.markdown(
-                    f"""
-                    <div style="background-color:#f9f9f9;
-                                padding:20px;
-                                border-radius:15px;
-                                box-shadow:2px 2px 8px rgba(0,0,0,0.1);
-                                text-align:center;
-                                margin-bottom:20px;">
-                        <img src="{res['picture']['data']['url']}" width="80" style="border-radius:50%;">
-                        <h3 style="margin:10px 0;">{res['name']}</h3>
-                        <p style="color:gray;">Page ID: {res['id']}</p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
+                if "error" in res:
+                    st.error(f"⚠️ Error: {res['error']['message']} (Page ID: {page_id})")
+                else:
+                    # แสดงเป็นการ์ดสวย ๆ
+                    st.markdown(
+                        f"""
+                        <div style="background-color:#f9f9f9;
+                                    padding:20px;
+                                    border-radius:15px;
+                                    box-shadow:2px 2px 8px rgba(0,0,0,0.1);
+                                    text-align:center;
+                                    margin-bottom:20px;">
+                            <img src="{res['picture']['data']['url']}" width="80" style="border-radius:50%;">
+                            <h3 style="margin:10px 0;">{res['name']}</h3>
+                            <p style="color:gray;">Page ID: {res['id']}</p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
         # --------------------- 7. LINE OA ---------------------
         with tabs[6]:
             st.header("💬 LINE OA Insights")
