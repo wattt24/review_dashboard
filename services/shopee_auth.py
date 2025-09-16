@@ -10,7 +10,7 @@ import urllib.parse
 redirect = urllib.parse.quote(SHOPEE_REDIRECT_URI)
 
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
-BASE_URL = "https://partner.shopeemobile.com"
+BASE_URL = "https://partner.shopeemobile.com/api/v2"
 
 # ========== SIGN GENERATOR ==========
 import urllib.parse
@@ -104,7 +104,10 @@ def refresh_token(refresh_token_value, shop_id):
 # ========== STEP 4: Call Shopee API ==========
 def call_shopee_api(path, access_token, shop_id, params=None):
     timestamp = int(time.time())
-    sign = shopee_generate_sign("/api/v2/" + path, timestamp, access_token + str(shop_id))
+
+    # path ที่ใช้ sign ต้องรวม /api/v2
+    sign_path = "/api/v2" + path if not path.startswith("/api/v2") else path
+    sign = shopee_generate_sign(sign_path, timestamp, access_token + str(shop_id))
 
     url = (
         f"{BASE_URL}{path}"
@@ -114,8 +117,10 @@ def call_shopee_api(path, access_token, shop_id, params=None):
         f"&shop_id={shop_id}"
         f"&sign={sign}"
     )
+    print("👉 Shopee request URL:", url)  # debug
     resp = requests.get(url, params=params, timeout=30)
     return resp.json()
+
 # ====== Wrapper สำหรับเรียก Shopee API แบบอัตโนมัติ  ======
 def call_shopee_api_auto(path, shop_id, params=None):
     # ถ้า shop_id เป็น dict ให้ดึงค่าออก

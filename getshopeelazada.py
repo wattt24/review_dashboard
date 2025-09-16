@@ -54,19 +54,17 @@ async def shopee_check_shop(shop_id: int):
 
 @app.get("/shopee/shop_info")
 async def shopee_shop_info(shop_id: int):
-    try:
-        resp = call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
-        return JSONResponse(resp)
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+    shop_info = call_shopee_api_auto("/shop/get_shop_info", shop_id)
+    return shop_info
+
 @app.get("/shopee/products")
 async def shopee_products(shop_id: int, page_size: int = 10, page: int = 1):
     offset = (page - 1) * page_size
-    params = {
+    products = call_shopee_api_auto("/product/get_item_list", shop_id, params={
         "pagination_offset": offset,
         "pagination_entries_per_page": page_size
-    }
-    return call_shopee_api_auto("/api/v2/product/get_item_list", shop_id, params=params)
+    })
+    return products
 
 
 
