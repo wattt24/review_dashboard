@@ -117,7 +117,7 @@ def auto_refresh_token(platform, account_id):
             return new_data["access_token"]
 
         elif platform in ["facebook", "facebook_page"]:
-            from api.facebook_graph_api import refresh_facebook_token
+            from services.facebook_auth import refresh_facebook_token
             new_data = refresh_facebook_token(token_data["access_token"], account_id)
 
             if "access_token" in new_data:
