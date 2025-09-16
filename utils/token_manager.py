@@ -87,7 +87,7 @@ def get_latest_token(platform, account_id):
         account_id_str = str(account_id).strip()
         for idx, record in enumerate(records, start=2):
             if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
-               and str(record.get("account_id", "")).strip() == account_id_str:
+                and str(record.get("account_id", "")).strip() == str(account_id).strip():
                 return {
                     "access_token": record.get("access_token", ""),
                     "refresh_token": record.get("refresh_token", ""),

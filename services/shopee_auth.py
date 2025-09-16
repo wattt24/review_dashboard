@@ -161,6 +161,9 @@ def check_shop_type(shop_id: int):
     }
     """
     try:
+        if isinstance(shop_id, dict):
+            shop_id = shop_id.get("shop_id")
+
         shop_info = call_shopee_api_auto("/api/v2/shop/get_shop_info", shop_id)
         return {
             "shop_name": shop_info.get("shop_name"),
