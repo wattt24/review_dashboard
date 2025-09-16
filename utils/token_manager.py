@@ -35,23 +35,46 @@ client = get_gspread_client()
 sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
 
 # ===== Token Manager =====
-def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
+# def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
     
+#     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
+#     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
+    
+#     try:
+#         records = sheet.get_all_records()
+#         for idx, record in enumerate(records, start=2):
+#             if record["platform"] == platform and str(record["account_id"]) == int(account_id):
+#                 sheet.update(f"A{idx}:G{idx}", [[
+#                     platform, account_id, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+#                 ]])
+#                 return
+
+#         # ถ้าไม่เจอ row เดิม → เพิ่มใหม่
+#         sheet.append_row([
+#             platform, account_id, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+#         ])
+
+#     except Exception as e:
+#         print("❌ save_token error:", str(e))
+def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
+    
+    account_id_str = str(account_id).strip()
     
     try:
         records = sheet.get_all_records()
         for idx, record in enumerate(records, start=2):
-            if record["platform"] == platform and str(record["account_id"]) == int(account_id):
+            if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
+               and str(record.get("account_id", "")).strip() == account_id_str:
                 sheet.update(f"A{idx}:G{idx}", [[
-                    platform, account_id, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+                    platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
                 ]])
                 return
 
         # ถ้าไม่เจอ row เดิม → เพิ่มใหม่
         sheet.append_row([
-            platform, account_id, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+            platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
         ])
 
     except Exception as e:
