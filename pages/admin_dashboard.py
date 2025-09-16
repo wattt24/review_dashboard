@@ -434,44 +434,24 @@ def app():
                     shop_id = record["account_id"]
                     access_token = auto_refresh_token("shopee", shop_id)
 
-                    if not access_token:
-                        st.error(f"❌ ไม่สามารถดึง token สำหรับ Shop ID: {shop_id}")
-                        continue
+                    # Step 1: ดึงรายการ item_id ทั้งหมด
+                    items = call_shopee_api_auto(
+                        "/product/get_item_list",
+                        shop_id,
+                        params={"pagination_offset": 0, "pagination_entries_per_page": 50, "item_status": "NORMAL"}
+                    )
 
-                    # ดึงข้อมูลร้าน
-                    shop_info = call_shopee_api_auto('shop/get_shop_info', {"shop_id": int(shop_id)})
-                    shop_name = shop_info.get("shop_name", "")
-                    shop_logo = shop_info.get("shop_logo", "")
+                    item_ids = [item["item_id"] for item in items.get("response", {}).get("item", [])]
 
-                    st.subheader(f"{shop_name} (Shop ID: {shop_id})")
-                    if shop_logo:
-                        st.image(shop_logo, width=100)
+                    # Step 2: ดึงรายละเอียดสินค้า
+                    if item_ids:
+                        product_info = call_shopee_api_auto(
+                            "/product/get_item_base_info",
+                            shop_id,
+                            params={"item_id_list": ",".join(map(str, item_ids))}
+                        )
+                        print(product_info)
 
-                    # ดึงสินค้า
-                    items = call_shopee_api_auto('items/get', {"shop_id": int(shop_id), "pagination_offset": 0, "pagination_entries_per_page": 50})
-                    item_list = items.get("item_list", [])
-
-                    if not item_list:
-                        st.info("ไม่มีสินค้าในร้านนี้")
-                        continue
-
-                    # แสดงสินค้าแบบ Table
-                    data = []
-                    for item in item_list:
-                        data.append({
-                            "Item ID": item.get("item_id"),
-                            "Name": item.get("name"),
-                            "Price": item.get("price"),
-                            "Stock": item.get("stock"),
-                            "Image": item.get("image")
-                        })
-
-                    for d in data:
-                        st.markdown(f"**{d['Name']}** (ID: {d['Item ID']})")
-                        st.write(f"Price: {d['Price']}, Stock: {d['Stock']}")
-                        if d['Image']:
-                            st.image(d['Image'], width=150)
-                        st.markdown("---")
         # --------------------- 5. Lazada ---------------------
         with tabs[4]:
             st.header("📦 Lazada Orders")

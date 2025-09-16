@@ -66,9 +66,6 @@ async def shopee_products(shop_id: int, page_size: int = 10, page: int = 1):
     })
     return products
 
-
-
-
 @app.api_route("/lazada/callback", methods=["GET", "HEAD"])
 async def lazada_callback(code: str = None, country: str = None):
     if not code:

@@ -27,5 +27,21 @@ params = {
     "pagination_entries_per_page": 100,
     "item_status": "ALL"
 }
-items = call_shopee_api_auto("/product/get_item_list", shop_id, params=params)
+# Step 1: ดึงรายการ item_id ทั้งหมด
+items = call_shopee_api_auto(
+    "/product/get_item_list",
+    shop_id,
+    params={"pagination_offset": 0, "pagination_entries_per_page": 50, "item_status": "NORMAL"}
+)
 print(items)
+
+item_ids = [item["item_id"] for item in items.get("response", {}).get("item", [])]
+
+# Step 2: ดึงรายละเอียดสินค้า
+if item_ids:
+    product_info = call_shopee_api_auto(
+        "/product/get_item_base_info",
+        shop_id,
+        params={"item_id_list": ",".join(map(str, item_ids))}
+    )
+    print(product_info)
