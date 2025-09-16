@@ -61,16 +61,18 @@ def get_latest_token(platform, account_id):
     try:
         records = sheet.get_all_records()
         for record in records:
-            if record["platform"] == platform and str(record["account_id"]) == str(account_id):
+            if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
+               and str(record.get("account_id", "")).strip() == str(account_id).strip():
                 return {
-                    "access_token": record["access_token"],
-                    "refresh_token": record["refresh_token"],
+                    "access_token": record.get("access_token", ""),
+                    "refresh_token": record.get("refresh_token", ""),
                     "expired_at": record.get("expired_at"),
                     "refresh_expired_at": record.get("refresh_expired_at")
                 }
     except Exception as e:
         print("❌ get_latest_token error:", str(e))
     return None
+
 
 
 # ===== Auto-refresh token =====
