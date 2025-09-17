@@ -129,7 +129,7 @@ def shopee_get_access_token(shop_id, code):
     )
     return data
 
-@router.get("/shopee/callback")
+@router.get("/callback")
 async def shopee_callback(request: Request):
     code = request.query_params.get("code")
     shop_id = request.query_params.get("shop_id")
