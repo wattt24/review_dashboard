@@ -74,28 +74,22 @@ def shopee_get_access_token(shop_id, code):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
 
-    # ✅ sign ต้องต่อ partner_id + path + timestamp + code + shop_id
-    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
+    # แปลง shop_id เป็น string ก่อนต่อ sign
+    shop_id_str = str(shop_id)
+    code_str = str(code)
+
+    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code_str}{shop_id_str}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         sign_input.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
-    # ✅ query string ต้องมี partner_id, timestamp, sign
-    url = (
-        f"{BASE_URL}{path}"
-        f"?partner_id={SHOPEE_PARTNER_ID}"
-        f"&timestamp={timestamp}"
-        f"&sign={sign}"
-    )
+    BASE_URL = "https://partner.shopeemobile.com"
+    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
-    payload = {
-        "code": code,
-        "shop_id": shop_id
-    }
+    payload = {"code": code_str, "shop_id": shop_id_str}  # ส่ง string
 
-    # 🔍 DEBUG LOG ทั้งหมด
     print("=== DEBUG Shopee Access Token ===")
     print("Partner ID:", SHOPEE_PARTNER_ID)
     print("Shop ID:", shop_id)
@@ -110,7 +104,6 @@ def shopee_get_access_token(shop_id, code):
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
 
-    # 🔍 debug response
     print("=== DEBUG Shopee Response ===")
     print(data)
     print("=============================")
@@ -129,6 +122,7 @@ def shopee_get_access_token(shop_id, code):
         refresh_expires_in=data.get("refresh_expires_in", 0)
     )
     return data
+
 
 @router.get("/callback")
 async def shopee_callback(request: Request):
