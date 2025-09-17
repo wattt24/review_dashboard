@@ -17,18 +17,36 @@ import time, hmac, hashlib
 # ===== Google Sheet Setup =====
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
+def shopee_generate_sign(path, timestamp, code=None, shop_id=None):
+    """
+    สร้าง sign สำหรับ Shopee API
+    สำหรับ /shop/auth_partner ไม่ต้องใส่ /api/v2
+    """
+    message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"  # ใช้ partner_id + path + timestamp
+
+    # สำหรับ step แลก token ใส่ code และ shop_id
+    if code:
+        message += code
+    if shop_id:
+        message += str(shop_id)
+
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        message.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    return sign
+
 def shopee_get_authorization_url():
     path = "/shop/auth_partner"
     timestamp = int(time.time())
 
-    # สร้าง sign
     sign = shopee_generate_sign(path, timestamp)
 
-    # redirect URI ของเรา
-    redirect_full = SHOPEE_REDIRECT_URI.rstrip("/")  # ex: https://your-domain.com/shopee/callback
+    redirect_full = SHOPEE_REDIRECT_URI.rstrip("/")
     redirect_encoded = urllib.parse.quote(redirect_full, safe='')
 
-    # สร้าง URL ให้ร้านค้ากด authorize
     url = (
         f"{BASE_URL}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
@@ -40,18 +58,7 @@ def shopee_get_authorization_url():
 def shopee_get_gspread_client(service_account_json_path=None):
     creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
     return gspread.authorize(creds)
-def shopee_generate_sign(path, timestamp, code=None, shop_id=None):
-    message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    if code:
-        message += code
-    if shop_id:
-        message += str(shop_id)
-    sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        message.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-    return sign
+
 
 # 1️⃣ ตรวจสอบร้านพาร์ทเนอร์
 def auth_partner(shop_id):
