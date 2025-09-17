@@ -78,13 +78,13 @@ def auth_partner(shop_id):
     return response.json()
 
 def shopee_get_access_token(shop_id, code):
-    path = "/api/v2/auth/access_token/get"  # ต้องมี /api/v2
+    path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
     sign = shopee_generate_sign(path, timestamp, code=code, shop_id=shop_id)
 
-    url = f"https://partner.shopeemobile.com{path}"  # URL ถูกต้อง
+    url = f"https://partner.shopeemobile.com{path}"  # ต้องตรง
     payload = {
-        "partner_id": SHOPEE_PARTNER_ID,  # ต้องส่ง partner_id
+        "partner_id": SHOPEE_PARTNER_ID,
         "shop_id": shop_id,
         "code": code,
         "sign": sign,
@@ -109,6 +109,7 @@ def shopee_get_access_token(shop_id, code):
         refresh_expires_in=data.get("refresh_expires_in", 0)
     )
     return data
+
 
 
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
