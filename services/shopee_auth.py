@@ -61,8 +61,8 @@ def get_token(code: str, shop_id: int):
         "code": code,
         "shop_id": shop_id,
         "partner_id": SHOPEE_PARTNER_ID,
+        "redirect_uri": SHOPEE_REDIRECT_URI.rstrip("/") + "/shopee/callback"
     }
-
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
     print("=== Shopee get_token response ===")
@@ -90,17 +90,18 @@ def refresh_token(refresh_token_value, shop_id):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
     sign = shopee_generate_sign(path, timestamp)
-
     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+
     payload = {
         "refresh_token": refresh_token_value,
         "partner_id": SHOPEE_PARTNER_ID,
         "shop_id": shop_id
     }
-    
+
+    print("[🔁 Refresh payload]", payload)
+
     resp = requests.post(url, json=payload, timeout=30)
     print("[Shopee Refresh API Response]", resp.json())
-
     return resp.json()
 
 # ========== STEP 4: Call Shopee API ==========

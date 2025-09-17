@@ -30,24 +30,28 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     print("Authorization Code:", code)
     print("Shop ID:", shop_id)
 
-    # 1. แลก token จริงจาก Shopee
-    token_response = get_token(code, shop_id)
-
-    # 2. บันทึก token ลง Google Sheet
-    save_token(
-        platform="shopee",
-        account_id=shop_id,
-        access_token=token_response["access_token"],
-        refresh_token=token_response["refresh_token"],
-        expires_in=token_response.get("expire_in"),             # Shopee ใช้ expire_in
-        refresh_expires_in=token_response.get("refresh_expires_in")
-    )
     try:
+        # 1. แลก token จริงจาก Shopee
         token_response = get_token(code, shop_id)
+
+        # 2. บันทึก token ลง Google Sheet
+        save_token(
+            platform="shopee",
+            account_id=shop_id,
+            access_token=token_response["access_token"],
+            refresh_token=token_response["refresh_token"],
+            expires_in=token_response.get("expire_in"),
+            refresh_expires_in=token_response.get("refresh_expires_in")
+        )
+
+        return {"message": "✅ Token saved successfully."}
+
     except ValueError as e:
-        # log และ return response แบบ user-friendly
-        return {"error": "Invalid authorization code. Please try again.", "details": str(e)}
-@app.get("/shopee/check_shop")
+        return {
+            "error": "Invalid authorization code. Please try again.",
+            "details": str(e)
+        }
+
 async def shopee_check_shop(shop_id: int):
     info = check_shop_type(shop_id)
     return info
