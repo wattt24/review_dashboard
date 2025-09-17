@@ -18,20 +18,17 @@ import time, hmac, hashlib
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
 def shopee_get_authorization_url():
-    """
-    คืน URL ให้ร้านค้ากด authorize
-    """
     path = "/shop/auth_partner"
     timestamp = int(time.time())
-
-    # full redirect URI ของเรา
-    redirect_full = SHOPEE_REDIRECT_URI.rstrip("/")  # ตัวอย่าง: https://your-domain.com/shopee/callback
-    redirect_encoded = urllib.parse.quote(redirect_full, safe='')
 
     # สร้าง sign
     sign = shopee_generate_sign(path, timestamp)
 
-    # สร้าง URL ให้ Shopee redirect
+    # redirect URI ของเรา
+    redirect_full = SHOPEE_REDIRECT_URI.rstrip("/")  # ex: https://your-domain.com/shopee/callback
+    redirect_encoded = urllib.parse.quote(redirect_full, safe='')
+
+    # สร้าง URL ให้ร้านค้ากด authorize
     url = (
         f"{BASE_URL}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
@@ -40,7 +37,6 @@ def shopee_get_authorization_url():
         f"&redirect={redirect_encoded}"
     )
     return url
-
 def shopee_get_gspread_client(service_account_json_path=None):
     creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
     return gspread.authorize(creds)
