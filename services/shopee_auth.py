@@ -13,7 +13,8 @@ import time, hmac, hashlib, requests
 from fastapi import APIRouter, Request
 router = APIRouter()
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
-BASE_URL = "https://partner.shopeemobile.com/api/v2"
+BASE_URL = "https://partner.shopeemobile.com"
+# BASE_URL = "https://partner.shopeemobile.com/api/v2"
 BASE_URL_AUTH = "https://partner.shopeemobile.com"  
 # ========== SIGN GENERATOR ==========
 import time, hmac, hashlib
