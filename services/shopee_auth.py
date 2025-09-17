@@ -74,7 +74,6 @@ def shopee_get_access_token(shop_id, code):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
 
-    # แปลง shop_id เป็น string ก่อนต่อ sign
     shop_id_str = str(shop_id)
     code_str = str(code)
 
@@ -85,44 +84,28 @@ def shopee_get_access_token(shop_id, code):
         hashlib.sha256
     ).hexdigest()
 
-    BASE_URL = "https://partner.shopeemobile.com"
-    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    url = f"https://partner.shopeemobile.com{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
 
-    payload = {"code": code_str, "shop_id": shop_id_str}  # ส่ง string
+    payload = {"code": code_str, "shop_id": shop_id_str}
 
     print("=== DEBUG Shopee Access Token ===")
-    print("Partner ID:", SHOPEE_PARTNER_ID)
-    print("Shop ID:", shop_id)
-    print("Code:", code)
-    print("Timestamp:", timestamp)
-    print("Sign Input String:", sign_input)
+    print("Sign Input:", sign_input)
     print("Generated Sign:", sign)
-    print("Request URL:", url)
-    print("Request Payload:", payload)
-    print("================================")
+    print("URL:", url)
+    print("Payload:", payload)
+    print("===============================")
 
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
 
-    print("=== DEBUG Shopee Response ===")
+    print("=== DEBUG Response ===")
     print(data)
-    print("=============================")
+    print("=====================")
 
     if data.get("error"):
-        raise ValueError(
-            f"Shopee API Error: {data.get('error')} - {data.get('message')} | full_response={data}"
-        )
+        raise ValueError(f"Shopee API Error: {data.get('error')} - {data.get('message')}")
 
-    save_token(
-        platform="shopee",
-        account_id=shop_id,
-        access_token=data["access_token"],
-        refresh_token=data["refresh_token"],
-        expires_in=data.get("expire_in", 0),
-        refresh_expires_in=data.get("refresh_expires_in", 0)
-    )
     return data
-
 
 @router.get("/callback")
 async def shopee_callback(request: Request):
