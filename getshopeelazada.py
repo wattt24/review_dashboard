@@ -21,10 +21,8 @@ async def shopee_authorize():
     """
     url = shopee_get_authorization_url()  # <-- ใส่ตรงนี้
     return {"authorization_url": url}
-
-@app.api_route("/shopee/callback", methods=["GET", "HEAD"])
+@app.get("/shopee/callback")
 async def shopee_callback(code: str = None, shop_id: int = None):
-
     if not code or not shop_id:
         return {"message": "Shopee callback ping"}
 
@@ -32,10 +30,9 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     print("Shop ID:", shop_id)
 
     try:
-        # 1. แลก token จริงจาก Shopee และบันทึกลง Google Sheet
-        token_response = get_token(code, shop_id)
+        # ใช้ฟังก์ชันแลก token ที่ถูกต้อง
+        token_response = get_token(shop_id=shop_id, code=code)
 
-        # 2. คืนข้อความยืนยัน
         return {
             "message": "✅ Token saved successfully.",
             "token": {
@@ -47,11 +44,41 @@ async def shopee_callback(code: str = None, shop_id: int = None):
         }
 
     except ValueError as e:
-        # log และ return response แบบ user-friendly
         return {
             "error": "Invalid authorization code. Please try again.",
             "details": str(e)
         }
+
+# @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
+# async def shopee_callback(code: str = None, shop_id: int = None):
+
+#     if not code or not shop_id:
+#         return {"message": "Shopee callback ping"}
+
+#     print("Authorization Code:", code)
+#     print("Shop ID:", shop_id)
+
+#     try:
+#         # 1. แลก token จริงจาก Shopee และบันทึกลง Google Sheet
+#         token_response = get_token(code, shop_id)
+
+#         # 2. คืนข้อความยืนยัน
+#         return {
+#             "message": "✅ Token saved successfully.",
+#             "token": {
+#                 "access_token": token_response["access_token"],
+#                 "refresh_token": token_response["refresh_token"],
+#                 "expire_in": token_response.get("expire_in"),
+#                 "refresh_expires_in": token_response.get("refresh_expires_in")
+#             }
+#         }
+
+#     except ValueError as e:
+#         # log และ return response แบบ user-friendly
+#         return {
+#             "error": "Invalid authorization code. Please try again.",
+#             "details": str(e)
+#         }
 
 # @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
 # async def shopee_callback(code: str = None, shop_id: int = None):
