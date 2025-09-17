@@ -20,11 +20,9 @@ scope = ["https://spreadsheets.google.com/feeds",
 def shopee_generate_sign(path, timestamp, code=None, shop_id=None):
     """
     สร้าง sign สำหรับ Shopee API
-    สำหรับ /shop/auth_partner ไม่ต้องใส่ /api/v2
     """
-    message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"  # ใช้ partner_id + path + timestamp
+    message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
 
-    # สำหรับ step แลก token ใส่ code และ shop_id
     if code:
         message += code
     if shop_id:
@@ -38,20 +36,19 @@ def shopee_generate_sign(path, timestamp, code=None, shop_id=None):
 
     return sign
 
-def shopee_get_authorization_url():
-    path = "/shop/auth_partner"  # สำหรับ authorize
-    timestamp = int(time.time())
-    
-    # สร้าง sign
-    sign = shopee_generate_sign(path, timestamp)
-    
-    # Redirect URI ที่ลงทะเบียนใน Shopee Partner Center
-    redirect_full = SHOPEE_REDIRECT_URI.rstrip("/")
-    redirect_encoded = urllib.parse.quote(redirect_full, safe='')
 
-    # URL ให้ร้านค้ากด authorize
+def shopee_get_authorization_url():
+    path = "/api/v2/shop/auth_partner"
+    timestamp = int(time.time())
+
+    # ทำ sign
+    sign = shopee_generate_sign(path, timestamp)
+
+    # encode redirect URI
+    redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI, safe='')
+
     url = (
-        f"https://partner.shopeemobile.com{path}"
+        f"{BASE_URL_AUTH}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
         f"&timestamp={timestamp}"
         f"&sign={sign}"
