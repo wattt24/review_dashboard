@@ -19,17 +19,16 @@ scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
 def shopee_generate_sign(path, timestamp, code=None, shop_id=None, is_authorize=False):
     message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    if not is_authorize:
-        if code:
-            message += code
-        if shop_id:
-            message += str(shop_id)
+    # ✅ ตอนแลก token ต้องใส่ code+shop_id
+    if code and shop_id:
+        message += f"{code}{shop_id}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         message.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
     return sign
+
 # ====== สร้าง URL สำหรับร้านกด authorize ======
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
@@ -70,9 +69,10 @@ def auth_partner(shop_id):
 def shopee_get_access_token(shop_id, code):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
+
+    # ✅ สร้าง sign โดยส่ง code, shop_id ไปด้วย
     sign = shopee_generate_sign(path, timestamp, code=code, shop_id=shop_id)
 
-    # ✅ ต้องใส่ partner_id, timestamp, sign ใน query string
     url = (
         f"{BASE_URL}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
@@ -80,7 +80,6 @@ def shopee_get_access_token(shop_id, code):
         f"&sign={sign}"
     )
 
-    # ✅ body มีเฉพาะ code + shop_id
     payload = {
         "code": code,
         "shop_id": shop_id
@@ -88,6 +87,7 @@ def shopee_get_access_token(shop_id, code):
 
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
+    print("DEBUG AccessToken response:", data)  # ✅ debug log
 
     if data.get("error"):
         raise ValueError(
@@ -103,6 +103,7 @@ def shopee_get_access_token(shop_id, code):
         refresh_expires_in=data.get("refresh_expires_in", 0)
     )
     return data
+
 
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
 def process_shopee_tokens(sheet_key, service_account_json_path=None):
