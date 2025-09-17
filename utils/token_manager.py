@@ -17,30 +17,27 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# def get_gspread_client():
-#     key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
-#     creds = None
-
-#     if os.path.exists(key_path):
-#         creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
-#     else:
-#         try:
-#             service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
-#             creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(service_account_info), scope)
-#         except Exception as e:
-#             raise FileNotFoundError(f"❌ ไม่พบ Service Account JSON") from e
-
-#     return gspread.authorize(creds)
 def get_gspread_client():
-    key_path = "C:/Users/aisop/Desktop/review_dashboard_project/data/service_account.json"
-    creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+    key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
+    creds = None
+
+    if os.path.exists(key_path):
+        creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+    else:
+        try:
+            service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(service_account_info), scope)
+        except Exception as e:
+            raise FileNotFoundError(f"❌ ไม่พบ Service Account JSON") from e
+
     return gspread.authorize(creds)
 
 
-client = get_gspread_client()
-# sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
 
-sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+client = get_gspread_client()
+sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
+
+# sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
 
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
