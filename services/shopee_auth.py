@@ -70,9 +70,15 @@ def shopee_get_access_token(shop_id, code):
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
 
-    # ✅ สร้าง sign โดยส่ง code, shop_id ไปด้วย
-    sign = shopee_generate_sign(path, timestamp, code=code, shop_id=shop_id)
+    # ✅ sign ต้องต่อ partner_id + path + timestamp + code + shop_id
+    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        sign_input.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
 
+    # ✅ query string ต้องมี partner_id, timestamp, sign
     url = (
         f"{BASE_URL}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
@@ -85,9 +91,25 @@ def shopee_get_access_token(shop_id, code):
         "shop_id": shop_id
     }
 
+    # 🔍 DEBUG LOG ทั้งหมด
+    print("=== DEBUG Shopee Access Token ===")
+    print("Partner ID:", SHOPEE_PARTNER_ID)
+    print("Shop ID:", shop_id)
+    print("Code:", code)
+    print("Timestamp:", timestamp)
+    print("Sign Input String:", sign_input)
+    print("Generated Sign:", sign)
+    print("Request URL:", url)
+    print("Request Payload:", payload)
+    print("================================")
+
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
-    print("DEBUG AccessToken response:", data)  # ✅ debug log
+
+    # 🔍 debug response
+    print("=== DEBUG Shopee Response ===")
+    print(data)
+    print("=============================")
 
     if data.get("error"):
         raise ValueError(
@@ -103,6 +125,7 @@ def shopee_get_access_token(shop_id, code):
         refresh_expires_in=data.get("refresh_expires_in", 0)
     )
     return data
+
 
 
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
