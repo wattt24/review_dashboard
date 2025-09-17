@@ -18,25 +18,17 @@ import time, hmac, hashlib
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
 def shopee_generate_sign(path, timestamp, code=None, shop_id=None, is_authorize=False):
-    """
-    สร้าง sign สำหรับ Shopee API
-    - สำหรับ authorize: is_authorize=True → ไม่ต้องใส่ code/shop_id
-    - สำหรับแลก token: is_authorize=False → ใส่ code + shop_id
-    """
     message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-
     if not is_authorize:
         if code:
             message += code
         if shop_id:
             message += str(shop_id)
-
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         message.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
-
     return sign
 
 # ====== สร้าง URL สำหรับร้านกด authorize ======
