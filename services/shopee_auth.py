@@ -17,16 +17,19 @@ import time, hmac, hashlib
 # ===== Google Sheet Setup =====
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
-def shopee_generate_sign(path, timestamp, code=None, shop_id=None):
+def shopee_generate_sign(path, timestamp, code=None, shop_id=None, is_authorize=False):
     """
     สร้าง sign สำหรับ Shopee API
+    - สำหรับ authorize: is_authorize=True → ไม่ต้องใส่ code/shop_id
+    - สำหรับแลก token: is_authorize=False → ใส่ code + shop_id
     """
     message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
 
-    if code:
-        message += code
-    if shop_id:
-        message += str(shop_id)
+    if not is_authorize:
+        if code:
+            message += code
+        if shop_id:
+            message += str(shop_id)
 
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
@@ -36,15 +39,12 @@ def shopee_generate_sign(path, timestamp, code=None, shop_id=None):
 
     return sign
 
-
+# ====== สร้าง URL สำหรับร้านกด authorize ======
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
-    timestamp = int(time.time())
+    timestamp = int(time.time())  # ต้องเป็นวินาที 10 หลัก
+    sign = shopee_generate_sign(path, timestamp, is_authorize=True)
 
-    # ทำ sign
-    sign = shopee_generate_sign(path, timestamp)
-
-    # encode redirect URI
     redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI, safe='')
 
     url = (
@@ -165,4 +165,35 @@ def get_token(code: str, shop_id: int):
         refresh_expires_in=data.get("refresh_expires_in", 0)
     )
     
+    return data
+
+def shopee_get_access_token(shop_id, code):
+    path = "/api/v2/auth/access_token/get"
+    timestamp = int(time.time())
+    sign = shopee_generate_sign(path, timestamp, code=code, shop_id=shop_id)
+
+    url = f"{BASE_URL}{path}"
+    payload = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "shop_id": shop_id,
+        "code": code,
+        "sign": sign,
+        "timestamp": timestamp
+    }
+
+    resp = requests.post(url, json=payload, timeout=30)
+    data = resp.json()
+
+    if data.get("error"):
+        raise ValueError(f"Shopee API Error: {data.get('error')} - {data.get('message', '')}")
+
+    # บันทึก token ลง Google Sheet
+    save_token(
+        platform="shopee",
+        account_id=shop_id,
+        access_token=data["access_token"],
+        refresh_token=data["refresh_token"],
+        expires_in=data.get("expire_in", 0),
+        refresh_expires_in=data.get("refresh_expires_in", 0)
+    )
     return data
