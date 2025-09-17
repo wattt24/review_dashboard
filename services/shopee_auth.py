@@ -11,7 +11,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
 BASE_URL = "https://partner.shopeemobile.com/api/v2"
-
+BASE_URL_AUTH = "https://partner.shopeemobile.com"  
 # ========== SIGN GENERATOR ==========
 import time, hmac, hashlib
 # ===== Google Sheet Setup =====
@@ -42,19 +42,21 @@ def shopee_get_authorization_url():
     path = "/shop/auth_partner"
     timestamp = int(time.time())
 
+    # สร้าง sign สำหรับ authorize
     sign = shopee_generate_sign(path, timestamp)
 
     redirect_full = SHOPEE_REDIRECT_URI.rstrip("/")
     redirect_encoded = urllib.parse.quote(redirect_full, safe='')
 
     url = (
-        f"{BASE_URL}{path}"
+        f"{BASE_URL_AUTH}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
         f"&timestamp={timestamp}"
         f"&sign={sign}"
         f"&redirect={redirect_encoded}"
     )
     return url
+
 def shopee_get_gspread_client(service_account_json_path=None):
     creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
     return gspread.authorize(creds)
