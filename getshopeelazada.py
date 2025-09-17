@@ -10,6 +10,8 @@ from utils.token_manager import *
 from services.facebook_auth import get_all_page_tokens
 app = FastAPI(title="Fujika Dashboard API")
 import requests
+from services import shopee_auth
+
 from utils.token_manager import auto_refresh_token
 @app.get("/")
 async def root():
@@ -21,6 +23,8 @@ async def shopee_authorize():
     """
     url = shopee_get_authorization_url()  # <-- ใส่ตรงนี้
     return {"authorization_url": url}
+
+app.include_router(shopee_auth.router, prefix="/shopee")
 # @app.get("/shopee/callback")
 # async def shopee_callback(code: str = None, shop_id: int = None):
 #     if not code or not shop_id:
