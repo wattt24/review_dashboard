@@ -30,7 +30,6 @@ def shopee_generate_sign(path, timestamp, code=None, shop_id=None, is_authorize=
         hashlib.sha256
     ).hexdigest()
     return sign
-
 # ====== สร้าง URL สำหรับร้านกด authorize ======
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
@@ -51,7 +50,6 @@ def shopee_get_authorization_url():
 def shopee_get_gspread_client(service_account_json_path=None):
     creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
     return gspread.authorize(creds)
-
 
 # 1️⃣ ตรวจสอบร้านพาร์ทเนอร์
 def auth_partner(shop_id):
@@ -74,13 +72,18 @@ def shopee_get_access_token(shop_id, code):
     timestamp = int(time.time())
     sign = shopee_generate_sign(path, timestamp, code=code, shop_id=shop_id)
 
-    url = f"https://partner.shopeemobile.com{path}"  # ต้องตรง
+    # ✅ ต้องใส่ partner_id, timestamp, sign ใน query string
+    url = (
+        f"{BASE_URL}{path}"
+        f"?partner_id={SHOPEE_PARTNER_ID}"
+        f"&timestamp={timestamp}"
+        f"&sign={sign}"
+    )
+
+    # ✅ body มีเฉพาะ code + shop_id
     payload = {
-        "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id,
         "code": code,
-        "sign": sign,
-        "timestamp": timestamp
+        "shop_id": shop_id
     }
 
     resp = requests.post(url, json=payload, timeout=30)
@@ -91,7 +94,6 @@ def shopee_get_access_token(shop_id, code):
             f"Shopee API Error: {data.get('error')} - {data.get('message')} | full_response={data}"
         )
 
-    # บันทึก token ลง Google Sheet
     save_token(
         platform="shopee",
         account_id=shop_id,
@@ -101,8 +103,6 @@ def shopee_get_access_token(shop_id, code):
         refresh_expires_in=data.get("refresh_expires_in", 0)
     )
     return data
-
-
 
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
 def process_shopee_tokens(sheet_key, service_account_json_path=None):
