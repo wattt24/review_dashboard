@@ -39,17 +39,19 @@ def shopee_generate_sign(path, timestamp, code=None, shop_id=None):
     return sign
 
 def shopee_get_authorization_url():
-    path = "/shop/auth_partner"
+    path = "/shop/auth_partner"  # สำหรับ authorize
     timestamp = int(time.time())
-
-    # สร้าง sign สำหรับ authorize
+    
+    # สร้าง sign
     sign = shopee_generate_sign(path, timestamp)
-
+    
+    # Redirect URI ที่ลงทะเบียนใน Shopee Partner Center
     redirect_full = SHOPEE_REDIRECT_URI.rstrip("/")
     redirect_encoded = urllib.parse.quote(redirect_full, safe='')
 
+    # URL ให้ร้านค้ากด authorize
     url = (
-        f"{BASE_URL_AUTH}{path}"
+        f"https://partner.shopeemobile.com{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
         f"&timestamp={timestamp}"
         f"&sign={sign}"
