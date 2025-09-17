@@ -78,21 +78,37 @@ def auth_partner(shop_id):
     return response.json()
 
 def shopee_get_access_token(shop_id, code):
-    path = "/api/v2/auth/access_token/get"
+    path = "/api/v2/auth/access_token/get"  # ต้องมี /api/v2
     timestamp = int(time.time())
     sign = shopee_generate_sign(path, timestamp, code=code, shop_id=shop_id)
-    
-    url = f"{BASE_URL}{path}"
+
+    url = f"https://partner.shopeemobile.com{path}"  # URL ถูกต้อง
     payload = {
-        "partner_id": SHOPEE_PARTNER_ID,
+        "partner_id": SHOPEE_PARTNER_ID,  # ต้องส่ง partner_id
         "shop_id": shop_id,
         "code": code,
         "sign": sign,
         "timestamp": timestamp
     }
-    response = requests.post(url, json=payload)
-    return response.json()
 
+    resp = requests.post(url, json=payload, timeout=30)
+    data = resp.json()
+
+    if data.get("error"):
+        raise ValueError(
+            f"Shopee API Error: {data.get('error')} - {data.get('message')} | full_response={data}"
+        )
+
+    # บันทึก token ลง Google Sheet
+    save_token(
+        platform="shopee",
+        account_id=shop_id,
+        access_token=data["access_token"],
+        refresh_token=data["refresh_token"],
+        expires_in=data.get("expire_in", 0),
+        refresh_expires_in=data.get("refresh_expires_in", 0)
+    )
+    return data
 
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
 def process_shopee_tokens(sheet_key, service_account_json_path=None):

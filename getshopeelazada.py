@@ -2,7 +2,7 @@
 # getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from services.shopee_auth import get_token,shopee_get_authorization_url
+from services.shopee_auth import shopee_get_access_token,shopee_get_authorization_url
 from services.lazada_auth import get_lazada_token, call_lazada_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
@@ -31,7 +31,7 @@ async def shopee_callback(code: str = None, shop_id: int = None):
 
     try:
         # ใช้ฟังก์ชันแลก token ที่ถูกต้อง
-        token_response = get_token(shop_id=shop_id, code=code)
+        token_response = shopee_get_access_token(shop_id=shop_id, code=code)
 
         return {
             "message": "✅ Token saved successfully.",
