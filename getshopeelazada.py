@@ -53,16 +53,16 @@ async def shopee_callback(code: str = None, shop_id: int = None):
             "details": str(e)
         }
 
-@app.api_route("/shopee/callback", methods=["GET", "HEAD"])
-async def shopee_callback(code: str = None, shop_id: int = None):
-    if not code or not shop_id:
-        return {"message": "Shopee callback ping"}
+# @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
+# async def shopee_callback(code: str = None, shop_id: int = None):
+#     if not code or not shop_id:
+#         return {"message": "Shopee callback ping"}
 
-    try:
-        token_response = get_token(code, shop_id)
-        return {"message": "✅ Token saved successfully.", "token": token_response}
-    except ValueError as e:
-        return {"error": "Invalid authorization code. Please try again.", "details": str(e)}
+#     try:
+#         token_response = get_token(code, shop_id)
+#         return {"message": "✅ Token saved successfully.", "token": token_response}
+#     except ValueError as e:
+#         return {"error": "Invalid authorization code. Please try again.", "details": str(e)}
 
 
 
