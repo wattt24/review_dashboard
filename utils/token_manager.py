@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials 
 import streamlit as st
 
+GOOGLE_SHEET_ID = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
 
 # Facebook ใช้ long-lived token แทน refresh_token
 # สามารถเพิ่ม API สำหรับ refresh ได้ถ้าจำเป็น
@@ -16,46 +17,31 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
+# def get_gspread_client():
+#     key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
+#     creds = None
+
+#     if os.path.exists(key_path):
+#         creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+#     else:
+#         try:
+#             service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
+#             creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(service_account_info), scope)
+#         except Exception as e:
+#             raise FileNotFoundError(f"❌ ไม่พบ Service Account JSON") from e
+
+#     return gspread.authorize(creds)
 def get_gspread_client():
-    key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
-    creds = None
-
-    if os.path.exists(key_path):
-        creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
-    else:
-        try:
-            service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(service_account_info), scope)
-        except Exception as e:
-            raise FileNotFoundError(f"❌ ไม่พบ Service Account JSON") from e
-
+    key_path = "C:/Users/aisop/Desktop/review_dashboard_project/data/service_account.json"
+    creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
     return gspread.authorize(creds)
 
+
 client = get_gspread_client()
-sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
+# sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
 
-# ===== Token Manager =====
-# def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
-    
-#     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
-#     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
-    
-#     try:
-#         records = sheet.get_all_records()
-#         for idx, record in enumerate(records, start=2):
-#             if record["platform"] == platform and str(record["account_id"]) == int(account_id):
-#                 sheet.update(f"A{idx}:G{idx}", [[
-#                     platform, account_id, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
-#                 ]])
-#                 return
+sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
 
-#         # ถ้าไม่เจอ row เดิม → เพิ่มใหม่
-#         sheet.append_row([
-#             platform, account_id, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
-#         ])
-
-#     except Exception as e:
-#         print("❌ save_token error:", str(e))
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
@@ -85,7 +71,9 @@ def get_latest_token(platform, account_id):
     try:
         records = sheet.get_all_records()
         account_id_str = str(account_id).strip()
-        for idx, record in enumerate(records, start=2):
+        print(f"Searching token for {platform}:{account_id_str}")
+        for record in records:
+            print(record.get("platform"), record.get("account_id"))
             if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
             and str(record.get("account_id", "")).strip() == account_id_str:
                 return {
@@ -121,12 +109,18 @@ def auto_refresh_token(platform, account_id):
     try:
         if platform == "shopee":
             from services.shopee_auth import refresh_token as shopee_refresh_token
+            print(f"🔄 Trying to refresh Shopee token for shop_id={account_id}")
             new_data = shopee_refresh_token(token_data["refresh_token"], account_id)
+
+            if not new_data or "access_token" not in new_data:
+                print(f"❌ Shopee refresh failed. Response: {new_data}")
+                return None
+
             save_token(platform, account_id,
-                       new_data["access_token"],
-                       new_data["refresh_token"],
-                       new_data.get("expire_in", 0),
-                       new_data.get("refresh_expires_in", 0))
+                    new_data["access_token"],
+                    new_data["refresh_token"],
+                    new_data.get("expire_in", 0),
+                    new_data.get("refresh_expires_in", 0))
             print(f"[{datetime.now().isoformat()}] ✅ Shopee token refreshed")
             return new_data["access_token"]
 
@@ -157,6 +151,7 @@ def auto_refresh_token(platform, account_id):
                         sheet.update(f"G{idx}", datetime.now().isoformat())
                 print(f"Updating token for {platform}:{account_id} at row {idx}")
                 print(f"[{datetime.now().isoformat()}] ✅ Facebook token refreshed for all related accounts")
+                print("Token Data Fetched:", token_data)
                 return new_data["access_token"]
 
 

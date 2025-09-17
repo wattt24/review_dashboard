@@ -97,8 +97,10 @@ def refresh_token(refresh_token_value, shop_id):
         "partner_id": SHOPEE_PARTNER_ID,
         "shop_id": shop_id
     }
-
+    
     resp = requests.post(url, json=payload, timeout=30)
+    print("[Shopee Refresh API Response]", resp.json())
+
     return resp.json()
 
 # ========== STEP 4: Call Shopee API ==========
