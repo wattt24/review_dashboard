@@ -77,6 +77,7 @@ def shopee_get_access_token(shop_id, code):
     shop_id_str = str(shop_id)
     code_str = str(code)
 
+    # สร้าง sign
     sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code_str}{shop_id_str}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
@@ -84,28 +85,30 @@ def shopee_get_access_token(shop_id, code):
         hashlib.sha256
     ).hexdigest()
 
-    url = f"https://partner.shopeemobile.com{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
-
-    payload = {"code": code_str, "shop_id": shop_id_str}
-
+    # ส่ง POST JSON payload ครบ
+    url = f"{BASE_URL_AUTH}{path}"
+    payload = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "timestamp": timestamp,
+        "sign": sign,
+        "code": code_str,
+        "shop_id": shop_id_str
+    }
     print("=== DEBUG Shopee Access Token ===")
     print("Sign Input:", sign_input)
     print("Generated Sign:", sign)
     print("URL:", url)
     print("Payload:", payload)
     print("===============================")
-
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
-
     print("=== DEBUG Response ===")
     print(data)
     print("=====================")
-
     if data.get("error"):
         raise ValueError(f"Shopee API Error: {data.get('error')} - {data.get('message')}")
-
     return data
+
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
 def process_shopee_tokens(sheet_key, service_account_json_path=None):
     client = shopee_get_gspread_client(service_account_json_path)
