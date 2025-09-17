@@ -1,46 +1,37 @@
 # services/shopee_auth.py
 import time, hmac, hashlib, requests
+import urllib.parse
 from utils.config import (
     SHOPEE_PARTNER_ID,
     SHOPEE_PARTNER_SECRET,
     SHOPEE_REDIRECT_URI
 )
-from utils.token_manager import save_token,auto_refresh_token
-import urllib.parse
-redirect = urllib.parse.quote(SHOPEE_REDIRECT_URI)
-
+from utils.token_manager import save_token
+from oauth2client.service_account import ServiceAccountCredentials
+import gspread
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
 BASE_URL = "https://partner.shopeemobile.com/api/v2"
 
 # ========== SIGN GENERATOR ==========
-import urllib.parse
 import time, hmac, hashlib
-
-import urllib.parse
-import time, hmac, hashlib
-
-def shopee_generate_sign(path, timestamp, body=""):
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body}"
-    return hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        base_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-
-
+# ===== Google Sheet Setup =====
+scope = ["https://spreadsheets.google.com/feeds",
+         "https://www.googleapis.com/auth/drive"]
 def shopee_get_authorization_url():
-    path = "/api/v2/shop/auth_partner"
+    """
+    คืน URL ให้ร้านค้ากด authorize
+    """
+    path = "/shop/auth_partner"
     timestamp = int(time.time())
 
-    # ✅ full redirect url (callback ของคุณ)
-    redirect_full = SHOPEE_REDIRECT_URI.rstrip("/") + "/shopee/callback"
-
-    # ❌ ไม่ต้องใส่ redirect_full ใน base_string
-    sign = shopee_generate_sign(path, timestamp)
-
-    # ✅ encode redirect URI ให้ Shopee รับได้
+    # full redirect URI ของเรา
+    redirect_full = SHOPEE_REDIRECT_URI.rstrip("/")  # ตัวอย่าง: https://your-domain.com/shopee/callback
     redirect_encoded = urllib.parse.quote(redirect_full, safe='')
 
+    # สร้าง sign
+    sign = shopee_generate_sign(path, timestamp)
+
+    # สร้าง URL ให้ Shopee redirect
     url = (
         f"{BASE_URL}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
@@ -50,123 +41,124 @@ def shopee_get_authorization_url():
     )
     return url
 
-# ========== STEP 2: Get Token ==========
-def get_token(code: str, shop_id: int):
-    path = "/api/v2/auth/token/get"
-    timestamp = int(time.time())
-    sign = shopee_generate_sign(path, timestamp)
+def shopee_get_gspread_client(service_account_json_path=None):
+    creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
+    return gspread.authorize(creds)
+def shopee_generate_sign(path, timestamp, code=None, shop_id=None):
+    message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    if code:
+        message += code
+    if shop_id:
+        message += str(shop_id)
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        message.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+    return sign
 
-    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
-    payload = {
-        "code": code,
-        "shop_id": shop_id,
+# 1️⃣ ตรวจสอบร้านพาร์ทเนอร์
+def auth_partner(shop_id):
+    path = "/api/v2/shop/auth_partner"
+    timestamp = int(time.time())
+    sign = shopee_generate_sign(path, timestamp, shop_id=shop_id)
+    
+    url = f"{BASE_URL}{path}"
+    params = {
         "partner_id": SHOPEE_PARTNER_ID,
-        "redirect_uri": SHOPEE_REDIRECT_URI.rstrip("/") + "/shopee/callback"
+        "shop_id": shop_id,
+        "timestamp": timestamp,
+        "sign": sign
     }
+    response = requests.get(url, params=params)
+    return response.json()
+
+def shopee_get_access_token(shop_id, code):
+    path = "/api/v2/auth/access_token/get"
+    timestamp = int(time.time())
+    sign = shopee_generate_sign(path, timestamp, code=code, shop_id=shop_id)
+    
+    url = f"{BASE_URL}{path}"
+    payload = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "shop_id": shop_id,
+        "code": code,
+        "sign": sign,
+        "timestamp": timestamp
+    }
+    response = requests.post(url, json=payload)
+    return response.json()
+
+
+# ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
+def process_shopee_tokens(sheet_key, service_account_json_path=None):
+    client = shopee_get_gspread_client(service_account_json_path)
+    sheet = client.open_by_key(sheet_key).sheet1
+    records = sheet.get_all_records()
+
+    for idx, row in enumerate(records, start=2):
+        platform = row.get("platform", "").lower()
+        shop_id = str(row.get("account_id", "")).strip()
+        code = row.get("code", "").strip()  # สมมติว่าเก็บ code ไว้ใน sheet
+
+        if platform != "shopee" or not shop_id or not code:
+            continue
+
+        # 1️⃣ ตรวจสอบร้าน
+        partner_info = auth_partner(shop_id)
+        print(f"[{shop_id}] Partner info:", partner_info)
+
+        # 2️⃣ แลก access token
+        token_data = shopee_get_access_token(shop_id, code)
+        print(f"[{shop_id}] Token data:", token_data)
+
+        if token_data and "access_token" in token_data:
+            save_token(
+                "shopee",
+                shop_id,
+                token_data["access_token"],
+                token_data.get("refresh_token", ""),
+                token_data.get("expire_in", 0),
+                token_data.get("refresh_expires_in", 0)
+            )
+
+
+def get_token(code: str, shop_id: int):
+    """
+    แลก access_token + refresh_token จาก Shopee และบันทึกลง Google Sheet
+    """
+    path = "/auth/access_token/get"
+    timestamp = int(time.time())
+    
+    # สร้าง sign ตามเอกสาร Shopee
+    sign = shopee_generate_sign(path, timestamp, code=code, shop_id=shop_id)
+    
+    url = f"{BASE_URL}{path}"
+    payload = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "shop_id": shop_id,
+        "code": code,
+        "sign": sign,
+        "timestamp": timestamp
+    }
+    
     resp = requests.post(url, json=payload, timeout=30)
     data = resp.json()
-    print("=== Shopee get_token response ===")
-    print(data)
+    
     # ตรวจสอบ error ก่อน
     if data.get("error"):
         raise ValueError(
             f"Shopee API Error: {data.get('error')} - {data.get('message', '')} | full_response={data}"
         )
-    print("Shopee token response:", data)
-    # save token
-    save_token(
-        "shopee", shop_id,
-        data["access_token"], 
-        data["refresh_token"],
-        data.get("expire_in", 0),          # ใช้ expire_in แทน expires_in
-        data.get("refresh_expires_in", 0)  # อาจไม่มี ให้ default=0
-    )
-
-    return data
-
-
-# ========== STEP 3: Refresh Token ==========
-def refresh_token(refresh_token_value, shop_id):
-    path = "/api/v2/auth/access_token/get"
-    timestamp = int(time.time())
-    sign = shopee_generate_sign(path, timestamp)
-    url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
-
-    payload = {
-        "refresh_token": refresh_token_value,
-        "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id
-    }
-
-    print("[🔁 Refresh payload]", payload)
-
-    resp = requests.post(url, json=payload, timeout=30)
-    print("[Shopee Refresh API Response]", resp.json())
-    return resp.json()
-
-# ========== STEP 4: Call Shopee API ==========
-def call_shopee_api(path, access_token, shop_id, params=None):
-    timestamp = int(time.time())
-
-    # path ที่ใช้ sign ต้องรวม /api/v2
-    sign_path = "/api/v2" + path if not path.startswith("/api/v2") else path
-    sign = shopee_generate_sign(sign_path, timestamp, access_token + str(shop_id))
-
-    url = (
-        f"{BASE_URL}{path}"
-        f"?partner_id={SHOPEE_PARTNER_ID}"
-        f"&timestamp={timestamp}"
-        f"&access_token={access_token}"
-        f"&shop_id={shop_id}"
-        f"&sign={sign}"
-    )
-
-    print("👉 Shopee request URL:", url)  # debug
-    resp = requests.get(url, params=params, timeout=30)
-    return resp.json()
-
-# ====== Wrapper สำหรับเรียก Shopee API แบบอัตโนมัติ  ======
-def call_shopee_api_auto(path, shop_id, params=None):
-    # ถ้า shop_id เป็น dict ให้ดึงค่าออก
-    if isinstance(shop_id, dict):
-        shop_id = shop_id.get("shop_id")
-    shop_id = int(shop_id)
     
-    access_token = auto_refresh_token("shopee", shop_id)
-    if not access_token:
-        auth_url = shopee_get_authorization_url()
-        raise RuntimeError(f"❌ ไม่มี access_token สำหรับร้าน {shop_id}.\n{auth_url}")
-
-    resp = call_shopee_api(path, access_token, shop_id, params)
-    if resp and resp.get("error") == 10008:
-        access_token = auto_refresh_token("shopee", shop_id)
-        if not access_token:
-            raise RuntimeError("❌ ไม่สามารถต่ออายุ access_token ได้ — กรุณา authorize ใหม่")
-        resp = call_shopee_api(path, access_token, shop_id, params)
-    return resp
-
-def check_shop_type(shop_id: int):
-    """
-    ตรวจสอบประเภทร้านและสถานะร้าน
-    คืนค่า dict เช่น:
-    {
-        "shop_name": "FUJIKA Official",
-        "is_sip": False,
-        "status": "NORMAL",
-        "shop_fulfillment_flag": "Others"
-    }
-    """
-    try:
-        if isinstance(shop_id, dict):
-            shop_id = shop_id.get("shop_id")
-
-        shop_info = call_shopee_api_auto("/shop/get_shop_info", shop_id)
-
-        return {
-            "shop_name": shop_info.get("shop_name"),
-            "is_sip": shop_info.get("is_sip"),
-            "status": shop_info.get("status"),
-            "shop_fulfillment_flag": shop_info.get("shop_fulfillment_flag"),
-        }
-    except Exception as e:
-        return {"error": str(e)}
+    # บันทึก token ลง Google Sheet
+    save_token(
+        platform="shopee",
+        account_id=shop_id,
+        access_token=data["access_token"],
+        refresh_token=data["refresh_token"],
+        expires_in=data.get("expire_in", 0),
+        refresh_expires_in=data.get("refresh_expires_in", 0)
+    )
+    
+    return data

@@ -2,7 +2,7 @@
 # getshopeelazada.py
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from services.shopee_auth import shopee_get_authorization_url,get_token,check_shop_type,call_shopee_api_auto
+from services.shopee_auth import get_token,shopee_get_authorization_url
 from services.lazada_auth import get_lazada_token, call_lazada_api
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
@@ -31,44 +31,39 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     print("Shop ID:", shop_id)
 
     try:
-        # 1. แลก token จริงจาก Shopee
+        # 1. แลก token จริงจาก Shopee และบันทึกลง Google Sheet
         token_response = get_token(code, shop_id)
 
-        # 2. บันทึก token ลง Google Sheet
-        save_token(
-            platform="shopee",
-            account_id=shop_id,
-            access_token=token_response["access_token"],
-            refresh_token=token_response["refresh_token"],
-            expires_in=token_response.get("expire_in"),
-            refresh_expires_in=token_response.get("refresh_expires_in")
-        )
-
-        return {"message": "✅ Token saved successfully."}
+        # 2. คืนข้อความยืนยัน
+        return {
+            "message": "✅ Token saved successfully.",
+            "token": {
+                "access_token": token_response["access_token"],
+                "refresh_token": token_response["refresh_token"],
+                "expire_in": token_response.get("expire_in"),
+                "refresh_expires_in": token_response.get("refresh_expires_in")
+            }
+        }
 
     except ValueError as e:
+        # log และ return response แบบ user-friendly
         return {
             "error": "Invalid authorization code. Please try again.",
             "details": str(e)
         }
 
-async def shopee_check_shop(shop_id: int):
-    info = check_shop_type(shop_id)
-    return info
+@app.api_route("/shopee/callback", methods=["GET", "HEAD"])
+async def shopee_callback(code: str = None, shop_id: int = None):
+    if not code or not shop_id:
+        return {"message": "Shopee callback ping"}
 
-@app.get("/shopee/shop_info")
-async def shopee_shop_info(shop_id: int):
-    shop_info = call_shopee_api_auto("/shop/get_shop_info", shop_id)
-    return shop_info
+    try:
+        token_response = get_token(code, shop_id)
+        return {"message": "✅ Token saved successfully.", "token": token_response}
+    except ValueError as e:
+        return {"error": "Invalid authorization code. Please try again.", "details": str(e)}
 
-@app.get("/shopee/products")
-async def shopee_products(shop_id: int, page_size: int = 10, page: int = 1):
-    offset = (page - 1) * page_size
-    products = call_shopee_api_auto("/product/get_item_list", shop_id, params={
-        "pagination_offset": offset,
-        "pagination_entries_per_page": page_size
-    })
-    return products
+
 
 @app.api_route("/lazada/callback", methods=["GET", "HEAD"])
 async def lazada_callback(code: str = None, country: str = None):
