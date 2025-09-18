@@ -35,12 +35,10 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     # debug: แสดง authorization code และ shop_id ที่ Shopee ส่งมา
     print("Authorization Code:", code)
     print("Shop ID:", shop_id)
-
+    partner_info = {}
     try:
         # ✅ ตรวจสอบร้านก่อน
-        partner_info = auth_partner(shop_id)#test
-        
-        
+        partner_info = auth_partner(shop_id)#test      
         # ตรวจสอบว่า API คืนค่าถูกต้องหรือร้านอนุญาต
         if partner_info.get("error"):#test
             raise ValueError(f"Partner check failed: {partner_info.get('message')}")#test
