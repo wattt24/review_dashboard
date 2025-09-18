@@ -87,7 +87,7 @@ def shopee_get_access_token(shop_id, code):
 
     # ✅ ส่งแบบ Query String
     url = (
-        f"{BASE_URL}{path}"
+        f"{BASE_URL_AUTH}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
         f"&timestamp={timestamp}"
         f"&sign={sign}"
@@ -102,7 +102,14 @@ def shopee_get_access_token(shop_id, code):
     print("===============================")
 
     # ✅ Shopee ต้องการ POST ว่าง (ไม่มี body)
-    resp = requests.post(url, timeout=30)
+    resp = requests.get(url, params={
+        "partner_id": SHOPEE_PARTNER_ID,
+        "timestamp": timestamp,
+        "sign": sign,
+        "code": code,
+        "shop_id": shop_id
+    }, timeout=30)
+
     data = resp.json()
 
     print("=== DEBUG Response ===")
