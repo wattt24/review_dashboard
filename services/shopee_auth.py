@@ -111,39 +111,6 @@ def shopee_get_access_token(shop_id, code):
 
     return data
 
-# def shopee_get_access_token(shop_id, code):
-#     path = "/api/v2/auth/token/get"   # ← ต้องเป็น token/get
-#     timestamp = int(time.time())
-
-#     shop_id_str = str(shop_id)
-#     code_str = str(code)
-
-#     sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code_str}{shop_id_str}"
-#     sign = hmac.new(
-#         SHOPEE_PARTNER_SECRET.encode("utf-8"),
-#         sign_input.encode("utf-8"),
-#         hashlib.sha256
-#     ).hexdigest()
-
-#     url = f"{BASE_URL_AUTH}{path}"
-#     params = {
-#         "partner_id": SHOPEE_PARTNER_ID,
-#         "timestamp": timestamp,
-#         "sign": sign
-#     }
-#     body = {
-#         "code": code_str,
-#         "shop_id": shop_id_str
-#     }
-
-#     resp = requests.post(url, params=params, json=body, timeout=30)
-#     data = resp.json()
-
-#     if data.get("error"):
-#         raise ValueError(f"Shopee API Error: {data.get('error')} - {data.get('message')}")
-
-#     return data
-
 
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
 def process_shopee_tokens(sheet_key, service_account_json_path=None):
