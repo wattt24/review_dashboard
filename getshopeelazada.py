@@ -25,47 +25,69 @@ async def shopee_authorize():
     return {"authorization_url": url}
 
 # app.include_router(shopee_auth.router, prefix="/shopee")
-@app.get("/shopee/callback")
-async def shopee_callback(code: str = None, shop_id: int = None):
-    if not code or not shop_id:
-        return {"message": "Shopee callback ping"}
-
-    print("Authorization Code:", code)
-    print("Shop ID:", shop_id)
-
-    try:
-        # ใช้ฟังก์ชันแลก token ที่ถูกต้อง
-        token_response = shopee_get_access_token(shop_id=shop_id, code=code)
-
-        return {
-            "message": "✅ Token saved successfully.",
-            "token": {
-                "access_token": token_response["access_token"],
-                "refresh_token": token_response["refresh_token"],
-                "expire_in": token_response.get("expire_in"),
-                "refresh_expires_in": token_response.get("refresh_expires_in")
-            }
-        }
-
-    except ValueError as e:
-        return {
-            "error": "Invalid authorization code. Please try again.",
-            "details": str(e)
-        }
-
 # @app.get("/shopee/callback")
 # async def shopee_callback(code: str = None, shop_id: int = None):
 #     if not code or not shop_id:
 #         return {"message": "Shopee callback ping"}
 
+#     print("Authorization Code:", code)
+#     print("Shop ID:", shop_id)
+
 #     try:
+#         # ใช้ฟังก์ชันแลก token ที่ถูกต้อง
 #         token_response = shopee_get_access_token(shop_id=shop_id, code=code)
+
 #         return {
 #             "message": "✅ Token saved successfully.",
-#             "token": token_response
+#             "token": {
+#                 "access_token": token_response["access_token"],
+#                 "refresh_token": token_response["refresh_token"],
+#                 "expire_in": token_response.get("expire_in"),
+#                 "refresh_expires_in": token_response.get("refresh_expires_in")
+#             }
 #         }
+
 #     except ValueError as e:
-#         return {"error": "Invalid authorization code.", "details": str(e)}
+#         return {
+#             "error": "Invalid authorization code. Please try again.",
+#             "details": str(e)
+#         }
+@app.api_route("/shopee/callback", methods=["GET", "HEAD"])
+async def shopee_callback(code: str = None, shop_id: int = None):
+    # ฟังก์ชันนี้คือ callback endpoint ที่ Shopee จะเรียกหลังจาก user กด Allow ที่หน้า OAuth
+    # Shopee จะส่ง query params: code (authorization code) และ shop_id มาที่ endpoint นี้
+
+    if not code or not shop_id:
+        # ถ้าไม่มี code หรือ shop_id แสดงว่า Shopee แค่ "ping" มาลองเรียกดู ไม่ได้ authorize จริง
+        return {"message": "Shopee callback ping"}
+
+    # debug: แสดง authorization code และ shop_id ที่ Shopee ส่งมา
+    print("Authorization Code:", code)
+    print("Shop ID:", shop_id)
+
+    try:
+        # 1. ใช้ code + shop_id ไปขอแลก access_token/refresh_token จาก Shopee API
+        # get_token() เป็นฟังก์ชันที่คุณเขียนไว้เองเพื่อเรียก API ของ Shopee
+        token_response = shopee_get_access_token(code, shop_id)
+
+        # 2. ถ้าแลก token สำเร็จ คืนค่ากลับไปเป็น response JSON
+        return {
+            "message": "✅ Token saved successfully.",
+            "token": {
+                "access_token": token_response["access_token"],
+                "refresh_token": token_response["refresh_token"],
+                "expire_in": token_response.get("expire_in"),  # อายุ access_token
+                "refresh_expires_in": token_response.get("refresh_expires_in")  # อายุ refresh_token
+            }
+        }
+
+    except ValueError as e:
+        # ถ้าแลก token ไม่สำเร็จ เช่น code ใช้แล้ว / หมดอายุ Shopee จะ error
+        # ตรงนี้ดัก error และส่งข้อความที่ user-friendly กลับไป
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Invalid authorization code", "details": str(e)}
+        )
 
 
 
