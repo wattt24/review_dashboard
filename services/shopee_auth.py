@@ -102,7 +102,7 @@ def shopee_get_access_token(shop_id, code):
     print("===============================")
 
     # ✅ Shopee ต้องการ POST ว่าง (ไม่มี body)
-    resp = requests.get(url, params=params, timeout=30)
+    resp = requests.post(url, params=params, timeout=30)
 
     data = resp.json()
 
