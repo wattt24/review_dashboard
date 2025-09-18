@@ -71,13 +71,12 @@ def auth_partner(shop_id):
     return response.json()
 
 def shopee_get_access_token(shop_id, code):
-    path = "/api/v2/auth/access_token/get"
+    path = "/api/v2/auth/token/get"   # ← ต้องเป็น token/get
     timestamp = int(time.time())
 
     shop_id_str = str(shop_id)
     code_str = str(code)
 
-    # ✅ จุดสำคัญ: สร้าง sign ตามลำดับที่ Shopee กำหนด
     sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code_str}{shop_id_str}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
@@ -85,35 +84,25 @@ def shopee_get_access_token(shop_id, code):
         hashlib.sha256
     ).hexdigest()
 
-    # ✅ ส่งแบบ Query String
-    url = f"{BASE_URL_AUTH}{path}"  # ไม่ซ้ำ /api/v2
+    url = f"{BASE_URL_AUTH}{path}"
     params = {
         "partner_id": SHOPEE_PARTNER_ID,
         "timestamp": timestamp,
-        "sign": sign,
+        "sign": sign
+    }
+    body = {
         "code": code_str,
         "shop_id": shop_id_str
     }
 
-    print("=== DEBUG Shopee Access Token ===")
-    print("Sign Input:", sign_input)
-    print("Generated Sign:", sign)
-    print("Final URL (with query params):", url + "?" + "&".join([f"{k}={v}" for k,v in params.items()]))
-    print("===============================")
-
-    # ✅ Shopee ต้องการ POST ว่าง (ไม่มี body)
-    resp = requests.post(url, params=params, timeout=30)
-
+    resp = requests.post(url, params=params, json=body, timeout=30)
     data = resp.json()
-
-    print("=== DEBUG Response ===")
-    print(data)
-    print("=====================")
 
     if data.get("error"):
         raise ValueError(f"Shopee API Error: {data.get('error')} - {data.get('message')}")
 
     return data
+
 
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
 def process_shopee_tokens(sheet_key, service_account_json_path=None):
