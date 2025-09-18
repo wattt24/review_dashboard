@@ -22,19 +22,11 @@ import time, hmac, hashlib
 # ===== Google Sheet Setup =====
 scope = ["https://spreadsheets.google.com/feeds",
          "https://www.googleapis.com/auth/drive"]
-def shopee_generate_sign(path, timestamp, code=None, shop_id=None, is_authorize=False):
-    message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    # ✅ ตอนแลก token ต้องใส่ code+shop_id
-    if code and shop_id:
-        message += f"{code}{shop_id}"
-    sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        message.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-    return sign
+def shopee_get_gspread_client(service_account_json_path=None):
+    creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
+    return gspread.authorize(creds)
 
-# ====== สร้าง URL สำหรับร้านกด authorize ======
+# ใช้สร้าง URL สำหรับให้ร้านกด authorize โดยไม่ต้องเข้า shopee open platform เอง
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())  # ต้องเป็นวินาที 10 หลัก
@@ -51,10 +43,18 @@ def shopee_get_authorization_url():
     )
     return url
 
-def shopee_get_gspread_client(service_account_json_path=None):
-    creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
-    return gspread.authorize(creds)
-
+# ถูกเรียก ภายใน shopee_get_access_token() และ auth_partner()ไม่ได้เรียกโดยตรงจาก callback
+def shopee_generate_sign(path, timestamp, code=None, shop_id=None, is_authorize=False):
+    message = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    # ✅ ตอนแลก token ต้องใส่ code+shop_id
+    if code and shop_id:
+        message += f"{code}{shop_id}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        message.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+    return sign
 # 1️⃣ ตรวจสอบร้านพาร์ทเนอร์
 def auth_partner(shop_id):
     path = "/api/v2/shop/auth_partner"
@@ -143,45 +143,6 @@ def process_shopee_tokens(sheet_key, service_account_json_path=None):
                 token_data.get("expire_in", 0),
                 token_data.get("refresh_expires_in", 0)
             )
-# @router.get("/shopee/callback")
-# async def shopee_callback(request: Request):
-#     code = request.query_params.get("code")
-#     shop_id = request.query_params.get("shop_id")
-#     timestamp = int(time.time())
-#     path = "/api/v2/auth/token/get"
-
-#     # sign ตาม doc
-#     sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
-#     sign = hmac.new(
-#         SHOPEE_PARTNER_SECRET.encode("utf-8"),
-#         sign_input.encode("utf-8"),
-#         hashlib.sha256
-#     ).hexdigest()
-
-#     url = f"{BASE_URL}{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
-
-#     payload = {
-#         "code": code,
-#         "shop_id": int(shop_id)
-#     }
-
-#     print("=== DEBUG Shopee Access Token ===")
-#     print("Partner ID:", SHOPEE_PARTNER_ID)
-#     print("Shop ID:", shop_id)
-#     print("Code:", code)
-#     print("Timestamp:", timestamp)
-#     print("Sign Input String:", sign_input)
-#     print("Generated Sign:", sign)
-#     print("Request URL:", url)
-#     print("Request Payload:", payload)
-#     print("================================")
-
-#     resp = requests.post(url, json=payload)
-#     print("=== DEBUG Shopee Response ===")
-#     print(resp.json())
-#     print("=============================")
-
-#     return resp.json()
 
 
 

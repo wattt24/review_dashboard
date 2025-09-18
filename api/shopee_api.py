@@ -1,40 +1,40 @@
 # # api/shopee_api.py
-# from services.shopee_auth import call_shopee_api_auto
-# from utils.token_manager import auto_refresh_token, sheet
+import APIRouter, Request, gspread, json
+scope = ["https://spreadsheets.google.com/feeds",
+         "https://www.googleapis.com/auth/drive"]
+def shopee_get_gspread_client(service_account_json_path=None):
+    creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
+    return gspread.authorize(creds)
 
-# # ------------------ ใช้ Shop ID จาก Sheet เดียวกับ token_manager ------------------
-# shop_ids = sheet.col_values(2)  # สมมติ Shop_ID อยู่คอลัมน์ B
-# shop_id = int(shop_ids[1])      # skip header
-# print("Using Shop ID:", shop_id)
 
-# # ------------------ ดึงข้อมูลร้าน ------------------
-# shop_info = call_shopee_api_auto("/shop/get_shop_info", shop_id)
-# print("Shop ID:", shop_info.get('shop_id'))
-# print("Shop Name:", shop_info.get('shop_name'))
-# print("Shop Logo:", shop_info.get('shop_logo'))
+# ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
+def process_shopee_tokens(sheet_key, service_account_json_path=None):
+    client = shopee_get_gspread_client(service_account_json_path)
+    sheet = client.open_by_key(sheet_key).sheet1
+    records = sheet.get_all_records()
 
-# # ------------------ ดึงสินค้าของร้าน ------------------
-# params = {
-#     "pagination_offset": 0,
-#     "pagination_entries_per_page": 100,
-#     "item_status": "ALL"
-# }
+    for idx, row in enumerate(records, start=2):
+        platform = row.get("platform", "").lower()
+        shop_id = str(row.get("account_id", "")).strip()
+        code = row.get("code", "").strip()  # สมมติว่าเก็บ code ไว้ใน sheet
 
-# # Step 1: ดึงรายการ item_id ทั้งหมด
-# items = call_shopee_api_auto(
-#     "/product/get_item_list",
-#     shop_id,
-#     params={"pagination_offset": 0, "pagination_entries_per_page": 50, "item_status": "NORMAL"}
-# )
-# print(items)
+        if platform != "shopee" or not shop_id or not code:
+            continue
 
-# item_ids = [item["item_id"] for item in items.get("response", {}).get("item", [])]
+        # 1️⃣ ตรวจสอบร้าน
+        partner_info = auth_partner(shop_id)
+        print(f"[{shop_id}] Partner info:", partner_info)
 
-# # Step 2: ดึงรายละเอียดสินค้า
-# if item_ids:
-#     product_info = call_shopee_api_auto(
-#         "/product/get_item_base_info",
-#         shop_id,
-#         params={"item_id_list": ",".join(map(str, item_ids))}
-#     )
-#     print(product_info)
+        # 2️⃣ แลก access token
+        token_data = shopee_get_access_token(shop_id, code)
+        print(f"[{shop_id}] Token data:", token_data)
+
+        if token_data and "access_token" in token_data:
+            save_token(
+                "shopee",
+                shop_id,
+                token_data["access_token"],
+                token_data.get("refresh_token", ""),
+                token_data.get("expire_in", 0),
+                token_data.get("refresh_expires_in", 0)
+            )
