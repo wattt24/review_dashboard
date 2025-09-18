@@ -72,50 +72,16 @@ def auth_partner(shop_id):
     return response.json()
 
 def shopee_get_access_token(shop_id, code):
-    """
-    แลก Authorization Code เพื่อรับ Access Token และ Refresh Token จาก Shopee API.
-    
-    Args:
-        shop_id (int): Shop ID ที่ได้จาก Shopee callback
-        code (str): Authorization code ที่ได้จาก Shopee callback
-        
-    Returns:
-        dict: response จาก Shopee API ที่มี access_token และ refresh_token
-        
-    Raises:
-        ValueError: หาก Shopee API คืนค่า error กลับมา
-    """
     path = "/api/v2/auth/token/get"
-    timestamp = int(time.time()) # ใช้ timestamp ณ เวลาปัจจุบัน
+    timestamp = int(time.time())
     
-    # Shopee V2 API ต้องการ JSON payload ใน body สำหรับ endpoint นี้
-    # และใช้ JSON string นี้ในการสร้าง signature
-    body = {
-        "shop_id": int(shop_id),
-        "code": code,
-        "partner_id": SHOPEE_PARTNER_ID
-    }
-    
-    # NOTE: การเรียงลำดับคีย์ใน JSON string มีผลต่อการคำนวณ sign
-    # Shopee ต้องการให้เรียงตามตัวอักษรของคีย์: "code", "partner_id", "shop_id"
-    # แต่ในกรณีนี้เราจะใช้ JSON.dumps ที่เรียงลำดับให้แล้ว (ถ้า key เป็น string)
-    # หรือเราสามารถสร้าง string เองเพื่อให้แน่ใจว่าถูกต้อง
-    body_json_string = json.dumps(body)
-
-    # 1. สร้าง String ที่จะใช้ในการ Sign ตามที่ Shopee กำหนด:
-    #    "partner_id" + "path" + "timestamp" + "JSON_body"
-    #    JSON_body คือ String ที่เกิดจาก json.dumps(body)
-    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{body_json_string}"
-
-    # 2. คำนวณ HMAC-SHA256 signature
+    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"  # ✅ ไม่มี body
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         sign_input.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
-    # 3. กำหนด URL พร้อม Query Parameters (partner_id, timestamp, sign)
-    #    ส่วน body จะถูกส่งไปใน POST request
     url = f"{BASE_URL_AUTH}{path}"
     params = {
         "partner_id": SHOPEE_PARTNER_ID,
@@ -123,19 +89,19 @@ def shopee_get_access_token(shop_id, code):
         "sign": sign
     }
 
-    print("=== DEBUG Shopee Access Token ===")
+    body = {
+        "shop_id": int(shop_id),
+        "code": code,
+        "partner_id": SHOPEE_PARTNER_ID
+    }
+
     print("Sign Input:", sign_input)
     print("Generated Sign:", sign)
-    print("Final URL (with query params):", url)
+    print("Final URL:", url)
     print("JSON Body:", body)
-    print("===============================")
 
-    # 4. ส่ง POST Request ไปยัง Shopee API
-    #    ใช้ `json=body` เพื่อให้ requests จัดการแปลง body เป็น JSON string
-    #    และตั้ง Content-Type เป็น application/json โดยอัตโนมัติ
     resp = requests.post(url, params=params, json=body, timeout=30)
     data = resp.json()
-
     print("=== DEBUG Response ===")
     print(data)
     print("=====================")
