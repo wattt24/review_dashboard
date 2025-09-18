@@ -8,7 +8,6 @@ import altair as alt
 import plotly.express as px
 from datetime import datetime
 from utils.token_manager import sheet, auto_refresh_token
-from services.shopee_auth import call_shopee_api_auto
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -428,41 +427,8 @@ def app():
             records = sheet.get_all_records()
             shopee_shops = [r for r in records if r["platform"].lower() == "shopee"]
 
-            if not shopee_shops:
-                st.warning("❌ ไม่มี Shopee Shop ใน Google Sheet")
-            else:
-                for record in shopee_shops:
-                    shop_id = record["account_id"]
-                    access_token = auto_refresh_token("shopee", shop_id)
-
-                    # Step 1: ดึงรายการ item_id ทั้งหมด
-                    items = call_shopee_api_auto(
-                        "/product/get_item_list",
-                        shop_id,
-                        params={"pagination_offset": 0, "pagination_entries_per_page": 50, "item_status": "NORMAL"}
-                    )
-
-                    item_list = items.get("response", {}).get("item", [])
-                    item_ids = [item["item_id"] for item in item_list]
-
-                    st.subheader(f"🛒 Shopee Shop ID: {shop_id}")
-                    if not item_ids:
-                        st.info("ไม่มีสินค้าในร้านนี้")
-                    else:
-                        # Step 2: ดึงรายละเอียดสินค้า
-                        product_info = call_shopee_api_auto(
-                            "/product/get_item_base_info",
-                            shop_id,
-                            params={"item_id_list": ",".join(map(str, item_ids))}
-                        )
-
-                        # แสดงผลเป็น DataFrame
-                        item_details = product_info.get("response", {}).get("item", [])
-                        if item_details:
-                            df = pd.DataFrame(item_details)
-                            st.dataframe(df)  # แสดงเป็นตาราง
-                        else:
-                            st.info("ไม่สามารถดึงรายละเอียดสินค้าได้")
+            
+                    
         # --------------------- 5. Lazada ---------------------
         with tabs[4]:
             st.header("📦 Lazada Orders")

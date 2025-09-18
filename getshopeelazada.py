@@ -68,7 +68,10 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     try:
         # 1. ใช้ code + shop_id ไปขอแลก access_token/refresh_token จาก Shopee API
         # get_token() เป็นฟังก์ชันที่คุณเขียนไว้เองเพื่อเรียก API ของ Shopee
-        token_response = shopee_get_access_token(code, shop_id)
+        token_response = shopee_get_access_token(
+            shop_id=shop_id,  # <-- shop_id ต้องอยู่ตัวแรก
+            code=code         # <-- code อยู่ตัวหลัง
+        )
 
         # 2. ถ้าแลก token สำเร็จ คืนค่ากลับไปเป็น response JSON
         return {
