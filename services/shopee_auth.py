@@ -85,7 +85,7 @@ def shopee_get_access_token(shop_id, code):
     Raises:
         ValueError: หาก Shopee API คืนค่า error กลับมา
     """
-    path = "/api/v2/auth/access_token/get"
+    path = "/api/v2/auth/token/get"
     timestamp = int(time.time()) # ใช้ timestamp ณ เวลาปัจจุบัน
     
     # Shopee V2 API ต้องการ JSON payload ใน body สำหรับ endpoint นี้
