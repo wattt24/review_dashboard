@@ -103,7 +103,7 @@ def auto_refresh_token(platform, account_id):
     # หมดอายุ → refresh
     try:
         if platform == "shopee":
-            from services.shopee_auth import refresh_token as shopee_refresh_token
+            from services.shopee_auth import call_shopee_api_auto as shopee_refresh_token
             print(f"🔄 Trying to refresh Shopee token for shop_id={account_id}")
             new_data = shopee_refresh_token(token_data["refresh_token"], account_id)
 
