@@ -46,8 +46,18 @@ def get_item_base_info(access_token, item_ids):
         "sign": sign_value
     }
     body = {"item_id_list": item_ids}
+
     resp = requests.post(url, params=params, json=body, timeout=30)
-    return resp.json()
+    
+    # <-- เพิ่ม debug
+    try:
+        data = resp.json()
+    except Exception as e:
+        print("❌ Shopee API Response is not JSON")
+        print("Response text:", resp.text)
+        raise e
+
+    return data
 
 def fetch_items_df():
     # <-- ใช้ auto_refresh_token จาก token_manager แทนการอ่าน Google Sheet ด้วยตัวเอง
