@@ -22,7 +22,6 @@ products = service_products
 sales_data, buyers_list, total_orders = fetch_sales_and_buyers_all(order_status="completed")
 import json
 
-
 client = get_gspread_client()
 sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
 def make_safe_for_streamlit(df):
