@@ -56,3 +56,17 @@ def get_page_insights(page_id: str, metric: str = "page_impressions,page_engaged
 
     res = requests.get(url, params=params).json()
     return res
+def get_top_selling_items(shop_id: int, limit: int = 5):
+    """
+    ดึงสินค้าขายดีจาก Shopee
+    """
+    endpoint = "/api/v2/item/get_shop_items"
+    params = {
+        "shop_id": shop_id,
+        "order_by": "sales",
+        "page_size": limit,
+    }
+    result = call_shopee_api_auto(shop_id, endpoint, params)
+    if "items" in result:
+        return result["items"]
+    return []

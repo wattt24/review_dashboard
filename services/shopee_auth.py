@@ -17,6 +17,41 @@ def shopee_get_gspread_client(key_path=None):
     creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
     return gspread.authorize(creds)
 
+def call_shopee_api_auto(path, method="GET", params=None, body=None):
+    """
+    เรียก Shopee API พร้อม auto-refresh token
+    """
+    # 1. ตรวจสอบและ refresh token
+    access_token = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
+    if not access_token:
+        raise ValueError("❌ Shopee access token not available or refresh failed")
+
+    # 2. สร้าง URL และ sign
+    url = BASE_URL_AUTH + path
+    timestamp = int(time.time())
+    sign = shopee_generate_sign(path, timestamp, access_token)
+
+    if params is None:
+        params = {}
+    params.update({
+        "partner_id": SHOPEE_PARTNER_ID,
+        "timestamp": timestamp,
+        "access_token": access_token,
+        "shop_id": SHOPEE_SHOP_ID,
+        "sign": sign
+    })
+
+    # 3. เรียก API
+    if method.upper() == "GET":
+        resp = requests.get(url, params=params, timeout=30)
+    elif method.upper() == "POST":
+        resp = requests.post(url, params=params, json=body or {}, timeout=30)
+    else:
+        raise ValueError("Method must be GET or POST")
+
+    return resp.json()
+
+
 # ใช้สร้าง URL สำหรับให้ร้านกด authorize โดยไม่ต้องเข้า shopee open platform เอง
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
@@ -135,38 +170,6 @@ def process_shopee_tokens(sheet_key, service_account_json_path=None):
                 token_data.get("refresh_expires_in", 0)
             )
 
-def call_shopee_api_auto(path, method="GET", params=None, body=None):
-    """
-    เรียก Shopee API พร้อม auto-refresh token
-    """
-    # 1. ตรวจสอบและ refresh token
-    access_token = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
-    if not access_token:
-        raise ValueError("❌ Shopee access token not available or refresh failed")
 
-    # 2. สร้าง URL และ sign
-    url = BASE_URL_AUTH + path
-    timestamp = int(time.time())
-    sign = shopee_generate_sign(path, timestamp, access_token)
-
-    if params is None:
-        params = {}
-    params.update({
-        "partner_id": SHOPEE_PARTNER_ID,
-        "timestamp": timestamp,
-        "access_token": access_token,
-        "shop_id": SHOPEE_SHOP_ID,
-        "sign": sign
-    })
-
-    # 3. เรียก API
-    if method.upper() == "GET":
-        resp = requests.get(url, params=params, timeout=30)
-    elif method.upper() == "POST":
-        resp = requests.post(url, params=params, json=body or {}, timeout=30)
-    else:
-        raise ValueError("Method must be GET or POST")
-
-    return resp.json()
 
 
