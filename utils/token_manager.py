@@ -16,20 +16,22 @@ scope = [
 
 def get_gspread_client():
     """
-    ใช้ Service Account JSON จาก Environment variable (Render)
+    ใช้ Service Account JSON จาก Environment variable (Render) หรือ dict (st.secrets)
     """
-    service_account_json_str = os.environ.get("SERVICE_ACCOUNT_JSON") or st.secrets["SERVICE_ACCOUNT_JSON"]
-    if not service_account_json_str:
-        raise FileNotFoundError("❌ ไม่พบ SERVICE_ACCOUNT_JSON ใน os.environ")
+    service_account_json = os.environ.get("SERVICE_ACCOUNT_JSON")
 
-    try:
-        service_account_info = json.loads(service_account_json_str)
-    except json.JSONDecodeError as e:
-        raise ValueError("❌ SERVICE_ACCOUNT_JSON ไม่ใช่ JSON ที่ถูกต้อง") from e
+    if service_account_json:  
+        # กรณี Render: SERVICE_ACCOUNT_JSON เป็น string (JSON string)
+        try:
+            service_account_info = json.loads(service_account_json)
+        except json.JSONDecodeError as e:
+            raise ValueError("❌ SERVICE_ACCOUNT_JSON ไม่ใช่ JSON ที่ถูกต้อง") from e
+    else:
+        # กรณี Streamlit: st.secrets เป็น dict/AttrDict
+        service_account_info = dict(st.secrets["SERVICE_ACCOUNT_JSON"])
 
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scope)
     return gspread.authorize(creds)
-
 
 # ===== Load Google Sheet =====
 client = get_gspread_client()
