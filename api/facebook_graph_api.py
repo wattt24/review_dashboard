@@ -66,7 +66,7 @@ def get_top_selling_items(shop_id: int, limit: int = 5):
         "order_by": "sales",
         "page_size": limit,
     }
-    result = call_shopee_api_auto(shop_id, endpoint, params)
+    result = auto_refresh_token(shop_id, endpoint, params)
     if "items" in result:
         return result["items"]
     return []

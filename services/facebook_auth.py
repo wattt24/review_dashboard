@@ -13,20 +13,15 @@ def refresh_facebook_token(current_token, account_id):
         "client_secret": os.environ["FACEBOOK_APP_SECRET"],
         "fb_exchange_token": current_token
     }
+
     resp = requests.get(url, params=params)
     data = resp.json()
+
     if "access_token" in data:
-        # บันทึกลง Google Sheet
-        save_token(
-            platform="facebook",
-            account_id=account_id,
-            access_token=data["access_token"],
-            refresh_token="",
-            expires_in=data.get("expires_in", 0)
-        )
-        return data
+        return data  # ✅ คืนค่าเฉย ๆ ไม่บันทึก
     else:
         raise Exception(f"Facebook token refresh failed: {data}")
+
 def get_all_page_tokens():
     """
     คืนค่า dict {page_id: access_token} สำหรับทุกเพจ (หลาย account)

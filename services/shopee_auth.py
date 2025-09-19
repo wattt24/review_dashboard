@@ -144,7 +144,6 @@ def refresh_shopee_token(refresh_token: str, shop_id: int):
     base_url = "https://partner.shopeemobile.com"
     timestamp = int(time.time())
 
-    # 1️⃣ สร้าง sign string
     sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
@@ -152,7 +151,6 @@ def refresh_shopee_token(refresh_token: str, shop_id: int):
         hashlib.sha256
     ).hexdigest()
 
-    # 2️⃣ เตรียม URL และ body
     url = f"{base_url}{path}"
     params = {
         "partner_id": SHOPEE_PARTNER_ID,
@@ -166,24 +164,12 @@ def refresh_shopee_token(refresh_token: str, shop_id: int):
         "shop_id": shop_id
     }
 
-    # 3️⃣ ส่ง POST request
     resp = requests.post(url, params=params, json=payload, timeout=30)
     data = resp.json()
     print("🔁 Shopee refresh_token response:", data)
 
-    # 4️⃣ เช็คผลลัพธ์
     if "access_token" in data:
-        # ✅ บันทึก token ใหม่
-        save_token(
-            platform="shopee",
-            account_id=shop_id,
-            access_token=data["access_token"],
-            refresh_token=data.get("refresh_token", ""),  # บางกรณี Shopee คืน refresh_token ใหม่
-            expires_in=data.get("expire_in", 0),
-            refresh_expires_in=data.get("refresh_expires_in", 0)
-        )
-        return data
+        return data  # ✅ คืนค่าเฉย ๆ ไม่บันทึก
     else:
         raise Exception(f"Shopee token refresh failed: {data}")
-
 
