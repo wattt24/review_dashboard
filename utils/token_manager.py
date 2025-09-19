@@ -16,18 +16,15 @@ scope = [
 
 def get_gspread_client():
     """
-    ใช้ Service Account JSON จาก Environment variable (Render) หรือ dict (st.secrets)
+    ใช้ Service Account JSON จาก Environment variable (Render) หรือ st.secrets (Streamlit Cloud)
     """
     service_account_json = os.environ.get("SERVICE_ACCOUNT_JSON")
 
-    if service_account_json:  
-        # กรณี Render: SERVICE_ACCOUNT_JSON เป็น string (JSON string)
-        try:
-            service_account_info = json.loads(service_account_json)
-        except json.JSONDecodeError as e:
-            raise ValueError("❌ SERVICE_ACCOUNT_JSON ไม่ใช่ JSON ที่ถูกต้อง") from e
+    if service_account_json:
+        # Render / env var เป็น string JSON
+        service_account_info = json.loads(service_account_json)
     else:
-        # กรณี Streamlit: st.secrets เป็น dict/AttrDict
+        # Streamlit Cloud / st.secrets เป็น dict
         service_account_info = dict(st.secrets["SERVICE_ACCOUNT_JSON"])
 
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scope)
