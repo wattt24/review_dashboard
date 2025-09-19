@@ -5,14 +5,16 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import altair as alt
+from api.shopee_api import fetch_items_df
 import plotly.express as px
 from datetime import datetime
-from utils.token_manager import sheet, auto_refresh_token
+from api.facebook_graph_api import get_page_info, get_page_posts
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api.fujikathailand_rest_api import *#fetch_all_product_sales, fetch_posts, fetch_comments,fetch_product_reviews
 # from services.gsc_fujikathailand import *
+from utils.token_manager import get_gspread_client
 from collections import defaultdict
 from api.fujikaservice_rest_api import *#fetch_service_all_products
 service_products = fetch_service_all_products()
@@ -20,6 +22,9 @@ products = service_products
 sales_data, buyers_list, total_orders = fetch_sales_and_buyers_all(order_status="completed")
 import json
 
+
+client = get_gspread_client()
+sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
 def make_safe_for_streamlit(df):
     """แปลงทุก column object/list/dict เป็น string เพื่อให้ Streamlit แสดงได้"""
     for col in df.columns:
@@ -422,10 +427,54 @@ def app():
         # --------------------- 4. Shopee ---------------------
         with tabs[3]:
             st.header("🛍️ รีวิว Shopee")
-            st.title("📦 Shopee Shops & Products Dashboard")
             # ดึง Shop ID ของทุกร้านจาก Google Sheet
-            records = sheet.get_all_records()
-            shopee_shops = [r for r in records if r["platform"].lower() == "shopee"]
+            st.title("📊 Shopee Product Dashboard")
+            df = fetch_items_df()
+            # ---- Search / Filter ----
+            search = st.text_input("🔎 ค้นหาสินค้า", "")
+            if search:
+                df = df[df["name"].str.contains(search, case=False, na=False)]
+
+            # ---- KPI Boxes ----
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("✅ สินค้าทั้งหมด", len(df))
+            col2.metric("🟢 กำลังขาย", (df["status"]=="NORMAL").sum())
+            col3.metric("🔴 หมดสต๊อก", (df["stock"]==0).sum())
+            col4.metric("⚠️ ถูกแบน", (df["status"]=="BANNED").sum())
+
+            # ---- Table ----
+            st.subheader("📋 รายการสินค้า")
+            st.dataframe(df[["item_id","name","stock","status","sales","category"]])
+
+            # ---- Bar Chart: Top 10 Products by Sales ----
+            st.subheader("🏆 Top Products by Sales")
+            top_sales = df.sort_values("sales", ascending=False).head(10)
+            bar = alt.Chart(top_sales).mark_bar().encode(
+                x="sales:Q",
+                y=alt.Y("name:N", sort="-x"),
+                tooltip=["name","sales"]
+            )
+            st.altair_chart(bar, use_container_width=True)
+
+            # ---- Pie Chart: Category Distribution ----
+            st.subheader("📊 การกระจายหมวดหมู่สินค้า")
+            pie = alt.Chart(df).mark_arc().encode(
+                theta="count()",
+                color="category",
+                tooltip=["category","count()"]
+            )
+            st.altair_chart(pie, use_container_width=True)
+
+            # ---- Line Chart: Sales Trend ----
+            st.subheader("📈 แนวโน้มยอดขาย")
+            df["date"] = pd.to_datetime(df["date"])
+            line = alt.Chart(df).mark_line(point=True).encode(
+                x="date:T",
+                y="sales:Q",
+                color="name:N",
+                tooltip=["date","sales","name"]
+            )
+            st.altair_chart(line, use_container_width=True)
 
             
                     
@@ -441,48 +490,37 @@ def app():
 
         # --------------------- 6. Facebook Page / Ads ---------------------
         with tabs[5]:
+            st.title("📘 Facebook Pages Overview")
             records = sheet.get_all_records()
             fb_pages = [r["account_id"] for r in records if r["platform"] == "facebook"]
-
-            if not fb_pages:
-                st.error("❌ ไม่พบเพจ Facebook ใน Google Sheet")
-                return
-
-            st.title("📘 Facebook Pages Overview")
-
             for page_id in fb_pages:
-                ACCESS_TOKEN = auto_refresh_token("facebook", page_id)
-                if not ACCESS_TOKEN:
-                    st.warning(f"⚠️ ไม่มี token สำหรับเพจ {page_id}")
+                page_info = get_page_info(page_id)
+
+                if "error" in page_info:
+                    st.error(page_info["error"])
                     continue
 
-                # --- ดึงข้อมูลเพจ ---
-                url = f"https://graph.facebook.com/v19.0/{page_id}"
-                params = {
-                    "fields": "id,name,picture{url}",
-                    "access_token": ACCESS_TOKEN
-                }
-                res = requests.get(url, params=params).json()
+                st.markdown(
+                    f"""
+                    <div style="background-color:#f9f9f9;
+                                padding:20px;
+                                border-radius:15px;
+                                box-shadow:2px 2px 8px rgba(0,0,0,0.1);
+                                text-align:center;
+                                margin-bottom:20px;">
+                        <img src="{page_info['picture']['data']['url']}" width="80" style="border-radius:50%;">
+                        <h3 style="margin:10px 0;">{page_info['name']}</h3>
+                        <p style="color:gray;">Page ID: {page_info['id']}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-                if "error" in res:
-                    st.error(f"⚠️ Error: {res['error']['message']} (Page ID: {page_id})")
-                else:
-                    # แสดงเป็นการ์ดสวย ๆ
-                    st.markdown(
-                        f"""
-                        <div style="background-color:#f9f9f9;
-                                    padding:20px;
-                                    border-radius:15px;
-                                    box-shadow:2px 2px 8px rgba(0,0,0,0.1);
-                                    text-align:center;
-                                    margin-bottom:20px;">
-                            <img src="{res['picture']['data']['url']}" width="80" style="border-radius:50%;">
-                            <h3 style="margin:10px 0;">{res['name']}</h3>
-                            <p style="color:gray;">Page ID: {res['id']}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                # โชว์โพสต์ล่าสุด 3 อัน
+                posts = get_page_posts(page_id, limit=3)
+                if "data" in posts:
+                    for post in posts["data"]:
+                        st.write(f"📝 [{post.get('message','(ไม่มีข้อความ)')[:50]}...]({post['permalink_url']}) - {post['created_time']}")
         # --------------------- 7. LINE OA ---------------------
         with tabs[6]:
             st.header("💬 LINE OA Insights")

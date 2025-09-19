@@ -1,40 +1,99 @@
-# # api/shopee_api.py
-import APIRouter, Request, gspread, json
-scope = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
-def shopee_get_gspread_client(service_account_json_path=None):
-    creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
-    return gspread.authorize(creds)
+import time, hmac, hashlib, requests, os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pandas as pd
+from utils.config import SHOPEE_SHOP_ID, SHOPEE_PARTNER_KEY, SHOPEE_PARTNER_ID
 
+# ===== Google Sheet Config =====
+SHEET_NAME = "all Tokens  refresh"
+key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
 
-# ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
-def process_shopee_tokens(sheet_key, service_account_json_path=None):
-    client = shopee_get_gspread_client(service_account_json_path)
-    sheet = client.open_by_key(sheet_key).sheet1
-    records = sheet.get_all_records()
+def load_token(platform, account_id):
+    scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open(SHEET_NAME).sheet1
+    rows = sheet.get_all_records()
+    for row in rows:
+        if row["platform"] == platform and str(row["account_id"]) == str(account_id):
+            return row
+    raise Exception("ไม่พบ token ใน Google Sheet")
 
-    for idx, row in enumerate(records, start=2):
-        platform = row.get("platform", "").lower()
-        shop_id = str(row.get("account_id", "")).strip()
-        code = row.get("code", "").strip()  # สมมติว่าเก็บ code ไว้ใน sheet
+def sign(path, timestamp, access_token):
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{SHOPEE_SHOP_ID}"
+    return hmac.new(
+        SHOPEE_PARTNER_KEY.encode(),
+        base_string.encode(),
+        hashlib.sha256
+    ).hexdigest()
 
-        if platform != "shopee" or not shop_id or not code:
-            continue
+def get_item_list(access_token, offset=0, page_size=50):
+    path = "/api/v2/product/get_item_list"
+    url = "https://partner.shopeemobile.com" + path
+    timestamp = int(time.time())
+    sign_value = sign(path, timestamp, access_token)
+    
+    params = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "timestamp": timestamp,
+        "access_token": access_token,
+        "shop_id": SHOPEE_SHOP_ID,
+        "sign": sign_value,
+        "offset": offset,
+        "page_size": page_size,
+        "item_status": "NORMAL"
+    }
+    
+    resp = requests.get(url, params=params, timeout=30)
+    return resp.json()
 
-        # 1️⃣ ตรวจสอบร้าน
-        partner_info = auth_partner(shop_id)
-        print(f"[{shop_id}] Partner info:", partner_info)
+def get_item_base_info(access_token, item_ids):
+    path = "/api/v2/product/get_item_base_info"
+    url = "https://partner.shopeemobile.com" + path
+    timestamp = int(time.time())
+    sign_value = sign(path, timestamp, access_token)
+    
+    params = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "timestamp": timestamp,
+        "access_token": access_token,
+        "shop_id": SHOPEE_SHOP_ID,
+        "sign": sign_value
+    }
+    body = {"item_id_list": item_ids}
+    resp = requests.post(url, params=params, json=body, timeout=30)
+    return resp.json()
 
-        # 2️⃣ แลก access token
-        token_data = shopee_get_access_token(shop_id, code)
-        print(f"[{shop_id}] Token data:", token_data)
+def fetch_items_df():
+    token_data = load_token("shopee", str(SHOPEE_SHOP_ID))
+    ACCESS_TOKEN = token_data["access_token"]
 
-        if token_data and "access_token" in token_data:
-            save_token(
-                "shopee",
-                shop_id,
-                token_data["access_token"],
-                token_data.get("refresh_token", ""),
-                token_data.get("expire_in", 0),
-                token_data.get("refresh_expires_in", 0)
-            )
+    items_all = []
+    offset = 0
+    page_size = 50
+    while True:
+        res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
+        items = res.get("response", {}).get("item", [])
+        if not items:
+            break
+        items_all.extend(items)
+        if not res.get("response", {}).get("more", False):
+            break
+        offset += page_size
+
+    item_ids = [i["item_id"] for i in items_all]
+    base_info_res = get_item_base_info(ACCESS_TOKEN, item_ids)
+    base_items = base_info_res.get("response", {}).get("item", [])
+
+    data = []
+    for item in base_items:
+        data.append({
+            "item_id": item["item_id"],
+            "name": item.get("item_name", ""),
+            "status": item.get("item_status", ""),
+            "stock": item.get("stock", 0),
+            "category": item.get("category_name", "อื่นๆ"),
+            "sales": item.get("sold", 0),
+            "date": pd.Timestamp.now()
+        })
+    return pd.DataFrame(data)

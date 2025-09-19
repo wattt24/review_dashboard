@@ -5,9 +5,6 @@ import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials 
 import streamlit as st
-
-GOOGLE_SHEET_ID = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
-
 # Facebook ใช้ long-lived token แทน refresh_token
 # สามารถเพิ่ม API สำหรับ refresh ได้ถ้าจำเป็น
 
@@ -18,6 +15,7 @@ scope = [
 ]
 
 def get_gspread_client():
+    
     key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
     creds = None
 

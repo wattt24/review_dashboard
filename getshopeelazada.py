@@ -37,12 +37,6 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     print("Shop ID:", shop_id)
     partner_info = {}
     try:
-        # ✅ ตรวจสอบร้านก่อน
-        partner_info = auth_partner(shop_id)#test      
-        # ตรวจสอบว่า API คืนค่าถูกต้องหรือร้านอนุญาต
-        if partner_info.get("error"):#test
-            raise ValueError(f"Partner check failed: {partner_info.get('message')}")#test
-        print(f"Partner info for shop {shop_id}:", partner_info)#test
         # 1. ใช้ code + shop_id ไปขอแลก access_token/refresh_token จาก Shopee API
         # get_token() เป็นฟังก์ชันที่คุณเขียนไว้เองเพื่อเรียก API ของ Shopee
         token_response = shopee_get_access_token(
@@ -70,10 +64,6 @@ async def shopee_callback(code: str = None, shop_id: int = None):
         }
 
     except ValueError as e:
-        print("Authorization Code:", code) #test
-        print("Shop ID:", shop_id) #test
-        print("Checking partner info...")#test
-        print("Partner response:", partner_info)#test
         # ถ้าแลก token ไม่สำเร็จ เช่น code ใช้แล้ว / หมดอายุ Shopee จะ error
         # ตรงนี้ดัก error และส่งข้อความที่ user-friendly กลับไป
         return JSONResponse(

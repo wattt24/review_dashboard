@@ -1,27 +1,16 @@
 # services/shopee_auth.py
-import time, hmac, hashlib, requests
+import time, hmac, hashlib, requests, gspread
 import urllib.parse
-from utils.config import (
-    SHOPEE_PARTNER_ID,
-    SHOPEE_PARTNER_SECRET,
-    SHOPEE_REDIRECT_URI
-)
-import json
+from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_REDIRECT_URI)
 from utils.token_manager import save_token
 from oauth2client.service_account import ServiceAccountCredentials
-import gspread
-import time, hmac, hashlib, requests
-from fastapi import APIRouter, Request
-# router = APIRouter()
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
-# BASE_URL = "https://partner.shopeemobile.com"
 BASE_URL = "https://partner.shopeemobile.com/api/v2"
-BASE_URL_AUTH = "https://partner.shopeemobile.com"  
+BASE_URL_AUTH = "https://partner.shopeemobile.com" 
+
 # ========== SIGN GENERATOR ==========
-import time, hmac, hashlib
 # ===== Google Sheet Setup =====
-scope = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
+scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
 def shopee_get_gspread_client(service_account_json_path=None):
     creds = ServiceAccountCredentials.from_json_keyfile_name(service_account_json_path, scope)
     return gspread.authorize(creds)
