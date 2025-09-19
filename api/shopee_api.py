@@ -1,23 +1,8 @@
-import time, hmac, hashlib, requests, os
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+# services/shopee_api.py
+import time, hmac, hashlib, requests
 import pandas as pd
 from utils.config import SHOPEE_SHOP_ID, SHOPEE_PARTNER_KEY, SHOPEE_PARTNER_ID
-
-# ===== Google Sheet Config =====
-SHEET_NAME = "all Tokens  refresh"
-key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
-
-def load_token(platform, account_id):
-    scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
-    client = gspread.authorize(creds)
-    sheet = client.open(SHEET_NAME).sheet1
-    rows = sheet.get_all_records()
-    for row in rows:
-        if row["platform"] == platform and str(row["account_id"]) == str(account_id):
-            return row
-    raise Exception("ไม่พบ token ใน Google Sheet")
+from utils.token_manager import auto_refresh_token
 
 def sign(path, timestamp, access_token):
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{SHOPEE_SHOP_ID}"
@@ -65,8 +50,10 @@ def get_item_base_info(access_token, item_ids):
     return resp.json()
 
 def fetch_items_df():
-    token_data = load_token("shopee", str(SHOPEE_SHOP_ID))
-    ACCESS_TOKEN = token_data["access_token"]
+    # <-- ใช้ auto_refresh_token จาก token_manager แทนการอ่าน Google Sheet ด้วยตัวเอง
+    ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
+    if not ACCESS_TOKEN:
+        raise Exception("❌ ไม่สามารถดึง Shopee access token ได้")
 
     items_all = []
     offset = 0

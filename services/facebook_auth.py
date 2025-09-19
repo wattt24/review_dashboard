@@ -1,16 +1,16 @@
 # services/facebook_auth.py
 import requests
-from utils.token_manager import save_token
-import os, streamlit as st
+import streamlit as st
 from datetime import datetime
 from utils.token_manager import auto_refresh_token, save_token
+from utils.config import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, FACEBOOK_PAGE_IDS  # import จาก config
 
 def refresh_facebook_token(current_token, account_id):
     url = "https://graph.facebook.com/v17.0/oauth/access_token"
     params = {
         "grant_type": "fb_exchange_token",
-        "client_id": os.environ["FACEBOOK_APP_ID"],
-        "client_secret": os.environ["FACEBOOK_APP_SECRET"],
+        "client_id": FACEBOOK_APP_ID,
+        "client_secret": FACEBOOK_APP_SECRET,
         "fb_exchange_token": current_token
     }
 
@@ -27,9 +27,7 @@ def get_all_page_tokens():
     คืนค่า dict {page_id: access_token} สำหรับทุกเพจ (หลาย account)
     auto-refresh token ถ้าหมดอายุ
     """
-    page_ids_str = st.secrets.get("FACEBOOK_PAGE_IDS", os.environ.get("FACEBOOK_PAGE_IDS", ""))
-    page_ids = [pid.strip() for pid in page_ids_str.split(",") if pid.strip()]
-    
+    page_ids = [pid.strip() for pid in FACEBOOK_PAGE_IDS.split(",") if pid.strip()]
     page_tokens = {}
     
     for page_id in page_ids:
@@ -51,11 +49,12 @@ def get_all_page_tokens():
             print(f"❌ ไม่สามารถดึง token ของเพจ {page_id}: {resp}")
     
     return page_tokens
+
 def validate_token(access_token):
     url = "https://graph.facebook.com/debug_token"
     params = {
         "input_token": access_token,
-        "access_token": f"{os.environ['FACEBOOK_APP_ID']}|{os.environ['FACEBOOK_APP_SECRET']}"
+        "access_token": f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"
     }
     resp = requests.get(url, params=params).json()
     return resp

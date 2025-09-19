@@ -15,27 +15,25 @@ scope = [
 ]
 
 def get_gspread_client():
+    """
+    ใช้ Streamlit secrets แทนไฟล์ JSON บนเครื่อง
+    """
+    try:
+        service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
+    except KeyError:
+        raise FileNotFoundError("❌ ไม่พบ SERVICE_ACCOUNT_JSON ใน st.secrets")
     
-    key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
-    creds = None
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scope)
+    client = gspread.authorize(creds)
+    return client
 
-    if os.path.exists(key_path):
-        creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
-    else:
-        try:
-            service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(service_account_info), scope)
-        except Exception as e:
-            raise FileNotFoundError(f"❌ ไม่พบ Service Account JSON") from e
-
-    return gspread.authorize(creds)
-
-
-
+# สร้าง client และเปิด sheet
 client = get_gspread_client()
-sheet = client.open_by_key(os.environ["GOOGLE_SHEET_ID"] or st.secrets["GOOGLE_SHEET_ID"]).sheet1
+GOOGLE_SHEET_ID = st.secrets.get("GOOGLE_SHEET_ID")
+if not GOOGLE_SHEET_ID:
+    raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน st.secrets")
 
-# sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
 
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
