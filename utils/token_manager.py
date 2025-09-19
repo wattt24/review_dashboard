@@ -1,6 +1,6 @@
 # เอาไว้เก็บลง Google Sheet เป็นศูนย์กลาง token ของทุกแพลตฟอร์ม (Shopee, Lazada, Facebook ฯลฯ) 
 # utils/token_manager.py
-import os
+import os , json
 import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials 
@@ -16,24 +16,30 @@ scope = [
 
 def get_gspread_client():
     """
-    ใช้ Streamlit secrets แทนไฟล์ JSON บนเครื่อง
+    ใช้ Service Account JSON จาก Environment variable (Render)
     """
+    service_account_json_str = os.environ.get("SERVICE_ACCOUNT_JSON") or st.secrets["SERVICE_ACCOUNT_JSON"]
+    if not service_account_json_str:
+        raise FileNotFoundError("❌ ไม่พบ SERVICE_ACCOUNT_JSON ใน os.environ")
+
     try:
-        service_account_info = st.secrets["SERVICE_ACCOUNT_JSON"]
-    except KeyError:
-        raise FileNotFoundError("❌ ไม่พบ SERVICE_ACCOUNT_JSON ใน st.secrets")
-    
+        service_account_info = json.loads(service_account_json_str)
+    except json.JSONDecodeError as e:
+        raise ValueError("❌ SERVICE_ACCOUNT_JSON ไม่ใช่ JSON ที่ถูกต้อง") from e
+
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scope)
-    client = gspread.authorize(creds)
-    return client
+    return gspread.authorize(creds)
 
-# สร้าง client และเปิด sheet
+
+# ===== Load Google Sheet =====
 client = get_gspread_client()
-GOOGLE_SHEET_ID = st.secrets.get("GOOGLE_SHEET_ID")
-if not GOOGLE_SHEET_ID:
-    raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน st.secrets")
+GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
 
-sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+if not GOOGLE_SHEET:
+    raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน os.environ")
+
+sheet = client.open_by_key(GOOGLE_SHEET).sheet1
+
 
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""

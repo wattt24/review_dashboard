@@ -9,15 +9,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 BASE_URL = "https://partner.shopeemobile.com/api/v2"
 BASE_URL_AUTH = "https://partner.shopeemobile.com" 
 
-# ========== SIGN GENERATOR ==========
+
 # ===== Google Sheet Setup =====
-scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
-key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
-def shopee_get_gspread_client(key_path=None):
-    if key_path is None:
-        key_path = os.getenv("SERVICE_ACCOUNT_JSON") or "/etc/secrets/SERVICE_ACCOUNT_JSON"
-    creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
-    return gspread.authorize(creds)
+from utils.token_manager import save_token, get_gspread_client
 
 
 
@@ -109,7 +103,7 @@ def shopee_get_access_token(shop_id, code):
 
 # ===== ดึงข้อมูลจาก Google Sheet และเรียก API =====
 def process_shopee_tokens(sheet_key, service_account_json_path=None):
-    client = shopee_get_gspread_client(service_account_json_path)
+    client = get_gspread_client(service_account_json_path)
     sheet = client.open_by_key(sheet_key).sheet1
     records = sheet.get_all_records()
 
