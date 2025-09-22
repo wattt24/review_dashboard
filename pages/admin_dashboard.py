@@ -426,10 +426,11 @@ def app():
         # --------------------- 4. Shopee ---------------------
         with tabs[3]:
             st.header("🛍️ รีวิว Shopee")
-            # ดึง Shop ID ของทุกร้านจาก Google Sheet
+        
             st.title("📊 Shopee Product Dashboard")
             try:
-                df = fetch_shop_sales_df()  # ดึงชื่อร้าน, โลโก้, ยอดขายรวม
+                df = fetch_shop_sales_df()
+                print("DEBUG df:", df)  # ✅ ดูข้อมูลจริงที่ได้
             except Exception as e:
                 st.error(f"❌ ไม่สามารถดึงข้อมูล Shopee ได้: {e}")
                 return
@@ -438,20 +439,20 @@ def app():
                 st.warning("⚠️ ไม่มีข้อมูลร้านค้า หรือเกิดข้อผิดพลาดในการดึงข้อมูล")
                 return
 
-            # สมมติว่า df มีคอลัมน์: shop_name, shop_logo, total_sales
             shop_name = df["shop_name"].iloc[0]
             shop_logo = df["shop_logo"].iloc[0]
             total_sales = df["total_sales"].iloc[0]
 
-            # แสดงโลโก้ร้านและชื่อร้าน
+            # ตรวจสอบค่าก่อนแสดง
+            print("DEBUG shop_name:", shop_name)
+            print("DEBUG shop_logo:", shop_logo)
+            print("DEBUG total_sales:", total_sales)
+
+            # แสดงผล
             if shop_logo:
                 st.image(shop_logo, width=120)
             st.subheader(f"ร้าน: {shop_name}")
-
-            # แสดงยอดขายรวม
             st.metric("ยอดขายรวมทั้งหมด", total_sales)
-
-            # ถ้าต้องการ แสดง DataFrame แบบตาราง
             st.dataframe(df, use_container_width=True)
             
                     

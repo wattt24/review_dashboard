@@ -144,34 +144,58 @@ def sign(path, timestamp, access_token=None, shop_id=None):
 def get_shop_info(access_token, shop_id):
     url = "https://partner.shopeemobile.com/api/v2/shop/get_shop_info"
     timestamp = int(time.time())
-    sign_value = sign("/api/v2/shop/get_shop_info", timestamp, access_token)
+    sign_value = sign("/api/v2/shop/get_shop_info", timestamp, access_token, shop_id)
 
-    body = {"partner_id": SHOPEE_PARTNER_ID, "shop_id": shop_id}
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    resp = requests.post(url, json=body, headers=headers, timeout=30)
-    if resp.status_code != 200:
-        print("❌ Shopee API error (get_shop_info)", resp.status_code, resp.text[:300])
-        return {}
-    
-    return resp.json().get("response", {})
-
-def get_item_list(access_token, offset=0, page_size=50):
-    path = "/api/v2/product/get_item_list"
-    url = "https://partner.shopeemobile.com" + path
-    timestamp = int(time.time())
-    sign_value = sign(path, timestamp, access_token)
-    
     body = {
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": SHOPEE_SHOP_ID,
+        "shop_id": shop_id,
+    }
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    try:
+        resp = requests.post(url, json=body, headers=headers, timeout=30)
+        resp.raise_for_status()  # ตรวจสอบสถานะ HTTP
+        data = resp.json()
+        if data.get("error"):
+            raise ValueError(f"API Error: {data['error']} - {data.get('message', '')}")
+        return data.get("response", {})
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+    except ValueError as ve:
+        print(f"Value error: {ve}")
+    except Exception as ex:
+        print(f"An unexpected error occurred: {ex}")
+    return {}
+
+
+def get_item_list(access_token, shop_id, offset=0, page_size=50):
+    url = "https://partner.shopeemobile.com/api/v2/product/get_item_list"
+    timestamp = int(time.time())
+    sign_value = sign("/api/v2/product/get_item_list", timestamp, access_token, shop_id)
+
+    body = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "shop_id": shop_id,
         "pagination_offset": offset,
         "pagination_entries_per_page": page_size,
         "status": "NORMAL"  # หรือ ALL
     }
     headers = {"Authorization": f"Bearer {access_token}"}
-    resp = requests.post(url, json=body, headers=headers, timeout=30)
-    return resp.json().get("response", {}).get("items", [])
+
+    try:
+        resp = requests.post(url, json=body, headers=headers, timeout=30)
+        resp.raise_for_status()  # ตรวจสอบสถานะ HTTP
+        data = resp.json()
+        if data.get("error"):
+            raise ValueError(f"API Error: {data['error']} - {data.get('message', '')}")
+        return data.get("response", {}).get("items", [])
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+    except ValueError as ve:
+        print(f"Value error: {ve}")
+    except Exception as ex:
+        print(f"An unexpected error occurred: {ex}")
+    return []
 
 
 def fetch_shop_sales_df():
@@ -190,7 +214,7 @@ def fetch_shop_sales_df():
     page_size = 50
 
     while True:
-        res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
+        res = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID, offset=offset, page_size=page_size)
         if not res:  # ถ้า API error หรือไม่มีสินค้า
             break
         items_all.extend(res)
@@ -209,6 +233,7 @@ def fetch_shop_sales_df():
         "date": pd.Timestamp.now()
     }])
     return df
+
 
 
 
