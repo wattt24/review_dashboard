@@ -135,9 +135,14 @@ def sign(path, timestamp, access_token=None, shop_id=None):
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     if access_token and shop_id:
         base_string += f"{access_token}{shop_id}"
+    elif access_token:
+        base_string += f"{access_token}"
+    elif shop_id:
+        base_string += f"{shop_id}"
+
     return hmac.new(
-        SHOPEE_PARTNER_KEY.encode(),
-        base_string.encode(),
+        SHOPEE_PARTNER_KEY.encode("utf-8"),
+        base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
@@ -155,43 +160,42 @@ def get_shop_info(access_token, shop_id):
         "sign": sign_value
     }
 
-    resp = requests.get(url, params=params, timeout=30)  # ✅ ต้องเป็น GET
+    resp = requests.get(url, params=params, timeout=30)
     data = resp.json()
+
+    print("DEBUG get_shop_info URL:", resp.url)
+    print("DEBUG response:", data)
 
     if data.get("error"):
         raise ValueError(f"API Error: {data['error']} - {data.get('message')}")
-    print("DEBUG get_shop_info URL:", resp.url)
-    print("DEBUG response:", data)
     return data.get("response", {})
 
-def get_item_list(access_token, shop_id, offset=0, page_size=50):
-    url = "https://partner.shopeemobile.com/api/v2/product/get_item_list"
+
+def get_item_list(access_token, shop_id, page_size=50):
+    path = "/api/v2/product/get_item_list"
+    url = f"https://partner.shopeemobile.com{path}"
     timestamp = int(time.time())
-    sign_value = sign("/api/v2/product/get_item_list", timestamp, access_token, shop_id)
+    sign_value = sign(path, timestamp, access_token, shop_id)
 
-    body = {
+    params = {
         "partner_id": SHOPEE_PARTNER_ID,
+        "timestamp": timestamp,
+        "access_token": access_token,
         "shop_id": shop_id,
-        "pagination_offset": offset,
-        "pagination_entries_per_page": page_size,
-        "status": "NORMAL"  # หรือ ALL
+        "sign": sign_value,
+        "offset": 0,
+        "page_size": page_size
     }
-    headers = {"Authorization": f"Bearer {access_token}"}
 
-    try:
-        resp = requests.post(url, json=body, headers=headers, timeout=30)
-        resp.raise_for_status()  # ตรวจสอบสถานะ HTTP
-        data = resp.json()
-        if data.get("error"):
-            raise ValueError(f"API Error: {data['error']} - {data.get('message', '')}")
-        return data.get("response", {}).get("items", [])
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
-    except ValueError as ve:
-        print(f"Value error: {ve}")
-    except Exception as ex:
-        print(f"An unexpected error occurred: {ex}")
-    return []
+    resp = requests.get(url, params=params, timeout=30)
+    data = resp.json()
+
+    print("DEBUG get_item_list URL:", resp.url)
+    print("DEBUG response:", data)
+
+    if data.get("error"):
+        raise ValueError(f"API Error: {data['error']} - {data.get('message')}")
+    return data.get("response", {}).get("item", [])
 
 
 def fetch_shop_sales_df():
