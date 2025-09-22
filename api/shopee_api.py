@@ -209,6 +209,24 @@ def fetch_shop_sales_df():
     shop_name = shop_info.get("shop_name", "Unknown")
     shop_logo = shop_info.get("shop_logo", "")
 
+    print("DEBUG shop_info raw:", shop_info)
+
+    items_all = []
+    offset = 0
+    page_size = 50
+    while True:
+        res = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID, offset=offset, page_size=page_size)
+        print(f"DEBUG items page {offset}:", res)
+        if not res:
+            break
+        items_all.extend(res)
+        if len(res) < page_size:
+            break
+        offset += page_size
+
+    total_sales = sum(item.get("sold_quantity", 0) for item in items_all)
+    print("DEBUG total_sales:", total_sales)
+
     # ดึงรายการสินค้าแบบง่าย ๆ
     items_all = []
     offset = 0

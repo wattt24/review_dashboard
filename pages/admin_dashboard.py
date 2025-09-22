@@ -6,6 +6,8 @@ import numpy as np
 import streamlit as st
 import altair as alt
 from api.shopee_api import fetch_shop_sales_df
+from utils.config import SHOPEE_SHOP_ID
+from utils.token_manager import auto_refresh_token
 import plotly.express as px
 from datetime import datetime
 from api.facebook_graph_api import get_page_info, get_page_posts
@@ -454,8 +456,16 @@ def app():
             st.subheader(f"ร้าน: {shop_name}")
             st.metric("ยอดขายรวมทั้งหมด", total_sales)
             st.dataframe(df, use_container_width=True)
-            
-                    
+            ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
+            st.write("DEBUG ACCESS_TOKEN:", ACCESS_TOKEN)
+
+            shop_info = get_shop_info(ACCESS_TOKEN, SHOPEE_SHOP_ID)
+            st.write("DEBUG shop_info:", shop_info)
+
+            items = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID)
+            st.write("DEBUG items:", items)
+
+                
         # --------------------- 5. Lazada ---------------------
         with tabs[4]:
             st.header("📦 Lazada Orders")
