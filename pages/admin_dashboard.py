@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import altair as alt
-from api.shopee_api import fetch_items_df
+from api.shopee_api import fetch_shop_sales_df
 import plotly.express as px
 from datetime import datetime
 from api.facebook_graph_api import get_page_info, get_page_posts
@@ -428,58 +428,31 @@ def app():
             st.header("🛍️ รีวิว Shopee")
             # ดึง Shop ID ของทุกร้านจาก Google Sheet
             st.title("📊 Shopee Product Dashboard")
-            df = fetch_items_df()
-            if not df.empty:
-                st.image(df["shop_logo"].iloc[0], width=100)
-                st.write(f"ร้าน: {df['shop_name'].iloc[0]}")
-            else:
-                st.write("⚠️ ยังไม่มีสินค้า หรือไม่สามารถดึงข้อมูลร้านได้")
-            # ---- Search / Filter ----
-            search = st.text_input("🔎 ค้นหาสินค้า", "")
-            if search:
-                df = df[df["name"].str.contains(search, case=False, na=False)]
+            try:
+                df = fetch_shop_sales_df()  # ดึงชื่อร้าน, โลโก้, ยอดขายรวม
+            except Exception as e:
+                st.error(f"❌ ไม่สามารถดึงข้อมูล Shopee ได้: {e}")
+                return
 
-            # ---- KPI Boxes ----
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("✅ สินค้าทั้งหมด", len(df))
-            col2.metric("🟢 กำลังขาย", (df["status"]=="NORMAL").sum())
-            col3.metric("🔴 หมดสต๊อก", (df["stock"]==0).sum())
-            col4.metric("⚠️ ถูกแบน", (df["status"]=="BANNED").sum())
+            if df.empty:
+                st.warning("⚠️ ไม่มีข้อมูลร้านค้า หรือเกิดข้อผิดพลาดในการดึงข้อมูล")
+                return
 
-            # ---- Table ----
-            st.subheader("📋 รายการสินค้า")
-            st.dataframe(df[["item_id","name","stock","status","sales","category"]])
+            # สมมติว่า df มีคอลัมน์: shop_name, shop_logo, total_sales
+            shop_name = df["shop_name"].iloc[0]
+            shop_logo = df["shop_logo"].iloc[0]
+            total_sales = df["total_sales"].iloc[0]
 
-            # ---- Bar Chart: Top 10 Products by Sales ----
-            st.subheader("🏆 Top Products by Sales")
-            top_sales = df.sort_values("sales", ascending=False).head(10)
-            bar = alt.Chart(top_sales).mark_bar().encode(
-                x="sales:Q",
-                y=alt.Y("name:N", sort="-x"),
-                tooltip=["name","sales"]
-            )
-            st.altair_chart(bar, use_container_width=True)
+            # แสดงโลโก้ร้านและชื่อร้าน
+            if shop_logo:
+                st.image(shop_logo, width=120)
+            st.subheader(f"ร้าน: {shop_name}")
 
-            # ---- Pie Chart: Category Distribution ----
-            st.subheader("📊 การกระจายหมวดหมู่สินค้า")
-            pie = alt.Chart(df).mark_arc().encode(
-                theta="count()",
-                color="category",
-                tooltip=["category","count()"]
-            )
-            st.altair_chart(pie, use_container_width=True)
+            # แสดงยอดขายรวม
+            st.metric("ยอดขายรวมทั้งหมด", total_sales)
 
-            # ---- Line Chart: Sales Trend ----
-            st.subheader("📈 แนวโน้มยอดขาย")
-            df["date"] = pd.to_datetime(df["date"])
-            line = alt.Chart(df).mark_line(point=True).encode(
-                x="date:T",
-                y="sales:Q",
-                color="name:N",
-                tooltip=["date","sales","name"]
-            )
-            st.altair_chart(line, use_container_width=True)
-
+            # ถ้าต้องการ แสดง DataFrame แบบตาราง
+            st.dataframe(df, use_container_width=True)
             
                     
         # --------------------- 5. Lazada ---------------------

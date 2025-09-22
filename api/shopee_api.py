@@ -174,68 +174,41 @@ def get_item_list(access_token, offset=0, page_size=50):
     return resp.json().get("response", {}).get("items", [])
 
 
-def get_item_base_info(access_token, shop_id, item_ids):
-    url = "https://partner.shopee.com/api/v2/product/get_item_base_info"
-    timestamp = int(time.time())
-    sign_value = sign("/api/v2/product/get_item_base_info", timestamp, access_token)
-
-    body = {"partner_id": SHOPEE_PARTNER_ID, "shop_id": shop_id, "item_id_list": item_ids}
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    resp = requests.post(url, json=body, headers=headers, timeout=30)
-    if resp.status_code != 200:
-        print("❌ Shopee API error (get_item_base_info)", resp.status_code, resp.text[:300])
-        return []
-    
-    return resp.json().get("response", {}).get("item", [])
-
-def fetch_items_df():
+def fetch_shop_sales_df():
     ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
     if not ACCESS_TOKEN:
         raise Exception("❌ ไม่สามารถดึง Shopee access token ได้")
 
+    # ดึงข้อมูลร้าน
     shop_info = get_shop_info(ACCESS_TOKEN, SHOPEE_SHOP_ID)
     shop_name = shop_info.get("shop_name", "Unknown")
     shop_logo = shop_info.get("shop_logo", "")
 
+    # ดึงรายการสินค้าแบบง่าย ๆ
     items_all = []
     offset = 0
     page_size = 50
 
     while True:
-        res = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID, offset=offset, page_size=page_size)
-        if "error" in res and res["error"] == "access_token_expired":
-            ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID, force=True)
-            res = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID, offset=offset, page_size=page_size)
-
-        items = res.get("item", [])
-        if not items:
+        res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
+        if not res:  # ถ้า API error หรือไม่มีสินค้า
             break
-        items_all.extend(items)
-        if not res.get("more", False):
+        items_all.extend(res)
+        if len(res) < page_size:  # ไม่มีหน้าเพิ่ม
             break
         offset += page_size
 
-    # ดึงรายละเอียดสินค้า batch ละ 50
-    item_ids = [i.get("item_id") for i in items_all]
-    base_items = []
-    for i in range(0, len(item_ids), 50):
-        batch_ids = item_ids[i:i+50]
-        base_items.extend(get_item_base_info(ACCESS_TOKEN, SHOPEE_SHOP_ID, batch_ids))
+    # รวมยอดขายทั้งหมด
+    total_sales = sum(item.get("sold_quantity", 0) for item in items_all)
 
-    data = []
-    for item in base_items:
-        data.append({
-            "item_id": item.get("item_id"),
-            "name": item.get("name"),
-            "status": item.get("status"),
-            "stock": item.get("stock"),
-            "sales": item.get("sold_quantity"),
-            "shop_name": shop_name,
-            "shop_logo": shop_logo,
-            "date": pd.Timestamp.now()
-        })
-    return pd.DataFrame(data)
+    # สร้าง DataFrame แสดงผล
+    df = pd.DataFrame([{
+        "shop_name": shop_name,
+        "shop_logo": shop_logo,
+        "total_sales": total_sales,
+        "date": pd.Timestamp.now()
+    }])
+    return df
 
 
 
