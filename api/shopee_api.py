@@ -140,7 +140,7 @@ def sign(path, timestamp, access_token):
     ).hexdigest()
 
 def get_item_list(access_token, offset=0, page_size=50):
-    path = "/api/v2/product/get_item_list"
+    path = "/api/v2/item/get_item_list"
     url = "https://partner.shopeemobile.com" + path
     timestamp = int(time.time())
     sign_value = sign(path, timestamp, access_token)
@@ -169,6 +169,8 @@ def get_item_list(access_token, offset=0, page_size=50):
     except Exception as e:
         print("❌ JSON decode error (get_item_list)")
         print("Body:", resp.text[:300])
+        print("🔎 URL:", url)
+        print("🔎 Params:", params)
         return {}
 
 
