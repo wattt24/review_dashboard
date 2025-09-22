@@ -429,9 +429,11 @@ def app():
             # ดึง Shop ID ของทุกร้านจาก Google Sheet
             st.title("📊 Shopee Product Dashboard")
             df = fetch_items_df()
-            st.image(df["shop_logo"].iloc[0], width=100)
-            st.write(f"ร้าน: {df['shop_name'].iloc[0]}")
-            st.dataframe(df)
+            if not df.empty:
+                st.image(df["shop_logo"].iloc[0], width=100)
+                st.write(f"ร้าน: {df['shop_name'].iloc[0]}")
+            else:
+                st.write("⚠️ ยังไม่มีสินค้า หรือไม่สามารถดึงข้อมูลร้านได้")
             # ---- Search / Filter ----
             search = st.text_input("🔎 ค้นหาสินค้า", "")
             if search:
