@@ -39,11 +39,21 @@ if not GOOGLE_SHEET:
 
 sheet = client.open_by_key(GOOGLE_SHEET).sheet1
 
-
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
-    expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
-    refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
-    
+    now = datetime.now()
+
+    # Access Token expiry
+    expired_at = (now + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
+
+    # Refresh Token expiry
+    refresh_expired_at = ""
+    if platform.lower() == "shopee":
+        # Shopee refresh token มีอายุ 30 วัน → คำนวณเอง
+        refresh_expired_at = (now + timedelta(days=30)).isoformat()
+    elif refresh_expires_in:  
+        # Lazada หรือ platform อื่นที่ส่งค่ามา
+        refresh_expired_at = (now + timedelta(seconds=refresh_expires_in)).isoformat()
+
     account_id_str = str(account_id).strip()
     
     try:
@@ -52,17 +62,40 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
             if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
                and str(record.get("account_id", "")).strip() == account_id_str:
                 sheet.update(f"A{idx}:G{idx}", [[
-                    platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+                    platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, now.isoformat()
                 ]])
                 return
 
         # ถ้าไม่เจอ row เดิม → เพิ่มใหม่
         sheet.append_row([
-            platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+            platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, now.isoformat()
         ])
 
     except Exception as e:
         print("❌ save_token error:", str(e))
+# def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
+#     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
+#     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
+    
+#     account_id_str = str(account_id).strip()
+    
+#     try:
+#         records = sheet.get_all_records()
+#         for idx, record in enumerate(records, start=2):
+#             if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
+#                and str(record.get("account_id", "")).strip() == account_id_str:
+#                 sheet.update(f"A{idx}:G{idx}", [[
+#                     platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+#                 ]])
+#                 return
+
+#         # ถ้าไม่เจอ row เดิม → เพิ่มใหม่
+#         sheet.append_row([
+#             platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+#         ])
+
+#     except Exception as e:
+#         print("❌ save_token error:", str(e))
 
 
 def get_latest_token(platform, account_id):
@@ -87,7 +120,7 @@ def get_latest_token(platform, account_id):
 
 
 # ===== Auto-refresh token =====
-def auto_refresh_token(platform, account_id):
+def auto_refresh_token(platform, account_id, force=False):
     print(f"[{datetime.now().isoformat()}] ⚡ Checking token for {platform}:{account_id}")
     token_data = get_latest_token(platform, account_id)
     if not token_data:
@@ -100,10 +133,10 @@ def auto_refresh_token(platform, account_id):
         expired_at_dt = datetime.fromisoformat(expired_at)
         expired = expired_at_dt <= datetime.now()
 
-    if not expired:
+    if not expired and not force:
         return token_data["access_token"]
 
-    # หมดอายุ → refresh
+    # 🔄 ถ้า force == True หรือหมดอายุจริง
     try:
         if platform == "shopee":
             from services.shopee_auth import refresh_shopee_token as shopee_refresh_token
@@ -115,13 +148,13 @@ def auto_refresh_token(platform, account_id):
                 return None
 
             save_token(platform, account_id,
-                    new_data["access_token"],
-                    new_data["refresh_token"],
-                    new_data.get("expire_in", 0),
-                    new_data.get("refresh_expires_in", 0))
+                       new_data["access_token"],
+                       new_data["refresh_token"],
+                       new_data.get("expire_in", 0),
+                       new_data.get("refresh_expires_in", 0))
+            
             print(f"[{datetime.now().isoformat()}] ✅ Shopee token refreshed")
             return new_data["access_token"]
-
         elif platform == "lazada":
             from services.lazada_auth import lazada_refresh_token as lazada_refresh_token
             new_data = lazada_refresh_token(token_data["refresh_token"], account_id)

@@ -80,16 +80,12 @@ def lazada_refresh_token(refresh_token: str, country: str = "th"):
     response = requests.get(url)
 
     data = response.json()
-    if "access_token" in data:
-        save_token(
-            platform="lazada",
-            account_id=country,
-            access_token=data["access_token"],
-            refresh_token=data.get("refresh_token"),
-            expires_in=data.get("expires_in")
-        )
-    return data
+    print("🔁 Lazada refresh_token response:", data)
 
+    if "access_token" in data:
+        return data  # ✅ แค่ return ไม่ต้อง save
+    else:
+        raise Exception(f"Lazada token refresh failed: {data}")
 
 def call_lazada_api(path: str, access_token: str, params: dict = None, method: str = "GET"):
     """

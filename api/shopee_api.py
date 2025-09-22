@@ -225,12 +225,10 @@ def fetch_items_df():
         res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
 
         # ✅ handle token expired
-        if "error" in res:
-            if res["error"] == "access_token_expired":
-                print("♻️ Token expired, refreshing...")
-                ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID, force=True)
-                res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
-
+        if "error" in res and res["error"] == "access_token_expired":
+            print("♻️ Token expired, force refreshing...")
+            ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID, force=True)
+            res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
         items = res.get("response", {}).get("item", [])
         if not items:
             break
