@@ -145,67 +145,92 @@ def sign(path, timestamp, access_token=None, shop_id=None):
     ).hexdigest()
 
 def get_item_list(access_token, offset=0, page_size=50):
-    path = "/api/v2/item/get_item_list"
+    path = "/api/v2/product/get_item_list"
     url = "https://partner.shopeemobile.com" + path
     timestamp = int(time.time())
-    sign_value = sign(path, timestamp, access_token, SHOPEE_SHOP_ID)
+    sign_value = sign(path, timestamp, access_token)
     
-    params = {
+    body = {
         "partner_id": SHOPEE_PARTNER_ID,
-        "timestamp": timestamp,
-        "access_token": access_token,
         "shop_id": SHOPEE_SHOP_ID,
-        "sign": sign_value,
         "offset": offset,
         "page_size": page_size,
-        "item_status": "NORMAL"
+        "item_status": "ALL"
     }
-
-    print("🔎 Request:", url, params)  # debug log
-    resp = requests.get(url, params=params, timeout=30)
-
+    
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    
+    resp = requests.post(url, json=body, headers=headers, timeout=30)
+    
     if resp.status_code != 200:
         print("❌ Shopee API error (get_item_list)")
         print("Status:", resp.status_code)
         print("Body:", resp.text[:300])
         return {}
+    
     try:
         return resp.json()
     except Exception as e:
         print("❌ JSON decode error (get_item_list)")
         print("Body:", resp.text[:300])
         return {}
-
-def get_item_base_info(access_token, item_ids):
-    path = "/api/v2/item/get_item_base_info"
+def get_shop_info(access_token):
+    """ดึงชื่อร้านและโลโก้"""
+    path = "/api/v2/shop/get_shop_info"
     url = "https://partner.shopeemobile.com" + path
     timestamp = int(time.time())
-    sign_value = sign(path, timestamp, access_token, SHOPEE_SHOP_ID)
-    
-    params = {
-        "partner_id": SHOPEE_PARTNER_ID,
-        "timestamp": timestamp,
-        "access_token": access_token,
-        "shop_id": SHOPEE_SHOP_ID,
-        "sign": sign_value
-    }
-    body = {"item_id_list": item_ids}
+    sign_value = sign(path, timestamp, access_token)
 
-    print("🔎 BaseInfo Request:", url, params, body)
-    resp = requests.post(url, params=params, json=body, timeout=30)
+    body = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "shop_id": SHOPEE_SHOP_ID
+    }
+    headers = {"Authorization": f"Bearer {access_token}"}
+    resp = requests.post(url, json=body, headers=headers, timeout=30)
 
     if resp.status_code != 200:
-        print("❌ Shopee API error (get_item_base_info)")
+        print("❌ Shopee API error (get_shop_info)")
         print("Status:", resp.status_code)
         print("Body:", resp.text[:300])
         return {}
-
+    
     try:
-        return resp.json()
-    except Exception as e:
-        print("❌ JSON decode error (get_item_base_info)")
-        print("Body:", resp.text[:300])
+        return resp.json().get("response", {})
+    except:
         return {}
+
+# def get_item_base_info(access_token, item_ids):
+#     path = "/api/v2/item/get_item_base_info"
+#     url = "https://partner.shopeemobile.com" + path
+#     timestamp = int(time.time())
+#     sign_value = sign(path, timestamp, access_token, SHOPEE_SHOP_ID)
+    
+#     params = {
+#         "partner_id": SHOPEE_PARTNER_ID,
+#         "timestamp": timestamp,
+#         "access_token": access_token,
+#         "shop_id": SHOPEE_SHOP_ID,
+#         "sign": sign_value
+#     }
+#     body = {"item_id_list": item_ids}
+
+#     print("🔎 BaseInfo Request:", url, params, body)
+#     resp = requests.post(url, params=params, json=body, timeout=30)
+
+#     if resp.status_code != 200:
+#         print("❌ Shopee API error (get_item_base_info)")
+#         print("Status:", resp.status_code)
+#         print("Body:", resp.text[:300])
+#         return {}
+
+#     try:
+#         return resp.json()
+#     except Exception as e:
+#         print("❌ JSON decode error (get_item_base_info)")
+#         print("Body:", resp.text[:300])
+#         return {}
 
 def fetch_items_df():
     ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
