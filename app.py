@@ -1,6 +1,10 @@
 # app.py
 import streamlit as st
 
+import pages.admin_dashboard as admin
+import pages.after_sales_dashboard as aftersls
+import pages.marketing_sales_dashboard as marketingsls
+import pages.shp_test_ss as shptst
 # ---------------- Page Config ----------------
 st.set_page_config(
     page_title="Fujika Dashboard",
@@ -77,21 +81,17 @@ else:
 
     st.sidebar.info(f"Logged in as: {st.session_state.email} ({st.session_state.role})")
 
-    # Role-based routing
-    role = st.session_state.role
-    if role == "admin":
-        import pages.admin_dashboard as admin
-        admin.app()
-    elif role == "service":
-        import pages.after_sales_dashboard as aftersls
-        aftersls.app()
-    elif role == "marketing":
-        import pages.marketing_sales_dashboard as marketingsls
-        marketingsls.app()
-    elif role == "shopee_test":
-        import pages.shp_test_ss as shptst
-        shptst.app()
-    else:
-        st.error(f"❌ Role '{role}' not recognized")
 
+
+role = st.session_state.role
+if role == "admin":
+    admin.app()
+elif role == "service":
+    aftersls.app()
+elif role == "marketing":
+    marketingsls.app()
+elif role == "shopee_test":
+    shptst.app()
+else:
+    st.error(f"Role '{role}' not recognized")
 
