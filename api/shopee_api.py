@@ -144,103 +144,65 @@ def sign(path, timestamp, access_token=None, shop_id=None):
         hashlib.sha256
     ).hexdigest()
 
-def get_item_list(access_token, offset=0, page_size=50):
-    path = "/api/v2/product/get_item_list"
-    url = "https://partner.shopeemobile.com" + path
+def get_item_list(access_token, merchant_id, offset=0, page_size=50):
+    url = "https://partner.shopeemobile.com/api/v2/product/get_item_list"
     timestamp = int(time.time())
-    sign_value = sign(path, timestamp, access_token)
-    
+    sign_value = sign("/api/v2/product/get_item_list", timestamp, access_token)
+
     body = {
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": SHOPEE_SHOP_ID,
+        "shop_id": merchant_id,
         "offset": offset,
         "page_size": page_size,
         "item_status": "ALL"
     }
-    
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-    
-    resp = requests.post(url, json=body, headers=headers, timeout=30)
-    
-    if resp.status_code != 200:
-        print("❌ Shopee API error (get_item_list)")
-        print("Status:", resp.status_code)
-        print("Body:", resp.text[:300])
-        return {}
-    
-    try:
-        return resp.json()
-    except Exception as e:
-        print("❌ JSON decode error (get_item_list)")
-        print("Body:", resp.text[:300])
-        return {}
-def get_shop_info(access_token):
-    """ดึงชื่อร้านและโลโก้"""
-    path = "/api/v2/shop/get_shop_info"
-    url = "https://partner.shopeemobile.com" + path
-    timestamp = int(time.time())
-    sign_value = sign(path, timestamp, access_token)
 
-    body = {
-        "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": SHOPEE_SHOP_ID
-    }
     headers = {"Authorization": f"Bearer {access_token}"}
     resp = requests.post(url, json=body, headers=headers, timeout=30)
 
     if resp.status_code != 200:
-        print("❌ Shopee API error (get_shop_info)")
-        print("Status:", resp.status_code)
-        print("Body:", resp.text[:300])
+        print("❌ Shopee API error (get_item_list)", resp.status_code, resp.text[:300])
         return {}
     
-    try:
-        return resp.json().get("response", {})
-    except:
-        return {}
-def get_item_base_info(access_token, item_ids):
-    """
-    ดึงรายละเอียดสินค้าจาก Shopee API v2
-    :param access_token: access token ของร้าน
-    :param item_ids: list ของ item_id
-    :return: dict response จาก Shopee API
-    """
-    if not item_ids:
-        return {"response": {"item": []}}
-
-    path = "/api/v2/item/get_item_base_info"
-    url = "https://partner.shopeemobile.com" + path
+    return resp.json().get("response", {})
+def get_shop_info(access_token, merchant_id):
+    url = "https://partner.shopeemobile.com/api/v2/shop/get_shop_info"
     timestamp = int(time.time())
-    
-    # สำหรับ v2 ใช้ Bearer token ไม่ต้อง sign
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
-    }
+    sign_value = sign("/api/v2/shop/get_shop_info", timestamp, access_token)
+
     body = {
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": SHOPEE_SHOP_ID,
+        "shop_id": merchant_id
+    }
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    resp = requests.post(url, json=body, headers=headers, timeout=30)
+    
+    if resp.status_code != 200:
+        print("❌ Shopee API error (get_shop_info)", resp.status_code, resp.text[:300])
+        return {}
+    
+    return resp.json().get("response", {})
+
+def get_item_base_info(access_token, merchant_id, item_ids):
+    url = "https://partner.shopeemobile.com/api/v2/product/get_item_base_info"
+    timestamp = int(time.time())
+    sign_value = sign("/api/v2/product/get_item_base_info", timestamp, access_token)
+
+    body = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "shop_id": merchant_id,
         "item_id_list": item_ids
     }
 
-    try:
-        resp = requests.post(url, json=body, headers=headers, timeout=30)
-        if resp.status_code != 200:
-            print("❌ Shopee API error (get_item_base_info)")
-            print("Status:", resp.status_code)
-            print("Headers:", resp.headers)
-            print("Body:", resp.text[:500])
-            return {"response": {"item": []}}
+    headers = {"Authorization": f"Bearer {access_token}"}
+    resp = requests.post(url, json=body, headers=headers, timeout=30)
 
-        data = resp.json()
-        return data
-    except Exception as e:
-        print("❌ Exception in get_item_base_info:", e)
-        return {"response": {"item": []}}
+    if resp.status_code != 200:
+        print("❌ Shopee API error (get_item_base_info)", resp.status_code, resp.text[:300])
+        return {}
 
-
+    return resp.json().get("response", {}).get("item", [])
 def fetch_items_df():
     ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
     if not ACCESS_TOKEN:
