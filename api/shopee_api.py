@@ -200,6 +200,7 @@ def get_item_list(access_token, shop_id, offset=0, page_size=50):
 
 def fetch_shop_sales_df():
     ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
+    print("DEBUG ACCESS_TOKEN:", ACCESS_TOKEN)
     if not ACCESS_TOKEN:
         raise Exception("❌ ไม่สามารถดึง Shopee access token ได้")
 
