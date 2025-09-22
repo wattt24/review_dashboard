@@ -146,27 +146,24 @@ def get_shop_info(access_token, shop_id):
     timestamp = int(time.time())
     sign_value = sign("/api/v2/shop/get_shop_info", timestamp, access_token, shop_id)
 
+    params = {
+        "partner_id": SHOPEE_PARTNER_ID,  # ✅ ต้องใส่ query
+        "timestamp": timestamp,
+        "sign": sign_value
+    }
+
     body = {
         "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id,
+        "shop_id": shop_id
     }
+
     headers = {"Authorization": f"Bearer {access_token}"}
 
-    try:
-        resp = requests.post(url, json=body, headers=headers, timeout=30)
-        resp.raise_for_status()  # ตรวจสอบสถานะ HTTP
-        data = resp.json()
-        if data.get("error"):
-            raise ValueError(f"API Error: {data['error']} - {data.get('message', '')}")
-        return data.get("response", {})
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
-    except ValueError as ve:
-        print(f"Value error: {ve}")
-    except Exception as ex:
-        print(f"An unexpected error occurred: {ex}")
-    return {}
-
+    resp = requests.post(url, params=params, json=body, headers=headers, timeout=30)
+    data = resp.json()
+    if data.get("error"):
+        raise ValueError(f"API Error: {data['error']} - {data.get('message')}")
+    return data.get("response", {})
 
 def get_item_list(access_token, shop_id, offset=0, page_size=50):
     url = "https://partner.shopeemobile.com/api/v2/product/get_item_list"
