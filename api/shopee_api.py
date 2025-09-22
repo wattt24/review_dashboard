@@ -142,27 +142,26 @@ def sign(path, timestamp, access_token=None, shop_id=None):
     ).hexdigest()
 
 def get_shop_info(access_token, shop_id):
-    url = "https://partner.shopeemobile.com/api/v2/shop/get_shop_info"
+    path = "/api/v2/shop/get_shop_info"
+    url = f"https://partner.shopeemobile.com{path}"
     timestamp = int(time.time())
-    sign_value = sign("/api/v2/shop/get_shop_info", timestamp, access_token, shop_id)
+    sign_value = sign(path, timestamp, access_token, shop_id)
 
     params = {
-        "partner_id": SHOPEE_PARTNER_ID,  # ✅ ต้องใส่ query
+        "partner_id": SHOPEE_PARTNER_ID,
         "timestamp": timestamp,
+        "access_token": access_token,
+        "shop_id": shop_id,
         "sign": sign_value
     }
 
-    body = {
-        "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id
-    }
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    resp = requests.post(url, params=params, json=body, headers=headers, timeout=30)
+    resp = requests.get(url, params=params, timeout=30)  # ✅ ต้องเป็น GET
     data = resp.json()
+
     if data.get("error"):
         raise ValueError(f"API Error: {data['error']} - {data.get('message')}")
+    print("DEBUG get_shop_info URL:", resp.url)
+    print("DEBUG response:", data)
     return data.get("response", {})
 
 def get_item_list(access_token, shop_id, offset=0, page_size=50):
