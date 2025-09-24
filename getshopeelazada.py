@@ -6,8 +6,9 @@ from utils.token_manager import save_token, get_gspread_client
 from fastapi.responses import Response
 from services.shopee_auth import shopee_get_access_token,shopee_get_authorization_url,shopee_get_categories
 from services.lazada_auth import get_auth_url_for_store
-from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET,GOOGLE_SHEET_ID
+from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID
 from fastapi import FastAPI
+# GOOGLE_SHEET_ID  = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
 from fastapi.responses import JSONResponse
 from utils.token_manager import *
 from services.facebook_auth import get_all_page_tokens
@@ -131,6 +132,9 @@ async def lazada_callback(request: Request):
         "redirect_uri": LAZADA_REDIRECT_URI
     }
     resp = requests.post(token_url, data=payload)
+    print("DEBUG: client_id =", LAZADA_CLIENT_ID)
+    print("DEBUG: client_secret =", LAZADA_CLIENT_SECRET)
+    print("DEBUG: redirect_uri =", LAZADA_REDIRECT_URI)
     data = resp.json()
 
     if "access_token" not in data:

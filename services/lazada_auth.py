@@ -34,8 +34,9 @@ def build_lazada_auth_url(state):
         "response_type": "code",
         "force_auth": "true",
         "redirect_uri": LAZADA_REDIRECT_URI,
-        "client_id": LAZADA_CLIENT_ID,
+        "app_key": LAZADA_CLIENT_ID,
         "state": state
     }
     qs = urllib.parse.urlencode(params)
+
     return f"{base}?{qs}"

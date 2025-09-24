@@ -32,13 +32,14 @@ def get_gspread_client():
 
 # ===== Load Google Sheet =====
 client = get_gspread_client()
-# GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
+GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
 GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID")
 if not GOOGLE_SHEET:
     raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน os.environ")
 
 sheet = client.open_by_key(GOOGLE_SHEET).sheet1
-
+# GOOGLE_SHEET_ID  = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
+# sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
     now = datetime.now()
 
