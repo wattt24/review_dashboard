@@ -14,6 +14,7 @@ from utils.token_manager import *
 from services.facebook_auth import get_all_page_tokens
 app = FastAPI(title="Fujika Dashboard API")
 import requests
+import time
 # from services import shopee_auth
 from utils.config import SHOPEE_SHOP_ID
 from utils.token_manager import auto_refresh_token
@@ -129,14 +130,17 @@ async def lazada_callback(request: Request):
         "grant_type": "authorization_code",
         "app_key": LAZADA_CLIENT_ID,        # <-- แก้ตรงนี้
         "app_secret": LAZADA_CLIENT_SECRET, # <-- แก้ตรงนี้
-        "redirect_uri": LAZADA_REDIRECT_URI
+        "redirect_uri": LAZADA_REDIRECT_URI,
+        "timestamp": int(time.time() * 1000)
     }
     resp = requests.post(token_url, json=payload)
     print("DEBUG Response:", resp.text)
     print("DEBUG: app_key =", LAZADA_CLIENT_ID)
     print("DEBUG: app_secret =", LAZADA_CLIENT_SECRET)
     print("DEBUG: redirect_uri =", LAZADA_REDIRECT_URI)
+    print("DEBUG Response:", resp.text)
     data = resp.json()
+    
     print("DEBUG payload:", payload)
     print("DEBUG request headers:", {"Content-Type": "application/json"})
     print("DEBUG: response =", resp.text)
