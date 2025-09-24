@@ -127,13 +127,13 @@ async def lazada_callback(request: Request):
     payload = {
         "code": code,
         "grant_type": "authorization_code",
-        "client_id": LAZADA_CLIENT_ID,
-        "client_secret": LAZADA_CLIENT_SECRET,
+        "app_key": LAZADA_CLIENT_ID,
+        "app_secret": LAZADA_CLIENT_SECRET,
         "redirect_uri": LAZADA_REDIRECT_URI
     }
     resp = requests.post(token_url, data=payload)
-    print("DEBUG: client_id =", LAZADA_CLIENT_ID)
-    print("DEBUG: client_secret =", LAZADA_CLIENT_SECRET)
+    print("DEBUG: app_key =", LAZADA_CLIENT_ID)
+    print("DEBUG: app_secret =", LAZADA_CLIENT_SECRET)
     print("DEBUG: redirect_uri =", LAZADA_REDIRECT_URI)
     data = resp.json()
 
