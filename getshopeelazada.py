@@ -106,7 +106,7 @@ def lookup_store_from_state(state):
         if r.get("state") == state:
             return r.get("store_id")
     return None
-
+#  getshopeelazada.py
 @app.get("/lazada/auth/{store_id}")
 async def lazada_auth_redirect(store_id: str):
     url = get_auth_url_for_store(store_id)
@@ -131,12 +131,15 @@ async def lazada_callback(request: Request):
         "app_secret": LAZADA_CLIENT_SECRET,
         "redirect_uri": LAZADA_REDIRECT_URI
     }
-    resp = requests.post(token_url, data=payload)
+    resp = requests.post(token_url, json=payload)  # <-- เปลี่ยนจาก data=payload เป็น json=payload
+    print("DEBUG Response:", resp.text)
     print("DEBUG: app_key =", LAZADA_CLIENT_ID)
     print("DEBUG: app_secret =", LAZADA_CLIENT_SECRET)
     print("DEBUG: redirect_uri =", LAZADA_REDIRECT_URI)
     data = resp.json()
-
+    print("DEBUG payload:", payload)
+    print("DEBUG request headers:", {"Content-Type": "application/json"})
+    print("DEBUG: response =", resp.text)
     if "access_token" not in data:
         # บันทึก/แจ้ง error
         return HTMLResponse(f"Failed to obtain token: {data}", status_code=500)
