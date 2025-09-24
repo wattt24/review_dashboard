@@ -123,18 +123,18 @@ async def lazada_callback(request: Request):
     # store_id อาจเป็น None ถ้าไม่ได้ส่ง state หรือ mapping หาย → ยังรับ token ได้แต่ต้องบันทึก shop info หลังจากตรวจสอบจาก Lazada
 
     # 2) แลก token
-    token_url = "https://auth.lazada.com/rest/auth/token/create"
+    token_url = "https://auth.lazada.com/rest/auth/token"  # แก้จาก /token/create
     payload = {
         "code": code,
         "grant_type": "authorization_code",
-        "client_id": LAZADA_CLIENT_ID,
-        "client_secret": LAZADA_CLIENT_SECRET,
+        "app_key": LAZADA_CLIENT_ID,        # <-- แก้ตรงนี้
+        "app_secret": LAZADA_CLIENT_SECRET, # <-- แก้ตรงนี้
         "redirect_uri": LAZADA_REDIRECT_URI
     }
-    resp = requests.post(token_url, json=payload)  # <-- เปลี่ยนจาก data=payload เป็น json=payload
+    resp = requests.post(token_url, json=payload)
     print("DEBUG Response:", resp.text)
-    print("DEBUG: client_id =", LAZADA_CLIENT_ID)
-    print("DEBUG: client_secret =", LAZADA_CLIENT_SECRET)
+    print("DEBUG: app_key =", LAZADA_CLIENT_ID)
+    print("DEBUG: app_secret =", LAZADA_CLIENT_SECRET)
     print("DEBUG: redirect_uri =", LAZADA_REDIRECT_URI)
     data = resp.json()
     print("DEBUG payload:", payload)
