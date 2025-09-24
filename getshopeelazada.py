@@ -1,17 +1,20 @@
 
 # getshopeelazada.py
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
+from utils.token_manager import save_token, get_gspread_client
 from fastapi.responses import Response
-from services.shopee_auth import shopee_get_access_token,shopee_get_authorization_url,auth_partner
-from services.lazada_auth import get_lazada_token, call_lazada_api
-from fastapi import FastAPI, Query
+from services.shopee_auth import shopee_get_access_token,shopee_get_authorization_url,shopee_get_categories
+from services.lazada_auth import get_auth_url_for_store
+from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET,GOOGLE_SHEET_ID
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from utils.token_manager import *
 from services.facebook_auth import get_all_page_tokens
 app = FastAPI(title="Fujika Dashboard API")
 import requests
 # from services import shopee_auth
-
+from utils.config import SHOPEE_SHOP_ID
 from utils.token_manager import auto_refresh_token
 @app.get("/")
 async def root():
@@ -35,7 +38,6 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     # debug: แสดง authorization code และ shop_id ที่ Shopee ส่งมา
     print("Authorization Code:", code)
     print("Shop ID:", shop_id)
-    partner_info = {}
     try:
         # 1. ใช้ code + shop_id ไปขอแลก access_token/refresh_token จาก Shopee API
         # get_token() เป็นฟังก์ชันที่คุณเขียนไว้เองเพื่อเรียก API ของ Shopee
@@ -54,7 +56,7 @@ async def shopee_callback(code: str = None, shop_id: int = None):
 
         # 2. ถ้าแลก token สำเร็จ คืนค่ากลับไปเป็น response JSON
         return {
-            "message": "✅ Token saved successfully.",
+            "message": "✅ Token saved successfully to Google Sheet.",
             "token": {
                 "access_token": token_response["access_token"],
                 "refresh_token": token_response["refresh_token"],
@@ -70,44 +72,12 @@ async def shopee_callback(code: str = None, shop_id: int = None):
             status_code=400,
             content={"error": "Invalid authorization code", "details": str(e)}
         )
+@app.get("/shopee/categories")
+def show_shopee_categories():
+    access_token = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
+    data = shopee_get_categories(access_token, SHOPEE_SHOP_ID)
+    return data.get("response", {}).get("category_list", [])
 
-
-@app.api_route("/lazada/callback", methods=["GET", "HEAD"])
-async def lazada_callback(code: str = None, country: str = None):
-    if not code:
-        return {"message": "Lazada callback ping"}
-
-    print("Authorization Code:", code)
-    print("Country:", country)
-
-    # 1. แลก token จริงจาก Lazada
-    token_response = get_lazada_token(code)
-
-    # 2. บันทึก token ลง Google Sheet
-    account_id = token_response.get("account_id") or country  # ใช้ account_id หรือ country แทน
-    save_token(
-        platform="lazada",
-        account_id=account_id,
-        access_token=token_response["access_token"],
-        refresh_token=token_response.get("refresh_token"),
-        expires_in=token_response.get("expires_in"),
-    )
-
-    # 3. auto refresh ถ้าหมดอายุ
-    access_token = auto_refresh_token("lazada", account_id)
-
-    # 4. ตัวอย่างเรียก API lazada (เช่น get seller info)
-    seller_info = call_lazada_api(
-        path="/seller/get",
-        access_token=access_token
-    )
-
-    return JSONResponse({
-        "message": "Lazada callback received and token saved",
-        "account_id": account_id,
-        "token_response": token_response,
-        "seller_info": seller_info
-    })
 
 #facebook
 
@@ -122,3 +92,86 @@ def get_facebook_pages():
         result[page_id] = resp
 
     return JSONResponse(result)
+def lookup_store_from_state(state):
+    # ตัวอย่าง: ดึงจาก Google Sheet 'state_mapping'
+    client = get_gspread_client()
+    ss = client.open_by_key(GOOGLE_SHEET_ID)
+    try:
+        ws = ss.worksheet("state_mapping")
+    except Exception:
+        return None
+    records = ws.get_all_records()
+    for r in records:
+        if r.get("state") == state:
+            return r.get("store_id")
+    return None
+
+@app.get("/lazada/auth/{store_id}")
+async def lazada_auth_redirect(store_id: str):
+    url = get_auth_url_for_store(store_id)
+    return RedirectResponse(url)
+@app.get("/lazada/callback")
+async def lazada_callback(request: Request):
+    code = request.query_params.get("code")
+    state = request.query_params.get("state")
+    if not code:
+        return HTMLResponse("Authorization canceled or no code returned.", status_code=400)
+
+    # 1) ยืนยันว่า state มี mapping ในระบบเรา (optional แต่แนะนำ)
+    store_id = lookup_store_from_state(state)
+    # store_id อาจเป็น None ถ้าไม่ได้ส่ง state หรือ mapping หาย → ยังรับ token ได้แต่ต้องบันทึก shop info หลังจากตรวจสอบจาก Lazada
+
+    # 2) แลก token
+    token_url = "https://auth.lazada.com/rest/auth/token/create"
+    payload = {
+        "code": code,
+        "grant_type": "authorization_code",
+        "client_id": LAZADA_CLIENT_ID,
+        "client_secret": LAZADA_CLIENT_SECRET,
+        "redirect_uri": LAZADA_REDIRECT_URI
+    }
+    resp = requests.post(token_url, data=payload)
+    data = resp.json()
+
+    if "access_token" not in data:
+        # บันทึก/แจ้ง error
+        return HTMLResponse(f"Failed to obtain token: {data}", status_code=500)
+
+    access_token = data["access_token"]
+    refresh_token = data.get("refresh_token")
+    expires_in = data.get("expires_in")
+    refresh_expires_in = data.get("refresh_expires_in")
+
+    # 3) เรียก Lazada API เพื่อตรวจสอบข้อมูลร้าน (ยืนยันว่า token เป็นของร้านไหนจริง)
+    # NOTE: endpoint ตัวอย่าง อาจเปลี่ยนตาม Lazada API เวอร์ชัน — ปรับตามเอกสารจริง
+    seller_info = None
+    try:
+        seller_resp = requests.get(
+            "https://api.lazada.com/rest/seller/get",  # ปรับถ้าจริงต่างกัน
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        seller_info = seller_resp.json()
+    except Exception as e:
+        seller_info = None
+
+    # หา shop_id จาก response (ปรับตามโครงสร้างจริงที่ Lazada ส่งกลับ)
+    shop_id = None
+    if isinstance(seller_info, dict):
+        # ตัวอย่างการค้นค่า (คุณอาจต้อง inspect response จริง)
+        shop_id = seller_info.get("sellerId") or seller_info.get("data", {}).get("shopId")
+
+    # ถ้าแยกไม่ได้ ให้ใช้ store_id จาก state เป็น fallback
+    account_id_to_save = shop_id or store_id or "unknown"
+
+    # 4) บันทึก token ลง Google Sheet ผ่าน save_token (โค้ดคุณมีฟังก์ชันนี้)
+    save_token(
+        platform="lazada",
+        account_id=account_id_to_save,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=expires_in,
+        refresh_expires_in=refresh_expires_in
+    )
+
+    # 5) ส่งหน้า success กลับไปให้ร้าน หรือ redirect ไปหน้าภายในระบบคุณ
+    return HTMLResponse(f"เชื่อมต่อสำเร็จสำหรับร้าน: {account_id_to_save}. ระบบจะบันทึก token ให้เรียบร้อยแล้ว.")

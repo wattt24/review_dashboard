@@ -32,8 +32,8 @@ def get_gspread_client():
 
 # ===== Load Google Sheet =====
 client = get_gspread_client()
-GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
-
+# GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
+GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID")
 if not GOOGLE_SHEET:
     raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน os.environ")
 
@@ -73,31 +73,6 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
 
     except Exception as e:
         print("❌ save_token error:", str(e))
-# def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
-#     expired_at = (datetime.now() + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
-#     refresh_expired_at = (datetime.now() + timedelta(seconds=refresh_expires_in)).isoformat() if refresh_expires_in else ""
-    
-#     account_id_str = str(account_id).strip()
-    
-#     try:
-#         records = sheet.get_all_records()
-#         for idx, record in enumerate(records, start=2):
-#             if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
-#                and str(record.get("account_id", "")).strip() == account_id_str:
-#                 sheet.update(f"A{idx}:G{idx}", [[
-#                     platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
-#                 ]])
-#                 return
-
-#         # ถ้าไม่เจอ row เดิม → เพิ่มใหม่
-#         sheet.append_row([
-#             platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
-#         ])
-
-#     except Exception as e:
-#         print("❌ save_token error:", str(e))
-
-
 def get_latest_token(platform, account_id):
     try:
         records = sheet.get_all_records()
@@ -139,9 +114,9 @@ def auto_refresh_token(platform, account_id, force=False):
     # 🔄 ถ้า force == True หรือหมดอายุจริง
     try:
         if platform == "shopee":
-            from services.shopee_auth import refresh_shopee_token as shopee_refresh_token
+            from services.shopee_auth import shopee_refresh_access_token as shopee_refresh_token
             print(f"🔄 Trying to refresh Shopee token for shop_id={account_id}")
-            new_data = shopee_refresh_token(token_data["refresh_token"], account_id)
+            new_data = shopee_refresh_token(account_id, token_data["refresh_token"])
 
             if not new_data or "access_token" not in new_data:
                 print(f"❌ Shopee refresh failed. Response: {new_data}")
@@ -184,8 +159,6 @@ def auto_refresh_token(platform, account_id, force=False):
                 print(f"[{datetime.now().isoformat()}] ✅ Facebook token refreshed for all related accounts")
                 print("Token Data Fetched:", token_data)
                 return new_data["access_token"]
-
-
         else:
             print(f"❌ Auto-refresh not implemented for {platform}")
             return token_data["access_token"]
