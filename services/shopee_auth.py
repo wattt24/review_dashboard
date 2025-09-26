@@ -60,19 +60,25 @@ def shopee_get_access_token(shop_id: int, code: str):
     """
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
-    sign = shopee_generate_sign_auth_code(path, timestamp)
+
+    # ❌ ปรับ sign ให้ถูกต้อง
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
 
     params = {
         "partner_id": SHOPEE_PARTNER_ID,
         "shop_id": shop_id,
         "code": code,
         "sign": sign,
-        "timestamp": timestamp,
-        "redirect": SHOPEE_REDIRECT_URI
+        "timestamp": timestamp
     }
 
     url = f"{BASE_URL}{path}"
-    resp = requests.get(url, params=params)
+    resp = requests.get(url, params=params, timeout=15)
     data = resp.json()
 
     if "error" in data and data["error"]:
@@ -84,6 +90,7 @@ def shopee_get_access_token(shop_id: int, code: str):
         "expire_in": data.get("expire_in"),
         "refresh_expires_in": data.get("refresh_expires_in")
     }
+
 
 # ถูกเรียก ภายใน shopee_get_access_token() และ auth_partner()ไม่ได้เรียกโดยตรงจาก callback
 def shopee_generate_sign(path, timestamp, shop_id, access_token ):
