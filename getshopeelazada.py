@@ -5,7 +5,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from utils.token_manager import save_token, get_gspread_client
 from fastapi.responses import Response
 from services.shopee_auth import shopee_get_authorization_url,shopee_get_access_token
-from api.shopee_api import shopee_get_categories
+# from api.shopee_api import shopee_get_categories 
+from test_dd import shopee_get_item_list
 from services.lazada_auth import lazada_exchange_token
 from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID
 from fastapi import FastAPI
@@ -73,13 +74,17 @@ async def shopee_callback(code: str = None, shop_id: int = None):
             status_code=400,
             content={"error": "Invalid authorization code", "details": str(e)}
         )
-@app.get("/shopee/categories")
-def show_shopee_categories():
+# @app.get("/shopee/categories")
+# def show_shopee_categories():
+#     access_token = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
+#     data = shopee_get_categories(access_token, SHOPEE_SHOP_ID)
+#     return data.get("response", {}).get("category_list", [])
+
+@app.get("/shopee/items")
+def show_shopee_items():
     access_token = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
-    data = shopee_get_categories(access_token, SHOPEE_SHOP_ID)
-    return data.get("response", {}).get("category_list", [])
-
-
+    data = shopee_get_item_list(SHOPEE_SHOP_ID, access_token, offset=0, page_size=50)
+    return data.get("items", []) 
 #facebook
 
 @app.get("/facebook/pages")

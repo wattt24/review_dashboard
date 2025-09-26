@@ -1,10 +1,69 @@
-
-import os, json
 import time, hmac, hashlib, requests
+import os, json
 import urllib.parse
+
 from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_SHOP_ID)
 from utils.token_manager import get_latest_token, auto_refresh_token
+BASE_URL = "https://partner.shopeemobile.com"
+# ค่าพวกนี้ดึงจาก config หรือ Google Sheet
+SHOPEE_PARTNER_ID = 2012650
+from utils.config import SHOPEE_PARTNER_SECRET, SHOPEE_PARTNER_ID
+BASE_URL = "https://partner.shopeemobile.com"
 
+def shopee_get_shop_info(shop_id, access_token):
+    path = "/api/v2/shop/get_shop_info"
+    timestamp = int(time.time())
+
+    # ✅ base_string สำหรับ sign
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    url = f"{BASE_URL}{path}"
+    params = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "timestamp": timestamp,
+        "sign": sign,
+        "access_token": access_token,
+        "shop_id": shop_id
+    }
+
+    print("BASE STRING:", base_string)
+    print("SIGN:", sign)
+    print("URL:", url)
+    print("PARAMS:", params)
+
+    resp = requests.get(url, params=params, timeout=15)
+    return resp.json()
+
+
+# ทดลองเรียก
+shop_id = 57360480
+access_token = "7a52646966667a71736f5a6763745973"  # จาก callback/Google Sheet
+info = shopee_get_shop_info(shop_id, access_token)
+print("== ข้อมูลร้าน ==")
+print(info)
+#//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+def fetch_items_from_shopee(account_id: int):
+    # 1) ดึง token ล่าสุดจาก Google Sheet
+    
+    token_info = get_latest_token("shopee", account_id)
+    if not token_info:
+        raise ValueError(f"❌ No token found for shopee:{account_id}")
+
+    access_token = token_info["access_token"]
+
+    # 2) ดึง item list จาก Shopee API
+    items = shopee_get_item_list(
+        shop_id=account_id,
+        access_token=access_token
+    )
+    return items
 # ===== Helper สำหรับดึง token จาก Google Sheet =====
 def get_shopee_access_token(shop_id: str, force_refresh: bool = False):
     """
@@ -57,68 +116,59 @@ def shopee_get_categories(shop_id, language="en"):
     url = f"{base_url}{path}"
     response = requests.get(url, params=params)
     return response.json()
-def shopee_get_item_list(shop_id, page_size=100, offset=0):
+def shopee_get_item_list(shop_id: int, access_token: str, offset=0, page_size=1):
     path = "/api/v2/product/get_item_list"
     timestamp = int(time.time())
+    
+    # สร้าง sign
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}"
+    print("shopee_get_item_list:.............//////")
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
 
-    token_data = get_latest_token("shopee", shop_id)
-    if not token_data:
-        raise ValueError("❌ ไม่พบ Shopee access_token")
-    access_token = token_data["access_token"]
-
-    shop_id = int(shop_id)
-    sign = shopee_generate_sign(path, timestamp, shop_id, access_token)
-
-    url = f"https://partner.shopeemobile.com{path}"
+    url = f"{BASE_URL}{path}"  # BASE_URL = https://partner.shopeemobile.com
     params = {
         "partner_id": SHOPEE_PARTNER_ID,
         "timestamp": timestamp,
+        "sign": sign,
         "access_token": access_token,
         "shop_id": shop_id,
-        "sign": sign,
-        "pagination_offset": offset,
-        "pagination_entries_per_page": page_size
+        "offset": offset,
+        "page_size": page_size
     }
-    print(">>> DEBUG PARAMS:", params)
-    resp = requests.get(url, params=params)
-    print(">>> RAW RESPONSE:", resp.text)
+    print("BASE STRING:", base_string)
+    print("SIGN:", sign)
+    print("URL:", url)
+    print("PARAMS:", params)
+    resp = requests.get(url, params=params, timeout=15)
     return resp.json()
 
-
-# ===== ตัวอย่างการเรียกใช้งาน =====
+# # ===== ตัวอย่างการเรียกใช้งาน =====
 if __name__ == "__main__":
-    # ดึงหมวดหมู่
-    categories = shopee_get_categories(SHOPEE_SHOP_ID)
-    # print("== หมวดหมู่ทั้งหมดจาก Shopee ==")
-    #print(json.dumps(categories, indent=2, ensure_ascii=False))#json.dumps = แปลง Python object (dict/list) → string ในรูปแบบ JSON indent=2 = จัด format JSON ให้สวย มีการย่อหน้า (pretty-print) ระดับ 2 space ensure_ascii=False = ให้แสดงตัวอักษร UTF-8 ตามจริง (เช่น ภาษาไทย "หมวดหมู่")
-    # print(type(categories))
-    # print(categories)
+#     # ดึงหมวดหมู่
+#     categories = shopee_get_categories(SHOPEE_SHOP_ID)
+#     print("== หมวดหมู่ทั้งหมดจาก Shopee ==")
+#     #print(json.dumps(categories, indent=2, ensure_ascii=False))#json.dumps = แปลง Python object (dict/list) → string ในรูปแบบ JSON indent=2 = จัด format JSON ให้สวย มีการย่อหน้า (pretty-print) ระดับ 2 space ensure_ascii=False = ให้แสดงตัวอักษร UTF-8 ตามจริง (เช่น ภาษาไทย "หมวดหมู่")
+#     # print(type(categories))
+#     # print(categories)
+    def fetch_items_from_shopee(account_id: int):
+    # 1) ดึง token ล่าสุดจาก Google Sheet
+        token_info = get_latest_token("shopee", account_id)
+        if not token_info:
+            raise ValueError(f"❌ No token found for shopee:{account_id}")
 
+        access_token = token_info["access_token"]
 
-    all_categories = categories.get("category_list", [])
-    category_map = {
-        cat["category_id"]: cat.get("display_category_name", "ไม่มีชื่อหมวดหมู่")
-        for cat in all_categories
-    }
-    print(category_map)
-    
-    # items_response = shopee_get_item_list(SHOPEE_SHOP_ID)
-    # print("== สินค้าทั้งหมดจาก Shopee  ในร้านของเรา==")
-    # print(json.dumps(items_response, indent=2, ensure_ascii=False))
-    # # ดึง list ของสินค้าจริง
-    # items = items_response.get("item", [])
-
-    # # เอา category_id ไม่ซ้ำ
-    # shop_category_ids = set(item["category_id"] for item in items)
-
-    # # สร้าง dict ของหมวดหมู่ร้าน
-    # shop_categories = {cid: category_map.get(cid, "ไม่มีชื่อหมวดหมู่") for cid in shop_category_ids}
-
-    # print("== หมวดหมู่ในร้านของเรา ==")
-    # for cid, name in shop_categories.items():
-    #     print(cid, ":", name)
-    # #     print("== หมวดหมู่ในร้านของเรา1111 ==")
-    # # print(shop_categories)
-    items = shopee_get_item_list(SHOPEE_SHOP_ID, page_size=50, offset=0)
+        # 2) ดึง item list จาก Shopee API
+        items = shopee_get_item_list(
+            shop_id=account_id,
+            access_token=access_token
+        )
+        
+        return items
+    items = fetch_items_from_shopee(SHOPEE_SHOP_ID)
     print("== รายการสินค้าในร้าน ==")
-    print(json.dumps(items, indent=2, ensure_ascii=False))
+    print(items)
