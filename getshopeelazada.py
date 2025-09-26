@@ -21,13 +21,14 @@ from utils.config import SHOPEE_SHOP_ID
 from utils.token_manager import auto_refresh_token
 @app.get("/")
 async def root():
+    
     return {"message": "Service is running"}
 @app.get("/shopee/authorize")
 async def shopee_authorize():
     """
     คืน URL ให้ร้านค้ากด authorize
     """
-    url = shopee_get_authorization_url()  # <-- ใส่ตรงนี้
+    url = shopee_get_authorization_url()  # <-- ใช้ฟังก์ชันใหม่
     return {"authorization_url": url}
 @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
 async def shopee_callback(code: str = None, shop_id: int = None):

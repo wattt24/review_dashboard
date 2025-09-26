@@ -13,10 +13,13 @@ BASE_URL_AUTH = "https://partner.shopeemobile.com"
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())  # ต้องเป็นวินาที 10 หลัก
-    sign = shopee_generate_sign(path, timestamp, is_authorize=True)
+
+    # ใช้ฟังก์ชันใหม่ สำหรับ authorize
+    sign = shopee_generate_sign_authorize(path, timestamp)
 
     redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI, safe='')
-    scope = "read_item,write_item"
+    scope = "read_item,write_item"  # ใส่ scope ที่ต้องการ
+
     url = (
         f"{BASE_URL_AUTH}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
@@ -26,6 +29,19 @@ def shopee_get_authorization_url():
         f"&scope={scope}"
     )
     return url
+
+
+def shopee_generate_sign_authorize(path, timestamp):
+    """
+    Sign สำหรับ URL authorize (ยังไม่มี shop_id, access_token)
+    """
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+    return sign
 
 # ถูกเรียก ภายใน shopee_get_access_token() และ auth_partner()ไม่ได้เรียกโดยตรงจาก callback
 def shopee_generate_sign(path, timestamp, shop_id, access_token ):
