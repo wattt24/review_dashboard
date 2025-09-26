@@ -8,7 +8,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
 BASE_URL = "https://partner.shopeemobile.com/api/v2"
 BASE_URL_AUTH = "https://partner.shopeemobile.com" 
-
 # ใช้สร้าง URL สำหรับให้ร้านกด authorize โดยไม่ต้องเข้า shopee open platform เอง
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
@@ -42,6 +41,49 @@ def shopee_generate_sign_authorize(path, timestamp):
         hashlib.sha256
     ).hexdigest()
     return sign
+
+def shopee_generate_sign_auth_code(path, timestamp):
+    """
+    Sign สำหรับแลก authorization code เป็น access_token
+    """
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        base_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+    return sign
+
+def shopee_get_access_token(shop_id: int, code: str):
+    """
+    ใช้ code + shop_id แลก access_token + refresh_token
+    """
+    path = "/api/v2/shop/auth_partner"
+    timestamp = int(time.time())
+    sign = shopee_generate_sign_auth_code(path, timestamp)
+
+    params = {
+        "partner_id": SHOPEE_PARTNER_ID,
+        "shop_id": shop_id,
+        "code": code,
+        "sign": sign,
+        "timestamp": timestamp,
+        "redirect": SHOPEE_REDIRECT_URI
+    }
+
+    url = f"{BASE_URL}{path}"
+    resp = requests.get(url, params=params)
+    data = resp.json()
+
+    if "error" in data and data["error"]:
+        raise ValueError(f"Cannot get access_token: {data}")
+
+    return {
+        "access_token": data["access_token"],
+        "refresh_token": data["refresh_token"],
+        "expire_in": data.get("expire_in"),
+        "refresh_expires_in": data.get("refresh_expires_in")
+    }
 
 # ถูกเรียก ภายใน shopee_get_access_token() และ auth_partner()ไม่ได้เรียกโดยตรงจาก callback
 def shopee_generate_sign(path, timestamp, shop_id, access_token ):
