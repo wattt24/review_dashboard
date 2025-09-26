@@ -1,425 +1,125 @@
-# # services/shopee_api.py
-# import time, hmac, hashlib, requests, json
-# import pandas as pd
-# from utils.config import SHOPEE_SHOP_ID, SHOPEE_PARTNER_KEY, SHOPEE_PARTNER_ID
-# from utils.token_manager import auto_refresh_token
-
-# def sign(path, timestamp, access_token):
-#     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{SHOPEE_SHOP_ID}"
-#     return hmac.new(
-#         SHOPEE_PARTNER_KEY.encode(),
-#         base_string.encode(),
-#         hashlib.sha256
-#     ).hexdigest()
-
-# def get_item_list(access_token, offset=0, page_size=50):
-#     path = "/api/v2/product/get_item_list"
-#     url = "https://partner.shopeemobile.com" + path
-#     timestamp = int(time.time())
-#     sign_value = sign(path, timestamp, access_token)
-    
-#     params = {
-#         "partner_id": SHOPEE_PARTNER_ID,
-#         "timestamp": timestamp,
-#         "access_token": access_token,
-#         "shop_id": SHOPEE_SHOP_ID,
-#         "sign": sign_value,
-#         "offset": offset,
-#         "page_size": page_size,
-#         "item_status": "NORMAL"
-#     }
-    
-#     try:
-#         resp = requests.get(url, params=params, timeout=30)
-#         resp.raise_for_status()
-#         data = resp.json()
-#     except Exception as e:
-#         print("❌ Shopee get_item_list error:", e)
-#         print("Response text:", getattr(resp, "text", "No response"))
-#         return {"response": {"item": [], "more": False}}
-    
-#     return data.get("response", {"item": [], "more": False})
-
-# def get_item_base_info(access_token, item_ids):
-#     if not item_ids:
-#         # ไม่มีสินค้า
-#         return {"response": {"item": []}}
-    
-#     path = "/api/v2/product/get_item_base_info"
-#     url = "https://partner.shopeemobile.com" + path
-#     timestamp = int(time.time())
-#     sign_value = sign(path, timestamp, access_token)
-    
-#     params = {
-#         "partner_id": SHOPEE_PARTNER_ID,
-#         "timestamp": timestamp,
-#         "access_token": access_token,
-#         "shop_id": SHOPEE_SHOP_ID,
-#         "sign": sign_value
-#     }
-    
-#     body = {"item_id_list": item_ids}
-    
-#     try:
-#         resp = requests.post(
-#             url,
-#             params=params,
-#             data=json.dumps(body),
-#             headers={"Content-Type": "application/json"},
-#             timeout=30
-#         )
-#         resp.raise_for_status()
-#         data = resp.json()
-#     except Exception as e:
-#         print("❌ Shopee get_item_base_info error:", e)
-#         print("Response text:", getattr(resp, "text", "No response"))
-#         return {"response": {"item": []}}
-    
-#     return data
-
-# def fetch_items_df():
-#     ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
-#     if not ACCESS_TOKEN:
-#         raise Exception("❌ ไม่สามารถดึง Shopee access token ได้")
-    
-#     items_all = []
-#     offset = 0
-#     page_size = 50
-    
-#     while True:
-#         res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
-#         items = res.get("item", [])
-#         if not items:
-#             break
-#         items_all.extend(items)
-#         if not res.get("more", False):
-#             break
-#         offset += page_size
-    
-#     item_ids = [i["item_id"] for i in items_all]
-    
-#     # ดึงข้อมูล base info ของสินค้า
-#     base_info_res = get_item_base_info(ACCESS_TOKEN, item_ids)
-#     base_items = base_info_res.get("item", [])
-    
-#     # สร้าง DataFrame สำหรับ Dashboard
-#     data = []
-#     for item in base_items:
-#         data.append({
-#             "item_id": item.get("item_id"),
-#             "name": item.get("item_name", ""),
-#             "status": item.get("item_status", ""),
-#             "stock": item.get("stock", 0),
-#             "category": item.get("category_name", "อื่นๆ"),
-#             "sales": item.get("sold", 0),
-#             "date": pd.Timestamp.now()
-#         })
-    
-#     df = pd.DataFrame(data)
-#     # ป้องกัน KeyError สำหรับ Dashboard
-#     for col in ["status", "stock", "sales", "category"]:
-#         if col not in df.columns:
-#             df[col] = 0 if col in ["stock","sales"] else ""
-    
-#     return df
-
-
-
-# services/shopee_api.py
+# api/shopee_api.py
+import os, json
 import time, hmac, hashlib, requests
-import pandas as pd
-from utils.config import SHOPEE_SHOP_ID, SHOPEE_PARTNER_KEY, SHOPEE_PARTNER_ID
-from utils.token_manager import auto_refresh_token
+import urllib.parse
+from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_SHOP_ID)
+from utils.token_manager import get_latest_token, auto_refresh_token
 
-def sign(path, timestamp, access_token=None, shop_id=None):
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    if access_token and shop_id:
-        base_string += f"{access_token}{shop_id}"
-    elif access_token:
-        base_string += f"{access_token}"
-    elif shop_id:
-        base_string += f"{shop_id}"
-
-    return hmac.new(
-        SHOPEE_PARTNER_KEY.encode("utf-8"),
+# ===== Helper สำหรับดึง token จาก Google Sheet =====
+def get_shopee_access_token(shop_id: str, force_refresh: bool = False):
+    """
+    ดึง access_token จาก Google Sheet และ auto-refresh ถ้าจำเป็น
+    """
+    token = auto_refresh_token("shopee", shop_id, force=force_refresh)
+    if token:
+        return token
+    # fallback กรณี refresh ไม่สำเร็จ → ดึง token ล่าสุดที่บันทึกไว้
+    token_data = get_latest_token("shopee", shop_id)
+    return token_data["access_token"] if token_data else None
+def shopee_generate_sign(path, timestamp, shop_id, access_token ):
+    print(">>> DEBUG shop_id param:", shop_id)
+    print(">>> DEBUG access_token param:", access_token)
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}"
+  
+    print("BASE STRING:", base_string)
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
+    print("BASE STRING:", base_string)
+    print("GENERATED SIGN:", sign)  # ดู sign ที่สร้าง
+    return sign
 
-def get_shop_info(access_token, shop_id):
-    path = "/api/v2/shop/get_shop_info"
-    url = f"https://partner.shopeemobile.com{path}"
+def shopee_get_categories(shop_id, language="en"):
+    path = "/api/v2/product/get_category"
+    base_url = "https://partner.shopeemobile.com"
     timestamp = int(time.time())
-    sign_value = sign(path, timestamp, access_token, shop_id)
+
+    token_data = get_latest_token("shopee", shop_id)
+    if not token_data:
+        raise ValueError("❌ ไม่พบ Shopee access_token")
+    access_token = token_data["access_token"]
+
+    shop_id = int(shop_id)
+    sign = shopee_generate_sign(path, timestamp, shop_id, access_token)
 
     params = {
         "partner_id": SHOPEE_PARTNER_ID,
         "timestamp": timestamp,
         "access_token": access_token,
         "shop_id": shop_id,
-        "sign": sign_value
+        "sign": sign,
+        "language": language
     }
 
-    resp = requests.get(url, params=params, timeout=30)
-    data = resp.json()
+    url = f"{base_url}{path}"
+    response = requests.get(url, params=params)
+    return response.json()
 
-    print("DEBUG get_shop_info URL:", resp.url)
-    print("DEBUG response:", data)
-
-    if data.get("error"):
-        raise ValueError(f"API Error: {data['error']} - {data.get('message')}")
-    return data.get("response", {})
-
-
-def get_item_list(access_token, shop_id, page_size=50):
+def shopee_get_item_list(shop_id, access_token, page_size=100, offset=0):
     path = "/api/v2/product/get_item_list"
-    url = f"https://partner.shopeemobile.com{path}"
     timestamp = int(time.time())
-    sign_value = sign(path, timestamp, access_token, shop_id)
 
+    access_token = get_shopee_access_token(shop_id)
+    if not access_token:
+        raise ValueError("❌ ไม่พบ Shopee access_token")
+    
+    sign = shopee_generate_sign(path, timestamp, shop_id, access_token)
+
+    url = f"https://partner.shopeemobile.com{path}"
     params = {
         "partner_id": SHOPEE_PARTNER_ID,
         "timestamp": timestamp,
         "access_token": access_token,
         "shop_id": shop_id,
-        "sign": sign_value,
-        "offset": 0,
-        "page_size": page_size
+        "sign": sign,
+        "pagination_offset": offset,
+        "pagination_entries_per_page": page_size
     }
 
-    resp = requests.get(url, params=params, timeout=30)
-    data = resp.json()
-
-    print("DEBUG get_item_list URL:", resp.url)
-    print("DEBUG response:", data)
-
-    if data.get("error"):
-        raise ValueError(f"API Error: {data['error']} - {data.get('message')}")
-    return data.get("response", {}).get("item", [])
+    resp = requests.get(url, params=params)
+    return resp.json()
 
 
-def fetch_shop_sales_df():
-    ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
-    print("DEBUG ACCESS_TOKEN:", ACCESS_TOKEN)
-    if not ACCESS_TOKEN:
-        raise Exception("❌ ไม่สามารถดึง Shopee access token ได้")
+# ===== ตัวอย่างการเรียกใช้งาน =====
+if __name__ == "__main__":
+    # ดึงหมวดหมู่
+    categories = shopee_get_categories(SHOPEE_SHOP_ID)
+    print("== หมวดหมู่ทั้งหมดจาก Shopee ==")
+    print(json.dumps(categories, indent=2, ensure_ascii=False))
 
-    # ดึงข้อมูลร้าน
-    shop_info = get_shop_info(ACCESS_TOKEN, SHOPEE_SHOP_ID)
-    shop_name = shop_info.get("shop_name", "Unknown")
-    shop_logo = shop_info.get("shop_logo", "")
+    all_categories = categories.get("category_list", [])
+    category_map = {
+        cat["category_id"]: cat.get("display_category_name", "ไม่มีชื่อหมวดหมู่")
+        for cat in all_categories
+    }
 
-    print("DEBUG shop_info raw:", shop_info)
-
-    items_all = []
+    # ดึงสินค้าทั้งหมดในร้าน
+    all_category_ids = set()
     offset = 0
-    page_size = 50
-    while True:
-        res = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID, offset=offset, page_size=page_size)
-        print(f"DEBUG items page {offset}:", res)
-        if not res:
-            break
-        items_all.extend(res)
-        if len(res) < page_size:
-            break
-        offset += page_size
-
-    total_sales = sum(item.get("sold_quantity", 0) for item in items_all)
-    print("DEBUG total_sales:", total_sales)
-
-    # ดึงรายการสินค้าแบบง่าย ๆ
-    items_all = []
-    offset = 0
-    page_size = 50
+    page_size = 100
 
     while True:
-        res = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID, offset=offset, page_size=page_size)
-        if not res:  # ถ้า API error หรือไม่มีสินค้า
+        data = shopee_get_item_list(SHOPEE_SHOP_ID, page_size, offset)
+        items = data.get("items", [])
+
+        if not items:
             break
-        items_all.extend(res)
-        if len(res) < page_size:  # ไม่มีหน้าเพิ่ม
-            break
+
+        for item in items:
+            all_category_ids.add(item["category_id"])
+
         offset += page_size
 
-    # รวมยอดขายทั้งหมด
-    total_sales = sum(item.get("sold_quantity", 0) for item in items_all)
+    print("== Category IDs ของสินค้าร้านเรา ==")
+    print(all_category_ids)
 
-    # สร้าง DataFrame แสดงผล
-    df = pd.DataFrame([{
-        "shop_name": shop_name,
-        "shop_logo": shop_logo,
-        "total_sales": total_sales,
-        "date": pd.Timestamp.now()
-    }])
-    return df
+    category_names_in_shop = [
+        category_map.get(cat_id, "ไม่พบหมวดหมู่")
+        for cat_id in all_category_ids
+    ]
 
-
-
-
-# def get_item_base_info(access_token, item_ids):
-#     path = "/api/v2/item/get_item_base_info"
-#     url = "https://partner.shopeemobile.com" + path
-#     timestamp = int(time.time())
-#     sign_value = sign(path, timestamp, access_token, SHOPEE_SHOP_ID)
-    
-#     params = {
-#         "partner_id": SHOPEE_PARTNER_ID,
-#         "timestamp": timestamp,
-#         "access_token": access_token,
-#         "shop_id": SHOPEE_SHOP_ID,
-#         "sign": sign_value
-#     }
-#     body = {"item_id_list": item_ids}
-
-#     print("🔎 BaseInfo Request:", url, params, body)
-#     resp = requests.post(url, params=params, json=body, timeout=30)
-
-#     if resp.status_code != 200:
-#         print("❌ Shopee API error (get_item_base_info)")
-#         print("Status:", resp.status_code)
-#         print("Body:", resp.text[:300])
-#         return {}
-
-#     try:
-#         return resp.json()
-#     except Exception as e:
-#         print("❌ JSON decode error (get_item_base_info)")
-#         print("Body:", resp.text[:300])
-#         return {}
-
-# # services/shopee_api.py
-# import time, hmac, hashlib, requests
-# import pandas as pd
-# from utils.config import SHOPEE_SHOP_ID, SHOPEE_PARTNER_KEY, SHOPEE_PARTNER_ID
-# from utils.token_manager import auto_refresh_token
-
-# def sign(path, timestamp, access_token):
-#     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{SHOPEE_SHOP_ID}"
-#     return hmac.new(
-#         SHOPEE_PARTNER_KEY.encode(),
-#         base_string.encode(),
-#         hashlib.sha256
-#     ).hexdigest()
-
-# def get_item_list(access_token, offset=0, page_size=50):
-#     path = "/api/v2/product/get_item_list"
-#     url = "https://partner.shopeemobile.com" + path
-#     timestamp = int(time.time())
-#     sign_value = sign(path, timestamp, access_token)
-    
-#     params = {
-#         "partner_id": SHOPEE_PARTNER_ID,
-#         "timestamp": timestamp,
-#         "access_token": access_token,
-#         "shop_id": SHOPEE_SHOP_ID,
-#         "sign": sign_value,
-#         "offset": offset,
-#         "page_size": page_size,
-#         "item_status": "NORMAL"
-#     }
-    
-#     resp = requests.get(url, params=params, timeout=30)
-
-#     if resp.status_code != 200:
-#         print("❌ Shopee API error (get_item_list)")
-#         print("Status:", resp.status_code)
-#         print("Body:", resp.text[:300])
-#         return {}
-
-#     try:
-#         return resp.json()
-#     except Exception as e:
-#         print("❌ JSON decode error (get_item_list)")
-#         print("Body:", resp.text[:300])
-#         return {}
-
-
-# def get_item_base_info(access_token, item_ids):
-#     path = "/api/v2/item/get_item_base_info"
-#     url = "https://partner.shopeemobile.com" + path
-#     timestamp = int(time.time())
-#     sign_value = sign(path, timestamp, access_token)
-    
-#     params = {
-#         "partner_id": SHOPEE_PARTNER_ID,
-#         "timestamp": timestamp,
-#         "access_token": access_token,
-#         "shop_id": SHOPEE_SHOP_ID,
-#         "sign": sign_value
-#     }
-#     body = {"item_id_list": item_ids}
-
-#     resp = requests.post(url, params=params, json=body, timeout=30)
-
-#     # ตรวจสอบ response
-#     if resp.status_code != 200:
-#         print("❌ Shopee API error")
-#         print("Status:", resp.status_code)
-#         print("Headers:", resp.headers)
-#         print("Body:", resp.text[:500])
-#         return {}
-
-#     # ตรวจสอบว่าเป็น JSON
-#     if "application/json" in resp.headers.get("Content-Type", ""):
-#         try:
-#             data = resp.json()
-#             return data
-#         except Exception as e:
-#             print("❌ JSON decode error")
-#             print("Response text:", resp.text[:500])
-#             raise e
-#     else:
-#         print("❌ Response is not JSON")
-#         print("Status:", resp.status_code)
-#         print("Headers:", resp.headers)
-#         print("Body:", resp.text[:500])
-#         return {}
-
-
-# def fetch_items_df():
-#     ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
-#     if not ACCESS_TOKEN:
-#         raise Exception("❌ ไม่สามารถดึง Shopee access token ได้")
-
-#     items_all = []
-#     offset = 0
-#     page_size = 50
-#     while True:
-#         res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
-
-#         # ✅ handle token expired
-#         if "error" in res:
-#             if res["error"] == "access_token_expired":
-#                 print("♻️ Token expired, refreshing...")
-#                 ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID, force=True)
-#                 res = get_item_list(ACCESS_TOKEN, offset=offset, page_size=page_size)
-
-#         items = res.get("response", {}).get("item", [])
-#         if not items:
-#             break
-#         items_all.extend(items)
-#         if not res.get("response", {}).get("more", False):
-#             break
-#         offset += page_size
-
-#     item_ids = [i.get("item_id") for i in items_all]
-
-#     # ✅ แบ่ง batch ละ 50
-#     base_items = []
-#     for i in range(0, len(item_ids), 50):
-#         batch_ids = item_ids[i:i+50]
-#         base_info_res = get_item_base_info(ACCESS_TOKEN, batch_ids)
-#         base_items.extend(base_info_res.get("response", {}).get("item", []))
-
-#     data = []
-#     for item in base_items:
-#         data.append({
-#             "item_id": item.get("item_id"),
-#             "name": item.get("item_name", ""),
-#             "status": item.get("item_status", ""),
-#             "stock": item.get("stock", 0),
-#             "category": item.get("category_name", "อื่นๆ"),
-#             "sales": item.get("sold", 0),
-#             "date": pd.Timestamp.now()
-#         })
-#     return pd.DataFrame(data)
+    print("== หมวดที่ร้านเรามี ==")
+    for name in category_names_in_shop:
+        print(name)

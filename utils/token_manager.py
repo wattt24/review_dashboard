@@ -5,21 +5,16 @@ import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials 
 import streamlit as st
-# Facebook ใช้ long-lived token แทน refresh_token
-# สามารถเพิ่ม API สำหรับ refresh ได้ถ้าจำเป็น
 
 # ===== Google Sheet Setup =====
-scope = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
+scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
 
+#ใช้เชื่อมต่อ Google Sheet
 def get_gspread_client():
     """
     ใช้ Service Account JSON จาก Environment variable (Render) หรือ st.secrets (Streamlit Cloud)
     """
     service_account_json = os.environ.get("SERVICE_ACCOUNT_JSON")
-
     if service_account_json:
         # Render / env var เป็น string JSON
         service_account_info = json.loads(service_account_json)
@@ -32,17 +27,18 @@ def get_gspread_client():
 
 # ===== Load Google Sheet =====
 client = get_gspread_client()
-GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
-GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID")
-if not GOOGLE_SHEET:
-    raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน os.environ")
+# GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
+# GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID")
+# if not GOOGLE_SHEET:
+#     raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน os.environ")
 
-sheet = client.open_by_key(GOOGLE_SHEET).sheet1
-# GOOGLE_SHEET_ID  = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
-# sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+# sheet = client.open_by_key(GOOGLE_SHEET).sheet1
+GOOGLE_SHEET_ID  = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
+sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+
+# บันทึก Token ลง Google Sheet
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
     now = datetime.now()
-
     # Access Token expiry
     expired_at = (now + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
 
@@ -74,6 +70,8 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
 
     except Exception as e:
         print("❌ save_token error:", str(e))
+
+# ดึง Token ล่าสุด
 def get_latest_token(platform, account_id):
     try:
         records = sheet.get_all_records()
@@ -103,16 +101,19 @@ def auto_refresh_token(platform, account_id, force=False):
         print(f"❌ No token found for {platform}:{account_id}")
         return None
 
-    expired_at = token_data.get("expired_at")
+    # ✅ เช็คอายุ token
     expired = True
+    expired_at = token_data.get("expired_at")
     if expired_at:
         expired_at_dt = datetime.fromisoformat(expired_at)
         expired = expired_at_dt <= datetime.now()
 
+    # 🟢 ถ้า token ยังไม่หมดอายุ และไม่บังคับ refresh
     if not expired and not force:
+        print(f"[{datetime.now().isoformat()}] ⏳ Token still valid, using existing one")
         return token_data["access_token"]
 
-    # 🔄 ถ้า force == True หรือหมดอายุจริง
+    # 🔄 ถ้า token หมดอายุ หรือ force=True → refresh
     try:
         if platform == "shopee":
             from services.shopee_auth import shopee_refresh_access_token as shopee_refresh_token
@@ -165,6 +166,6 @@ def auto_refresh_token(platform, account_id, force=False):
             return token_data["access_token"]
 
     except Exception as e:
-        print(f"❌ Auto-refresh failed for {platform}:{account_id} - {str(e)}")
+        print(f"❌ Auto-refresh failed for-- {platform}:{account_id} - {str(e)}")
         return None
 

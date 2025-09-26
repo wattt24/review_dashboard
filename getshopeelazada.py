@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from utils.token_manager import save_token, get_gspread_client
 from fastapi.responses import Response
 from services.shopee_auth import shopee_get_access_token,shopee_get_authorization_url,shopee_get_categories
-from services.lazada_auth import get_auth_url_for_store
+from services.lazada_auth import lazada_exchange_token
 from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID
 from fastapi import FastAPI
 # GOOGLE_SHEET_ID  = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
@@ -110,10 +110,11 @@ def lookup_store_from_state(state):
 #  getshopeelazada.py
 @app.get("/lazada/auth/{store_id}")
 async def lazada_auth_redirect(store_id: str):
-    url = get_auth_url_for_store(store_id)
+    url = lazada_exchange_token(store_id)
     return RedirectResponse(url)
 @app.get("/lazada/callback")
 async def lazada_callback(request: Request):
+    
     code = request.query_params.get("code")
     state = request.query_params.get("state")
     if not code:
