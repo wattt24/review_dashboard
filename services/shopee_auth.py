@@ -8,17 +8,15 @@ from oauth2client.service_account import ServiceAccountCredentials
 # Shopee API base URL (อย่าใช้ redirect_uri ตรงนี้)
 BASE_URL = "https://partner.shopeemobile.com/api/v2"
 BASE_URL_AUTH = "https://partner.shopeemobile.com" 
+
 # ใช้สร้าง URL สำหรับให้ร้านกด authorize โดยไม่ต้องเข้า shopee open platform เอง
 def shopee_get_authorization_url():
     path = "/api/v2/shop/auth_partner"
     timestamp = int(time.time())  # ต้องเป็นวินาที 10 หลัก
-
-    # ใช้ฟังก์ชันใหม่ สำหรับ authorize
-    sign = shopee_generate_sign_authorize(path, timestamp)
+    sign = shopee_generate_sign(path, timestamp, is_authorize=True)
 
     redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI, safe='')
-    scope = "read_item,write_item"  # ใส่ scope ที่ต้องการ
-
+    scope = "read_item,write_item"
     url = (
         f"{BASE_URL_AUTH}{path}"
         f"?partner_id={SHOPEE_PARTNER_ID}"
@@ -28,65 +26,6 @@ def shopee_get_authorization_url():
         f"&scope={scope}"
     )
     return url
-
-
-def shopee_generate_sign_authorize(path, timestamp):
-    """
-    Sign สำหรับ URL authorize (ยังไม่มี shop_id, access_token)
-    """
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        base_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-    return sign
-
-def shopee_generate_sign_auth_code(path, timestamp):
-    """
-    Sign สำหรับแลก authorization code เป็น access_token
-    """
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
-    sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        base_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-    return sign
-
-def shopee_get_access_token(shop_id: int, code: str):
-    path = "/api/v2/auth/access_token/get"
-    timestamp = int(time.time())
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
-    sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        base_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-
-    params = {
-        "partner_id": SHOPEE_PARTNER_ID,
-        "shop_id": shop_id,
-        "code": code,
-        "sign": sign,
-        "timestamp": timestamp
-    }
-
-    url = f"{BASE_URL}{path}"
-    resp = requests.get(url, params=params, timeout=15)
-    data = resp.json()
-
-    if "error" in data and data["error"]:
-        raise ValueError(f"Cannot get access_token: {data}")
-
-    return {
-        "access_token": data["access_token"],
-        "refresh_token": data["refresh_token"],
-        "expire_in": data.get("expire_in"),
-        "refresh_expires_in": data.get("refresh_expires_in")
-    }
-
-
 
 # ถูกเรียก ภายใน shopee_get_access_token() และ auth_partner()ไม่ได้เรียกโดยตรงจาก callback
 def shopee_generate_sign(path, timestamp, shop_id, access_token ):
