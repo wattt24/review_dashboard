@@ -58,7 +58,7 @@ def shopee_get_access_token(shop_id: int, code: str):
     """
     ใช้ code + shop_id แลก access_token + refresh_token
     """
-    path = "/api/v2/shop/auth_partner"
+    path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
     sign = shopee_generate_sign_auth_code(path, timestamp)
 
