@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from utils.token_manager import save_token, get_gspread_client
 from fastapi.responses import Response
-from services.shopee_auth import shopee_get_authorization_url
+from services.shopee_auth import shopee_get_authorization_url,shopee_get_access_token
 from api.shopee_api import shopee_get_categories
 from services.lazada_auth import lazada_exchange_token
 from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID
@@ -45,10 +45,7 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     try:
         # 1. ใช้ code + shop_id ไปขอแลก access_token/refresh_token จาก Shopee API
         # get_token() เป็นฟังก์ชันที่คุณเขียนไว้เองเพื่อเรียก API ของ Shopee
-        token_response = get_latest_token(
-            shop_id=shop_id,  # <-- shop_id ต้องอยู่ตัวแรก
-            code=code         # <-- code อยู่ตัวหลัง
-        )
+        token_response = shopee_get_access_token(shop_id=shop_id, code=code)
         save_token(
                     platform="shopee",
                     account_id=shop_id,

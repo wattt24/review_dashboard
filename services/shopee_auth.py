@@ -27,6 +27,40 @@ def shopee_get_authorization_url():
     )
     return url
 
+
+def shopee_get_access_token(shop_id: int, code: str):
+    path = "/api/v2/auth/access_token/get"
+    timestamp = int(time.time())
+
+    # สร้าง sign ตาม Shopee Docs
+    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
+    sign = hmac.new(
+        SHOPEE_PARTNER_SECRET.encode("utf-8"),
+        sign_input.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    url = f"{BASE_URL_AUTH}{path}"
+    params = {
+        "partner_id": str(SHOPEE_PARTNER_ID),
+        "timestamp": str(timestamp),
+        "sign": sign
+    }
+
+    body = {
+        "code": code,
+        "shop_id": shop_id
+    }
+
+    resp = requests.post(url, params=params, json=body, timeout=30)
+    data = resp.json()
+
+    if "error" in data:
+        raise ValueError(f"Cannot get access_token: {data}")
+
+    return data
+
+
 # ถูกเรียก ภายใน shopee_get_access_token() และ auth_partner()ไม่ได้เรียกโดยตรงจาก callback
 def shopee_generate_sign(path, timestamp, shop_id, access_token ):
     print(">>> DEBUG shop_id param:", shop_id)
