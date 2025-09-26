@@ -55,13 +55,8 @@ def shopee_generate_sign_auth_code(path, timestamp):
     return sign
 
 def shopee_get_access_token(shop_id: int, code: str):
-    """
-    ใช้ code + shop_id แลก access_token + refresh_token
-    """
     path = "/api/v2/auth/access_token/get"
     timestamp = int(time.time())
-
-    # ❌ ปรับ sign ให้ถูกต้อง
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
@@ -90,6 +85,7 @@ def shopee_get_access_token(shop_id: int, code: str):
         "expire_in": data.get("expire_in"),
         "refresh_expires_in": data.get("refresh_expires_in")
     }
+
 
 
 # ถูกเรียก ภายใน shopee_get_access_token() และ auth_partner()ไม่ได้เรียกโดยตรงจาก callback

@@ -34,7 +34,8 @@ async def shopee_authorize():
 async def shopee_callback(code: str = None, shop_id: int = None):
     if not code or not shop_id:
         return {"message": "Shopee callback ping"}
-
+    print("Authorization Code:", code)
+    print("Shop ID:", shop_id)
     # แลก token
     token_response = shopee_get_access_token(shop_id=shop_id, code=code)
 
@@ -49,8 +50,6 @@ async def shopee_callback(code: str = None, shop_id: int = None):
     )
 
     return {"message": "✅ Token saved", "token": token_response}
-
-
 # @app.api_route("/shopee/callback", methods=["GET", "HEAD"])
 # async def shopee_callback(code: str = None, shop_id: int = None):
 #     # ฟังก์ชันนี้คือ callback endpoint ที่ Shopee จะเรียกหลังจาก user กด Allow ที่หน้า OAuth
