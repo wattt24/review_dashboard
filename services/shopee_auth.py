@@ -27,13 +27,12 @@ def shopee_get_authorization_url():
     )
     return url
 
-
-def shopee_get_access_token(shop_id: int, code: str):
-    path = "/api/v2/auth/access_token/get"
+# สำหรับรับshop_id, code ครั้งแรกเพื่อไปแลก access_token   
+def shopee_get_access_token(shop_id, code):
+    path = "/api/v2/auth/token/get"
     timestamp = int(time.time())
-
-    # สร้าง sign ตาม Shopee Docs
-    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{code}{shop_id}"
+    
+    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"  # ✅ ไม่มี body
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
         sign_input.encode("utf-8"),
@@ -42,21 +41,30 @@ def shopee_get_access_token(shop_id: int, code: str):
 
     url = f"{BASE_URL_AUTH}{path}"
     params = {
-        "partner_id": str(SHOPEE_PARTNER_ID),
-        "timestamp": str(timestamp),
+        "partner_id": SHOPEE_PARTNER_ID,
+        "timestamp": timestamp,
         "sign": sign
     }
 
     body = {
+        "shop_id": int(shop_id),
         "code": code,
-        "shop_id": shop_id
+        "partner_id": SHOPEE_PARTNER_ID
     }
+
+    print("Sign Input:", sign_input)
+    print("Generated Sign:", sign)
+    print("Final URL:", url)
+    print("JSON Body:", body)
 
     resp = requests.post(url, params=params, json=body, timeout=30)
     data = resp.json()
+    print("=== DEBUG Response ===")
+    print(data)
+    print("=====================")
 
-    if "error" in data:
-        raise ValueError(f"Cannot get access_token: {data}")
+    if data.get("error"):
+        raise ValueError(f"Shopee API Error: {data.get('error')} - {data.get('message')}")
 
     return data
 
