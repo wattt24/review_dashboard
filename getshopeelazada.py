@@ -179,21 +179,27 @@ async def lazada_auth_redirect(store_id: str):
 #     )
 
 #     return HTMLResponse(f"✅ เชื่อมต่อ Lazada สำเร็จสำหรับร้าน: {account_id_to_save}")
+
+@app.get("/lazada/auth/{store_id}")
+async def lazada_auth_redirect(store_id: str):
+    url = lazada_get_auth_url_for_store(store_id)
+    return RedirectResponse(url)
 @app.get("/lazada/callback")
 async def lazada_callback(request: Request):
     code = request.query_params.get("code")
     if not code:
         return HTMLResponse("Authorization canceled.", status_code=400)
 
-    token_url = "https://auth.lazada.com/rest/auth/token"
+    token_url = "https://auth.lazada.com/rest/auth/token/create"
     timestamp = int(time.time() * 1000)
+
     payload = {
         "app_key": LAZADA_CLIENT_ID,
-        "grant_type": "authorization_code",
         "code": code,
+        "grant_type": "authorization_code",
         "redirect_uri": LAZADA_REDIRECT_URI,
-        "timestamp": timestamp,
-        "sign_method": "sha256",
+        "timestamp": int(time.time() * 1000),
+        "sign_method": "sha256"
     }
     payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
 

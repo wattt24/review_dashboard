@@ -57,7 +57,7 @@ def lazada_generate_sign(params: dict, app_secret: str) -> str:
 
 
 def lazada_exchange_token(code: str):
-    token_url = "https://auth.lazada.com/rest/auth/token"
+    token_url = "https://auth.lazada.com/rest/auth/token/create"
     timestamp = int(time.time() * 1000)
 
     payload = {
