@@ -1,7 +1,21 @@
-# from services.shopee_auth import get_token
+from apscheduler.schedulers.background import BackgroundScheduler
+import time
 
-# code = "59487941577441765072796f4a616445"  # code ที่ได้จาก Shopee
-# shop_id = 225734279                          # shop_id ของร้านค้า
+def job1():
+    print("✅ Refresh Shopee token...")
 
-# token_response = get_token(code, shop_id)
-# print(token_response)
+def job2():
+    print("✅ Refresh Facebook token...")
+
+if __name__ == "__main__":
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job1, 'interval', hours=3, minutes=40)
+    scheduler.add_job(job2, 'interval', hours=1, minutes=20)
+    scheduler.start()
+
+    print("🚀 Scheduler started on Railway")
+    try:
+        while True:
+            time.sleep(60)
+    except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()

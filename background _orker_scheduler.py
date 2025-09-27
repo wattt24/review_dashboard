@@ -15,24 +15,4 @@ try:
         time.sleep(60)
 except (KeyboardInterrupt, SystemExit):
     scheduler.shutdown()
-from utils.token_manager import get_all_tokens, save_token
-from services.shopee_api import refresh_shopee_token
-
-def refresh_all():
-    records = get_all_tokens("Tokens")
-    for row in records:
-        platform = row["platform"].lower()
-        account_id = row["account_id"]
-        refresh_token = row["refresh_token"]
-
-        if platform == "shopee":
-            result = refresh_shopee_token(account_id, refresh_token)
-            if "access_token" in result:
-                save_token("shopee", account_id,
-                           result["access_token"],
-                           result["refresh_token"],
-                           result.get("expire_in"),
-                           30*24*3600)
-
-if __name__ == "__main__":
-    refresh_all()
+    print('Scheduler shutdown.')
