@@ -111,6 +111,74 @@ def lookup_store_from_state(state):
 async def lazada_auth_redirect(store_id: str):
     url = lazada_get_auth_url_for_store(store_id)
     return RedirectResponse(url)
+# @app.get("/lazada/callback")
+# async def lazada_callback(request: Request):
+#     code = request.query_params.get("code")
+#     state = request.query_params.get("state")
+#     if not code:
+#         return HTMLResponse("Authorization canceled or no code returned.", status_code=400)
+
+#     # ตรวจสอบ state → หา store_id
+#     store_id = lookup_store_from_state(state)
+
+#     # 1) เตรียม payload
+#     token_url = "https://auth.lazada.com/rest/auth/token"
+#     timestamp = int(time.time() * 1000)
+
+#     payload = {
+#         "app_key": LAZADA_CLIENT_ID,
+#         "sign_method": "sha256",
+#         "timestamp": timestamp,
+#         "code": code,
+#         "grant_type": "authorization_code",
+#         "redirect_uri": LAZADA_REDIRECT_URI,
+#     }
+
+#     # 2) สร้าง sign
+#     payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
+
+#     # 3) ส่ง request
+#     resp = requests.post(token_url, data=payload, headers={"Content-Type": "application/x-www-form-urlencoded"})
+#     data = resp.json()
+#     print("DEBUG Response:", data)
+
+#     if "access_token" not in data:
+#         return HTMLResponse(f"❌ Failed to obtain token: {data}", status_code=500)
+
+#     access_token = data["access_token"]
+#     refresh_token = data.get("refresh_token")
+#     expires_in = data.get("expires_in")
+#     refresh_expires_in = data.get("refresh_expires_in")
+
+#     # 4) ตรวจสอบร้านค้า
+#     seller_info = None
+#     try:
+#         seller_resp = requests.get(
+#             "https://api.lazada.com/rest/seller/get",
+#             params={"app_key": LAZADA_CLIENT_ID, "timestamp": int(time.time() * 1000), "sign_method": "sha256"},
+#             headers={"Authorization": f"Bearer {access_token}"}
+#         )
+#         seller_info = seller_resp.json()
+#     except Exception as e:
+#         seller_info = {"error": str(e)}
+
+#     shop_id = None
+#     if isinstance(seller_info, dict):
+#         shop_id = seller_info.get("sellerId") or seller_info.get("data", {}).get("shopId")
+
+#     account_id_to_save = shop_id or store_id or "unknown"
+
+#     # 5) บันทึก token
+#     save_token(
+#         platform="lazada",
+#         account_id=account_id_to_save,
+#         access_token=access_token,
+#         refresh_token=refresh_token,
+#         expires_in=expires_in,
+#         refresh_expires_in=refresh_expires_in
+#     )
+
+#     return HTMLResponse(f"✅ เชื่อมต่อ Lazada สำเร็จสำหรับร้าน: {account_id_to_save}")
 @app.get("/lazada/callback")
 async def lazada_callback(request: Request):
     code = request.query_params.get("code")
@@ -118,27 +186,30 @@ async def lazada_callback(request: Request):
     if not code:
         return HTMLResponse("Authorization canceled or no code returned.", status_code=400)
 
-    # ตรวจสอบ state → หา store_id
     store_id = lookup_store_from_state(state)
 
-    # 1) เตรียม payload
-    token_url = "https://auth.lazada.com/rest/auth/token/create"
-    timestamp = int(time.time() * 1000)
+    # Correct token URL
+    token_url = "https://auth.lazada.com/rest/auth/token"
 
+    timestamp = int(time.time() * 1000)
     payload = {
         "app_key": LAZADA_CLIENT_ID,
-        "sign_method": "sha256",
-        "timestamp": timestamp,
         "code": code,
         "grant_type": "authorization_code",
         "redirect_uri": LAZADA_REDIRECT_URI,
+        "sign_method": "sha256",
+        "timestamp": timestamp,
     }
 
-    # 2) สร้าง sign
+    # Generate correct signature
     payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
 
-    # 3) ส่ง request
-    resp = requests.post(token_url, data=payload, headers={"Content-Type": "application/x-www-form-urlencoded"})
+    resp = requests.post(
+        token_url,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+
     data = resp.json()
     print("DEBUG Response:", data)
 
@@ -150,25 +221,8 @@ async def lazada_callback(request: Request):
     expires_in = data.get("expires_in")
     refresh_expires_in = data.get("refresh_expires_in")
 
-    # 4) ตรวจสอบร้านค้า
-    seller_info = None
-    try:
-        seller_resp = requests.get(
-            "https://api.lazada.com/rest/seller/get",
-            params={"app_key": LAZADA_CLIENT_ID, "timestamp": int(time.time() * 1000), "sign_method": "sha256"},
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
-        seller_info = seller_resp.json()
-    except Exception as e:
-        seller_info = {"error": str(e)}
+    account_id_to_save = store_id or "unknown"
 
-    shop_id = None
-    if isinstance(seller_info, dict):
-        shop_id = seller_info.get("sellerId") or seller_info.get("data", {}).get("shopId")
-
-    account_id_to_save = shop_id or store_id or "unknown"
-
-    # 5) บันทึก token
     save_token(
         platform="lazada",
         account_id=account_id_to_save,
