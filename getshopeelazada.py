@@ -189,7 +189,8 @@ async def lazada_callback(request: Request):
     store_id = lookup_store_from_state(state)
 
     # Correct token URL
-    token_url = "https://auth.lazada.co.th/rest/auth/token"
+    token_url = "https://auth.lazada.com/rest/auth/token"
+
 
     timestamp = int(time.time() * 1000)
     payload = {
