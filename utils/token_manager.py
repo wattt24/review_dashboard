@@ -169,3 +169,12 @@ def auto_refresh_token(platform, account_id, force=False):
         print(f"❌ Auto-refresh failed for-- {platform}:{account_id} - {str(e)}")
         return None
 
+def save_lazada_token(store_id, seller_id, access_token, refresh_token, expires_in):
+    client = get_gspread_client()
+    ss = client.open_by_key(GOOGLE_SHEET_ID)
+    try:
+        ws = ss.worksheet("lazada_tokens")
+    except Exception:
+        ws = ss.add_worksheet("lazada_tokens", rows=1000, cols=10)
+        ws.append_row(["store_id","seller_id","access_token","refresh_token","expires_in","created_at"])
+    ws.append_row([store_id, seller_id, access_token, refresh_token, expires_in, datetime.utcnow().isoformat()])
