@@ -71,6 +71,10 @@ def lazada_exchange_token(code: str):
     # สร้าง sign
     payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
 
-    resp = requests.post(token_url, data=payload)
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    resp = requests.post(token_url, data=payload, headers=headers)
+    sorted_params = sorted(payload.items(), key=lambda x: x[0])
+    base_string = "".join(f"{k}{v}" for k,v in sorted_params)
+    print("Base String for Sign:", base_string)
     print("DEBUG Response:", resp.text)
     return resp.json()
