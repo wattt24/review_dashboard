@@ -5,22 +5,7 @@ from datetime import datetime
 from utils.token_manager import auto_refresh_token, save_token
 from utils.config import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, FACEBOOK_PAGE_IDS  # import จาก config
 
-def refresh_facebook_token(current_token, account_id):
-    url = "https://graph.facebook.com/v17.0/oauth/access_token"
-    params = {
-        "grant_type": "fb_exchange_token",
-        "client_id": FACEBOOK_APP_ID,
-        "client_secret": FACEBOOK_APP_SECRET,
-        "fb_exchange_token": current_token
-    }
 
-    resp = requests.get(url, params=params)
-    data = resp.json()
-
-    if "access_token" in data:
-        return data  # ✅ คืนค่าเฉย ๆ ไม่บันทึก
-    else:
-        raise Exception(f"Facebook token refresh failed: {data}")
 
 def get_all_page_tokens():
     """
@@ -58,3 +43,19 @@ def validate_token(access_token):
     }
     resp = requests.get(url, params=params).json()
     return resp
+def refresh_facebook_token(current_token, account_id):
+    url = "https://graph.facebook.com/v17.0/oauth/access_token"
+    params = {
+        "grant_type": "fb_exchange_token",
+        "client_id": FACEBOOK_APP_ID,
+        "client_secret": FACEBOOK_APP_SECRET,
+        "fb_exchange_token": current_token
+    }
+
+    resp = requests.get(url, params=params)
+    data = resp.json()
+
+    if "access_token" in data:
+        return data  # ✅ คืนค่าเฉย ๆ ไม่บันทึก
+    else:
+        raise Exception(f"Facebook token refresh failed: {data}")

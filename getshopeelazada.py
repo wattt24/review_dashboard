@@ -190,7 +190,8 @@ async def lazada_callback(request: Request):
     if not code:
         return HTMLResponse("Authorization canceled.", status_code=400)
 
-    token_url = "https://auth.lazada.com/auth/token/create"
+    token_url = "https://auth.lazada.com/rest/auth/token/create"
+
     timestamp = int(time.time() * 1000)
 
     payload = {

@@ -57,7 +57,8 @@ def lazada_generate_sign(params: dict, app_secret: str) -> str:
 
 
 def lazada_exchange_token(code: str):
-    token_url = "https://auth.lazada.com/auth/token/create"
+    token_url = "https://auth.lazada.com/rest/auth/token/create"
+
     timestamp = int(time.time() * 1000)
 
     payload = {
@@ -73,10 +74,11 @@ def lazada_exchange_token(code: str):
 
     # Lazada ต้องการ form-urlencoded
     resp = requests.post(
-        "https://auth.lazada.com/rest/auth/token",
-        data=payload,
-        headers={"Content-Type": "application/x-www-form-urlencoded"}
-)
+    "https://auth.lazada.com/rest/auth/token/create",
+    data=payload,
+    headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+
 
     print("Payload for token request:", payload)
     sorted_params = sorted(payload.items(), key=lambda x: x[0])
