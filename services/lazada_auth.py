@@ -101,7 +101,7 @@ def lazada_refresh_token(refresh_token: str, store_id: str):
     Refresh Lazada access_token ด้วย refresh_token
     คืนค่า dict {"access_token":..., "refresh_token":..., "expires_in":..., "refresh_expires_in":...}
     """
-    token_url = "https://auth.lazada.com/rest/auth/token"
+    token_url = "https://auth.lazada.com/rest/auth/token/create"
     timestamp = int(time.time() * 1000)
     
     payload = {
