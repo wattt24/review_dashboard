@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import altair as alt
-from api.shopee_api import fetch_shop_sales_df,get_shop_info,get_item_list
+# from api.shopee_api import fetch_shop_sales_df,get_shop_info,get_item_list
 from utils.config import SHOPEE_SHOP_ID
 from utils.token_manager import auto_refresh_token
 import plotly.express as px
@@ -429,41 +429,41 @@ def app():
         with tabs[3]:
             st.header("🛍️ รีวิว Shopee")
         
-            st.title("📊 Shopee Product Dashboard")
-            try:
-                df = fetch_shop_sales_df()
-                print("DEBUG df:", df)  # ✅ ดูข้อมูลจริงที่ได้
-            except Exception as e:
-                st.error(f"❌ ไม่สามารถดึงข้อมูล Shopee ได้: {e}")
-                return
+            # st.title("📊 Shopee Product Dashboard")
+            # try:
+            #     df = fetch_shop_sales_df()
+            #     print("DEBUG df:", df)  # ✅ ดูข้อมูลจริงที่ได้
+            # except Exception as e:
+            #     st.error(f"❌ ไม่สามารถดึงข้อมูล Shopee ได้: {e}")
+            #     return
 
-            if df.empty:
-                st.warning("⚠️ ไม่มีข้อมูลร้านค้า หรือเกิดข้อผิดพลาดในการดึงข้อมูล")
-                return
+            # if df.empty:
+            #     st.warning("⚠️ ไม่มีข้อมูลร้านค้า หรือเกิดข้อผิดพลาดในการดึงข้อมูล")
+            #     return
 
-            shop_name = df["shop_name"].iloc[0]
-            shop_logo = df["shop_logo"].iloc[0]
-            total_sales = df["total_sales"].iloc[0]
+            # shop_name = df["shop_name"].iloc[0]
+            # shop_logo = df["shop_logo"].iloc[0]
+            # total_sales = df["total_sales"].iloc[0]
 
-            # ตรวจสอบค่าก่อนแสดง
-            print("DEBUG shop_name:", shop_name)
-            print("DEBUG shop_logo:", shop_logo)
-            print("DEBUG total_sales:", total_sales)
+            # # ตรวจสอบค่าก่อนแสดง
+            # print("DEBUG shop_name:", shop_name)
+            # print("DEBUG shop_logo:", shop_logo)
+            # print("DEBUG total_sales:", total_sales)
 
-            # แสดงผล
-            if shop_logo:
-                st.image(shop_logo, width=120)
-            st.subheader(f"ร้าน: {shop_name}")
-            st.metric("ยอดขายรวมทั้งหมด", total_sales)
-            st.dataframe(df, use_container_width=True)
-            ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
-            st.write("DEBUG ACCESS_TOKEN:", ACCESS_TOKEN)
+            # # แสดงผล
+            # if shop_logo:
+            #     st.image(shop_logo, width=120)
+            # st.subheader(f"ร้าน: {shop_name}")
+            # st.metric("ยอดขายรวมทั้งหมด", total_sales)
+            # st.dataframe(df, use_container_width=True)
+            # ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
+            # st.write("DEBUG ACCESS_TOKEN:", ACCESS_TOKEN)
 
-            shop_info = get_shop_info(ACCESS_TOKEN, SHOPEE_SHOP_ID)
-            st.write("DEBUG shop_info:", shop_info)
+            # shop_info = get_shop_info(ACCESS_TOKEN, SHOPEE_SHOP_ID)
+            # st.write("DEBUG shop_info:", shop_info)
 
-            items = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID)
-            st.write("DEBUG items:", items)
+            # items = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID)
+            # st.write("DEBUG items:", items)
 
                 
         # --------------------- 5. Lazada ---------------------

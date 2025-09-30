@@ -1,21 +1,32 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 import time
 
-def job1():
-    print("✅ Refresh Shopee token...")
+def refresh_facebook():
+    print("🔄 Refresh Facebook Token")
 
-def job2():
-    print("✅ Refresh Facebook token...")
+def refresh_shopee():
+    print("🔄 Refresh Shopee Token")
+
+def refresh_lazada():
+    print("🔄 Refresh Lazada Token")
 
 if __name__ == "__main__":
     scheduler = BackgroundScheduler()
-    scheduler.add_job(job1, 'interval', hours=3, minutes=40)
-    scheduler.add_job(job2, 'interval', hours=1, minutes=20)
+
+    # Facebook: ทุกๆ 30 วัน (เผื่อก่อนหมดอายุจริง)
+    scheduler.add_job(refresh_facebook, "interval", days=30)
+
+    # Shopee: ทุกๆ 3 ชั่วโมง
+    scheduler.add_job(refresh_shopee, "interval", hours=3)
+
+    # Lazada: ทุกๆ 30 นาที
+    scheduler.add_job(refresh_lazada, "interval", minutes=30)
+
     scheduler.start()
 
-    print("🚀 Scheduler started on Railway")
+    print("✅ Token refresher started")
     try:
         while True:
-            time.sleep(60)
+            time.sleep(10)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()

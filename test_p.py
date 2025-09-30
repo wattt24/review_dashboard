@@ -59,7 +59,53 @@
 
 # print("\n== Shop Summary ==")
 # print(get_shop_summary())
-from services.lazada_auth import lazada_get_auth_url_for_store
-store_id = "test_store_001"
-auth_url = lazada_get_auth_url_for_store(store_id)
-print(auth_url)
+import requests
+from utils.config import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
+
+
+def check_facebook_token(access_token: str) -> dict:
+    """
+    ตรวจสอบว่า token ของ Facebook เป็น long-lived หรือยัง
+    และคืนค่ารายละเอียด เช่น expires_at, is_valid
+    """
+    url = "https://graph.facebook.com/debug_token"
+    params = {
+        "input_token": access_token,
+        "access_token": f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"  # app token
+    }
+
+    resp = requests.get(url, params=params)
+    data = resp.json()
+
+    if "data" not in data:
+        raise ValueError(f"❌ Invalid response from Facebook API: {data}")
+
+    token_info = data["data"]
+
+    expires_at = token_info.get("expires_at", 0)
+    is_valid = token_info.get("is_valid", False)
+
+    # แปลงเป็น human readable
+    import datetime
+    if expires_at:
+        expires_str = datetime.datetime.fromtimestamp(expires_at).isoformat()
+    else:
+        expires_str = "ไม่ทราบ"
+
+    print("=== Facebook Token Debug ===")
+    print(f"✅ Valid: {is_valid}")
+    print(f"📅 Expiry: {expires_str}")
+    print(f"📌 Type: {token_info.get('type')}")
+    print(f"👤 User/Page ID: {token_info.get('user_id', token_info.get('page_id'))}")
+    print("============================")
+
+    return token_info
+
+
+# 🔹 ตัวอย่างการใช้งาน
+if __name__ == "__main__":
+    test_token = "EAAfvUL3Dgv8BPgxrvkEDtVdfZABl4R16AgCtE7l45a4J7vVrXTTbBBMUWYKZBLL2KZC1INAsTTg0WtCrNNgrZCs1G0i84vhN45HuUJjRX38zLFcpU1IDtsvnz9B1LHzb0hwh4979QfmJIbxo4ZBrdl8prPQrOKwrEqjHokFQvlrNiXUwPa9vV8hu8DByTlCKfi5NQac0RIBs4gzJt9oUyX5N1yxQ66e0Wf6PH"
+    try:
+        info = check_facebook_token(test_token)
+    except Exception as e:
+        print(f"Error: {e}")
