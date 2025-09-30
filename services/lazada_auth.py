@@ -8,9 +8,13 @@ from datetime import datetime
 from utils.token_manager import get_gspread_client , save_token , get_latest_token# ถ้าจะเก็บ mapping ลง Google Sheet
 from utils.config import (LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, GOOGLE_SHEET_ID, LAZADA_CLIENT_SECRET)
 
+def lazada_generate_state(store_id):
+    # state ควรเป็น unique + ยากเดา
+    return f"{store_id}-{uuid.uuid4().hex}"
 # Authorization
 # สร้าง state สําหรับ Lazada
 def lookup_store_from_state(state: str):
+    """อ่าน store_id จาก state ใน Google Sheet"""
     client = get_gspread_client()
     ss = client.open_by_key(GOOGLE_SHEET_ID)
     try:
@@ -22,19 +26,19 @@ def lookup_store_from_state(state: str):
         if r.get("state") == state:
             return r.get("store_id")
     return None
-def lazada_generate_state(store_id):
-    # state ควรเป็น unique + ยากเดา
-    return f"{store_id}-{uuid.uuid4().hex}"
+
 
 def lazada_save_state_mapping_to_sheet(state, store_id):
+    """เก็บ mapping state → store_id ลง Google Sheet"""
     client = get_gspread_client()
     ss = client.open_by_key(GOOGLE_SHEET_ID)
     try:
         ws = ss.worksheet("state_mapping")
     except Exception:
         ws = ss.add_worksheet("state_mapping", rows=1000, cols=10)
-        ws.append_row(["state","store_id","created_at"])
+        ws.append_row(["state", "store_id", "created_at"])
     ws.append_row([state, store_id, datetime.utcnow().isoformat()])
+
 def lazada_get_auth_url_for_store(store_id: str) -> str:
     """
     ใช้สำหรับ generate ลิงก์ Lazada Authorization สำหรับร้านค้า
@@ -100,13 +104,10 @@ def lazada_exchange_token(code: str):
 
 # refresh token
 def lazada_refresh_token(refresh_token: str, store_id: str):
-    """
-    Refresh Lazada access_token ด้วย refresh_token
-    คืนค่า dict {"access_token":..., "refresh_token":..., "expires_in":..., "refresh_expires_in":...}
-    """
+    """ใช้ refresh_token เพื่อขอ access_token ใหม่"""
     token_url = "https://auth.lazada.com/rest/auth/token/create"
     timestamp = int(time.time() * 1000)
-    
+
     payload = {
         "app_key": LAZADA_CLIENT_ID,
         "grant_type": "refresh_token",
@@ -124,11 +125,11 @@ def lazada_refresh_token(refresh_token: str, store_id: str):
     )
     data = resp.json()
 
-    if "error" in data or "access_token" not in data:
+    print("DEBUG Refresh token response:", data)
+
+    if "access_token" not in data:
         raise Exception(f"Lazada refresh token failed: {data}")
 
-
-    # บันทึกลง Google Sheet ด้วย save_token()
     save_token(
         "lazada",
         store_id,
@@ -137,6 +138,5 @@ def lazada_refresh_token(refresh_token: str, store_id: str):
         data.get("expires_in", 0),
         data.get("refresh_expires_in", 0)
     )
-
     return data
 
