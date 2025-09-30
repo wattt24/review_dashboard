@@ -3,14 +3,14 @@ import os, json
 import time, hmac, hashlib, requests
 import urllib.parse
 from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_SHOP_ID)
-from utils.token_manager import get_latest_token, auto_refresh_token
+from utils.token_manager import get_latest_token, get_latest_token
 
 # ===== Helper สำหรับดึง token จาก Google Sheet =====
 def get_shopee_access_token(shop_id: str, force_refresh: bool = False):
     """
     ดึง access_token จาก Google Sheet และ auto-refresh ถ้าจำเป็น
     """
-    token = auto_refresh_token("shopee", shop_id, force=force_refresh)
+    token = get_latest_token("shopee", shop_id, force=force_refresh)
     if token:
         return token
     # fallback กรณี refresh ไม่สำเร็จ → ดึง token ล่าสุดที่บันทึกไว้
