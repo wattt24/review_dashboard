@@ -76,13 +76,13 @@ def lazada_exchange_token(code: str):
     token_url = "https://auth.lazada.com/rest/auth/token/create"
 
     payload = {
-    "app_key": LAZADA_CLIENT_ID,
-    "code": code,
-    "grant_type": "authorization_code",
-    "redirect_uri": LAZADA_REDIRECT_URI,  # ต้องตรงกับ Developer Console
-    "timestamp": int(time.time() * 1000),
-    "sign_method": "sha256",
-    }
+        "app_key": LAZADA_CLIENT_ID,
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": LAZADA_REDIRECT_URI,  # ต้องตรงกับ Developer Console
+        "timestamp": int(time.time() * 1000),
+        "sign_method": "sha256",
+        }
 
     payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
 
