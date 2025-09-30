@@ -68,7 +68,7 @@ def lazada_generate_sign(params: dict, app_secret: str) -> str:
     ).hexdigest().upper()
     return sign
 def lazada_exchange_token(code: str):
-    token_url = "https://auth.lazada.com/rest/auth/token"
+    token_url = "https://auth.lazada.com/rest/auth/token/create"
 
     payload = {
     "app_key": LAZADA_CLIENT_ID,
@@ -88,6 +88,9 @@ def lazada_exchange_token(code: str):
     headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
     print("Payload for token request:", payload)
+    print("status_code:", resp.status_code)
+    print("resp.text:", resp.text)
+
     sorted_params = sorted(payload.items(), key=lambda x: x[0])
     base_string = "".join(f"{k}{v}" for k, v in sorted_params)
     print("Base string for HMAC:", base_string)
