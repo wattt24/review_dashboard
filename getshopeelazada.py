@@ -18,7 +18,6 @@ import requests
 import time
 # from services import shopee_auth
 from utils.config import SHOPEE_SHOP_ID
-from utils.token_manager import auto_refresh_token
 @app.get("/")
 async def root():
     
