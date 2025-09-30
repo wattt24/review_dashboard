@@ -70,6 +70,7 @@ def lazada_generate_sign(params: dict, app_secret: str) -> str:
         base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest().upper()
+    print("Base string for HMAC:", base_string)
     return sign
 def lazada_exchange_token(code: str):
     token_url = "https://auth.lazada.com/rest/auth/token/create"

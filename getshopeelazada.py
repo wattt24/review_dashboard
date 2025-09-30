@@ -112,7 +112,7 @@ async def lazada_auth(store_id: str):
 
     print(f"Generated state for store {store_id}: {state}")
     print(f"Redirecting to Lazada auth URL: {auth_url}")
-
+    print(f"redirect_uri: {redirect_uri}")
     return RedirectResponse(auth_url, status_code=302)
 
 
@@ -128,19 +128,18 @@ async def lazada_callback(request: Request):
     print(f"Callback received code={code}, state={state}")
 
     token_url = "https://auth.lazada.com/rest/auth/token/create"
-    timestamp = int(time.time() * 1000)
 
     payload = {
         "app_key": LAZADA_CLIENT_ID,
         "code": code,
         "grant_type": "authorization_code",
-        "redirect_uri": LAZADA_REDIRECT_URI,
-        "timestamp": timestamp,
-        "sign_method": "sha256"
+        "redirect_uri": LAZADA_REDIRECT_URI,   # ไม่ต้อง encode
+        "sign_method": "sha256",
     }
     payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
 
-    print(f"Exchanging code for token at: {token_url}")
+    print("Payload:", payload)
+
     resp = requests.post(
         token_url,
         data=payload,
@@ -149,17 +148,15 @@ async def lazada_callback(request: Request):
 
     print("DEBUG Response status:", resp.status_code)
     print("DEBUG Response text:", resp.text)
-
+    print("DEBUG Response payload:", payload)
     data = resp.json()
-    print("DEBUG Response JSON:", data)
 
     if "access_token" not in data:
         return HTMLResponse(f"❌ Failed to obtain token: {data}", status_code=500)
 
-    # ดึง store_id จาก state
+    # mapping state → store_id
     store_id = lookup_store_from_state(state)
     if store_id:
-        print(f"Saving token for store {store_id}")
         save_token(
             "lazada",
             store_id,
@@ -168,8 +165,6 @@ async def lazada_callback(request: Request):
             data.get("expires_in", 0),
             data.get("refresh_expires_in", 0)
         )
-        print(f"✅ Lazada token saved for store {store_id}")
+        return HTMLResponse(f"✅ Token saved for store {store_id}")
     else:
-        print("⚠️ State mapping not found, token not saved")
-
-    return HTMLResponse(f"✅ Token obtained and saved for store {store_id}")
+        return HTMLResponse("⚠️ State mapping not found, token not saved")
