@@ -109,6 +109,7 @@ async def lazada_auth(store_id: str):
         f"&redirect_uri={redirect_uri}"
         f"&state={state}"
         f"&force_auth=true"
+        f"&country=th"
         
     )
 
