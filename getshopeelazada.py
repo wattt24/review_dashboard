@@ -147,11 +147,14 @@ async def lazada_callback(request: Request):
         data=payload,
         headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
+    print("DEBUG payload:", payload)
+    print("DEBUG status:", resp.status_code)
+    print("DEBUG response:", resp.text)
     print("Authorization Code:", code)
     print("Shop ID:", state)
     print("DEBUG Response status:", resp.status_code)
     print("DEBUG Response text:", resp.text)
-    print("DEBUG Response payload:", payload)
+
     data = resp.json()
 
     if "access_token" not in data:
