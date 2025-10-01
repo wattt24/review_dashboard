@@ -50,14 +50,14 @@ def build_lazada_auth_url(state):
     base = "https://auth.lazada.com/oauth/authorize"
     params = {
         "response_type": "code",
-        "force_auth": "true",
-        "redirect_uri": LAZADA_REDIRECT_URI,
         "client_id": LAZADA_CLIENT_ID,
-        "state": state
+        "redirect_uri": LAZADA_REDIRECT_URI,  # ปล่อยเป็น raw
+        "state": state,
+        "force_auth": "true",
+        "country": "th",
     }
-    qs = urllib.parse.urlencode(params)
+    qs = urllib.parse.urlencode(params)  # urlencode จะ encode ให้เอง
     return f"{base}?{qs}"
-
 # สร้าง sign เพื่อ  generate token
 def lazada_generate_sign(params: dict, app_secret: str) -> str:
     # 1. เรียง key ตามตัวอักษร
