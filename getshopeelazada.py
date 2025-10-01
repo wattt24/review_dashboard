@@ -101,7 +101,7 @@ async def lazada_auth(store_id: str):
     state = lazada_generate_state(store_id)
     lazada_save_state_mapping_to_sheet(state, store_id)
 
-    redirect_uri = urllib.parse.quote(LAZADA_REDIRECT_URI, safe="")
+    redirect_uri = LAZADA_REDIRECT_URI
     auth_url = (
         f"https://auth.lazada.com/oauth/authorize?"
         f"response_type=code"
@@ -147,7 +147,8 @@ async def lazada_callback(request: Request):
         data=payload,
         headers={"Content-Type": "application/x-www-form-urlencoded"}
     )
-
+    print("Authorization Code:", code)
+    print("Shop ID:", state)
     print("DEBUG Response status:", resp.status_code)
     print("DEBUG Response text:", resp.text)
     print("DEBUG Response payload:", payload)
