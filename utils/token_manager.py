@@ -58,22 +58,22 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
     account_id_str = str(account_id).strip()
     
     try:
-        records = sheet.get_all_records()
-        for idx, record in enumerate(records, start=2):
-            if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
-               and str(record.get("account_id", "")).strip() == account_id_str:
-                sheet.update(f"A{idx}:G{idx}", [[
-                    platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, now.isoformat()
-                ]])
-                return
-
-        # ถ้าไม่เจอ row เดิม → เพิ่มใหม่
+    # ค้นหาแถวที่ตรงกับ platform + account_id
+        cell_platform = sheet.find(str(platform).strip(), in_column=1)  # สมมติ platform อยู่ column A
+        row_idx = cell_platform.row
+        # ตรวจสอบ account_id ด้วย
+        if str(sheet.cell(row_idx, 2).value).strip() == account_id_str:  # account_id column B
+            # update แถว
+            sheet.update(f"A{row_idx}:G{row_idx}", [[
+                platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+            ]])
+            return
+    except gspread.CellNotFound:
+        # ถ้าไม่เจอ → append row ใหม่
         sheet.append_row([
-            platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, now.isoformat()
+            platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
         ])
 
-    except Exception as e:
-        print("❌ save_token error:", str(e))
 
 # ดึง Token ล่าสุด
 def get_latest_token(platform, account_id):

@@ -1,4 +1,5 @@
 # services/facebook_auth.py
+# มี 2 เพจ ใช้ access token เดียวกัน บน Graph API Explorer
 import requests
 import streamlit as st
 from datetime import datetime, timedelta

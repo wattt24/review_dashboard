@@ -110,7 +110,7 @@ def auth_partner(shop_id):
     response = requests.get(url, params=params)
     return response.json()
 
-# จะ refresh แบบ ยังไม่หมดอายุ 
+# ตัวกลางที่ยิง API ของ Shopee เพื่อขอ access_token ใหม่ โดยใช้ refresh_token เดิม จะ refresh แบบ access_token ยังไม่หมดอายุ 
 def call_api_for_shopee_refresh(shop_id: str, refresh_token: str): 
     path = "/api/v2/auth/token/refresh"
     timestamp = int(time.time())
