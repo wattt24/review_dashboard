@@ -103,14 +103,15 @@ async def lazada_auth(store_id: str):
 
     redirect_uri = LAZADA_REDIRECT_URI
     auth_url = (
-    "https://auth.lazada.com/oauth/authorize?"
-    f"response_type=code"
-    f"&client_id={LAZADA_CLIENT_ID}"
-    f"&redirect_uri={urllib.parse.quote(LAZADA_REDIRECT_URI, safe='')}"
-    f"&state={state}"
-    f"&force_auth=true"
-    f"&country=th"
-)
+        f"https://auth.lazada.com/oauth/authorize?"
+        f"response_type=code"
+        f"&client_id={LAZADA_CLIENT_ID}"
+        f"&redirect_uri={redirect_uri}"
+        f"&state={state}"
+        f"&force_auth=true"
+        f"&country=th"
+    )
+
 
     print(f"Generated state for store {store_id}: {state}")
     print(f"Redirecting to Lazada auth URL: {auth_url}")
