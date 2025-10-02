@@ -8,7 +8,7 @@ scheduler = BackgroundScheduler()
 from utils.config import SHOPEE_SHOP_ID, FACEBOOK_PAGE_ID_ONE , FACEBOOK_PAGE_ID_TWO
 
 # Shopee → ทุก 3 ชั่วโมง
-scheduler.add_job(shopee_refresh_token, "interval", hours=3, args=[SHOPEE_SHOP_ID])
+scheduler.add_job(shopee_refresh_token, "interval", hours=1, minutes=15, args=[SHOPEE_SHOP_ID])
 
 # Lazada → ทุก 4 ชั่วโมง
 # scheduler.add_job(lazada_refresh_token, "interval", hours=4, args=["REFRESH_TOKEN", "STORE_A"])
@@ -17,7 +17,7 @@ scheduler.add_job(shopee_refresh_token, "interval", hours=3, args=[SHOPEE_SHOP_I
 scheduler.add_job(facebook_refresh_token, "interval", hours=1, args=[FACEBOOK_PAGE_ID_ONE])
 
 # Facebook → Page 2 ทุก 2 ชั่วโมง
-scheduler.add_job(facebook_refresh_token, "interval", hours=2, args=[FACEBOOK_PAGE_ID_TWO])
+scheduler.add_job(facebook_refresh_token, "interval", hours=1, minutes=30, args=[FACEBOOK_PAGE_ID_TWO])
 
 scheduler.start()
 
