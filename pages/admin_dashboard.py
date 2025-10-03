@@ -43,18 +43,17 @@ def app():
     
 
     # ---- Top menu to switch view ----
-    view = st.selectbox("🔽 เลือกหน้าแสดงผล", ["1 vs 2","แสดงข้อมูลแต่ละแหล่ง" ])
+    view = st.selectbox("🔽 เลือกหน้าแสดงผล", ["Highlights Overview","แสดงข้อมูลแต่ละแหล่ง" ])
 
 
     # ---- Show alternate page ----
-    if view == "1 vs 2":
+    if view == "Highlights Overview":
         
 
         st.set_page_config(page_title="GSC Dashboard", layout="wide")
-        st.title("Google Search Console Dashboard")
+        st.title("Highlights Overview")
 
     # ----------------- Table -----------------
-        st.subheader("Top Keywords")
             # โหลดข้อมูล GSC
         df = get_gsc_data()
     
