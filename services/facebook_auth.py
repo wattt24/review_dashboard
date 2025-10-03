@@ -57,9 +57,11 @@ def validate_token(access_token):
 # services/facebook_auth.py
 def facebook_refresh_token(page_id: str) -> dict | None:
     token_data = get_latest_token("facebook", page_id)
-    if not token_data:
-        print(f"❌ No token found for Facebook page {page_id}")
-        return None
+    if token_data and token_data.get("expires_in"):
+        exp = int(token_data["expires_in"])
+        if exp > 7 * 24 * 3600:  # ถ้าเหลือเกิน 7 วัน
+            print(f"ℹ️ Facebook token for page {page_id} still valid, skip refresh")
+            return token_data
 
     try:
         url = "https://graph.facebook.com/v17.0/oauth/access_token"

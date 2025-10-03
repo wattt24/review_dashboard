@@ -1,12 +1,12 @@
 # api/facebook_graph_api.py
 import requests
-from utils.token_manager import auto_refresh_token
+from utils.token_manager import get_latest_token
 
 def get_page_info(page_id: str):
     """
     ดึงข้อมูลเพจจาก Facebook Graph API
     """
-    ACCESS_TOKEN = auto_refresh_token("facebook", page_id)
+    ACCESS_TOKEN = get_latest_token("facebook", page_id)
     if not ACCESS_TOKEN:
         return {"error": f"⚠️ ไม่มี token สำหรับเพจ {page_id}"}
 
@@ -24,7 +24,7 @@ def get_page_posts(page_id: str, limit: int = 5):
     """
     ดึงโพสต์ล่าสุดจากเพจ
     """
-    ACCESS_TOKEN = auto_refresh_token("facebook", page_id)
+    ACCESS_TOKEN = ("facebook", page_id)
     if not ACCESS_TOKEN:
         return {"error": f"⚠️ ไม่มี token สำหรับเพจ {page_id}"}
 
@@ -43,7 +43,7 @@ def get_page_insights(page_id: str, metric: str = "page_impressions,page_engaged
     """
     ดึงข้อมูล Insights (เช่น Reach, Engagement)
     """
-    ACCESS_TOKEN = auto_refresh_token("facebook", page_id)
+    ACCESS_TOKEN = get_latest_token("facebook", page_id)
     if not ACCESS_TOKEN:
         return {"error": f"⚠️ ไม่มี token สำหรับเพจ {page_id}"}
 
@@ -66,7 +66,7 @@ def get_top_selling_items(shop_id: int, limit: int = 5):
         "order_by": "sales",
         "page_size": limit,
     }
-    result = auto_refresh_token(shop_id, endpoint, params)
+    result = get_latest_token(shop_id, endpoint, params)
     if "items" in result:
         return result["items"]
     return []
