@@ -7,7 +7,7 @@ from services.facebook_auth import facebook_refresh_token
 scheduler = BackgroundScheduler()
 from utils.config import SHOPEE_SHOP_ID, FACEBOOK_PAGE_ID_ONE , FACEBOOK_PAGE_ID_TWO
 
-# Shopee → ทุก 3 ชั่วโมง
+# Shopee → ทุก 1 ชั่วโมง 15 นาที
 scheduler.add_job(shopee_refresh_token, "interval", hours=1, minutes=15, args=[SHOPEE_SHOP_ID])
 
 # Lazada → ทุก 4 ชั่วโมง
@@ -16,7 +16,7 @@ scheduler.add_job(shopee_refresh_token, "interval", hours=1, minutes=15, args=[S
 # Facebook → Page 1 ทุก 1 ชั่วโมง
 scheduler.add_job(facebook_refresh_token, "interval", hours=1, args=[FACEBOOK_PAGE_ID_ONE])
 
-# Facebook → Page 2 ทุก 2 ชั่วโมง
+# Facebook → Page 2 ทุก 1 ชั่วโมง 30 นาที
 scheduler.add_job(facebook_refresh_token, "interval", hours=1, minutes=30, args=[FACEBOOK_PAGE_ID_TWO])
 
 scheduler.start()

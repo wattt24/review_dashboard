@@ -7,7 +7,6 @@ import streamlit as st
 import altair as alt
 # from api.shopee_api import fetch_shop_sales_df,get_shop_info,get_item_list
 from utils.config import SHOPEE_SHOP_ID
-from utils.token_manager import auto_refresh_token
 import plotly.express as px
 from datetime import datetime
 from api.facebook_graph_api import get_page_info, get_page_posts
