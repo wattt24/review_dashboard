@@ -81,18 +81,18 @@ def show_shopee_categories():
     return data.get("response", {}).get("category_list", [])
 
 
-#facebook
-@app.get("/facebook/pages")
-def get_facebook_pages():
-    page_tokens = get_all_page_tokens()
-    result = {}
+# #facebook
+# @app.get("/facebook/pages")
+# def get_facebook_pages():
+#     page_tokens = get_all_page_tokens()
+#     result = {}
 
-    for page_id, token in page_tokens.items():
-        url = "https://graph.facebook.com/v17.0/me/accounts"
-        resp = requests.get(url, params={"access_token": token}).json()
-        result[page_id] = resp
+#     for page_id, token in page_tokens.items():
+#         url = "https://graph.facebook.com/v17.0/me/accounts"
+#         resp = requests.get(url, params={"access_token": token}).json()
+#         result[page_id] = resp
 
-    return JSONResponse(result)
+#     return JSONResponse(result)
 
 #  getshopeelazada.py
 @app.get("/lazada/auth/{store_id}")
