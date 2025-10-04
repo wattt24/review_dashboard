@@ -13,7 +13,6 @@ import urllib
 # GOOGLE_SHEET_ID  = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
 from fastapi.responses import JSONResponse
 from utils.token_manager import *
-from services.facebook_auth import get_all_page_tokens
 app = FastAPI(title="Fujika Dashboard API")
 import requests
 import time
