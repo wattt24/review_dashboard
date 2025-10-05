@@ -103,6 +103,42 @@ def app():
         # --------------------- 1. Fujikathailand ---------------------
         with tabs[0]:
             st.header("📰 Website Fujikathailand.com")
+            option = st.selectbox(
+                "📅 เลือกช่วงเวลา",
+                ("1 เดือนล่าสุด", "3 เดือนล่าสุด", "1 ปีล่าสุด")
+            )
+
+            months_map = {
+                "1 เดือนล่าสุด": 1,
+                "3 เดือนล่าสุด": 3,
+                "1 ปีล่าสุด": 12
+            }
+
+            months = months_map[option]
+
+            # ===== Load data =====
+            st.info(f"📥 กำลังโหลดข้อมูลช่วง {option} ...")
+            df = load_reviews(months=months)
+
+            st.success(f"พบรีวิวทั้งหมด {len(df):,} รายการ")
+
+            # ===== Summary metrics =====
+            col1, col2, col3 = st.columns(3)
+            col1.metric("จำนวนรีวิว", f"{len(df):,}")
+            col2.metric("คะแนนเฉลี่ย", f"{df['rating'].mean():.2f}")
+            col3.metric("แพลตฟอร์มทั้งหมด", f"{df['platform'].nunique()}")
+
+            # ===== Chart by platform =====
+            st.subheader("📈 สัดส่วนรีวิวตาม Platform")
+            chart_data = df.groupby("platform")["rating"].count().reset_index(name="count")
+            st.bar_chart(chart_data, x="platform", y="count")
+
+            # ===== Table preview =====
+            st.subheader("📋 รายละเอียดรีวิว")
+            st.dataframe(df, use_container_width=True)
+
+
+
             products, buyers, total_orders = fetch_all_product_sales()
             st.subheader("📦 ข้อมูลเกี่ยวกับสินค้าแลการขาย")
             st.markdown(f"- จำนวนสินค้าทั้งหมด {len(products)} รายการ")

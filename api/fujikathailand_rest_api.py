@@ -1,5 +1,7 @@
 # scraping/fujikathailand_scraper.py
 import os
+import pandas as pd
+import pymysql
 import requests
 from utils.province_mapping import province_code_map
 from requests.auth import HTTPBasicAuth
@@ -211,3 +213,25 @@ def fetch_product_reviews(product_id=None, per_page=10):
     resp = requests.get(url, auth=HTTPBasicAuth(WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET), params=params)
     resp.raise_for_status()
     return resp.json()
+
+def get_connection():
+    return pymysql.connect(
+        host="yamanote.proxy.rlwy.net",
+        user="root",
+        password="yeiIByLVJqRlPrzKLGaNCNySevvHeabG",
+        port=49296,
+        database="railway",
+        charset="utf8mb4"
+    )
+
+def load_reviews(months=1):
+    conn = get_connection()
+    query = f"""
+        SELECT platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date
+        FROM reviews_history
+        WHERE review_date >= DATE_SUB(NOW(), INTERVAL {months} MONTH)
+        ORDER BY review_date DESC
+    """
+    df = pd.read_sql(query, conn)
+    conn.close()
+    return df
