@@ -78,6 +78,7 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
 # ดึง Token ล่าสุด
 def get_latest_token(platform, account_id):
     try:
+        sheet = get_sheet()
         records = sheet.get_all_records()
         account_id_str = str(account_id).strip()
         print(f"Searching token for {platform}:{account_id_str}")

@@ -138,60 +138,31 @@ def call_api_for_shopee_refresh(shop_id: int, refresh_token: str):
 
     resp = requests.post(url, params=params, json=body, timeout=30)
     return resp.json()
-def shopee_refresh_token(shop_id: int):
+
+
+def shopee_refresh_token(shop_id):
     print(f"⏳ Refreshing Shopee token for shop {shop_id}")
-    
     token_data = get_latest_token("shopee", shop_id)
     if not token_data:
         print(f"❌ No token found for Shopee shop {shop_id}")
         return
 
-    print(f"🔑 Using refresh_token: {token_data['refresh_token']}")
-
+    print(f"🔑 Using refresh_token: {token_data['refresh_token']}")  
     new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
-    print("=== DEBUG Response ===")
-    print("partner_id:", SHOPEE_PARTNER_ID)
+
     print("📥 Shopee API response:")
     print(json.dumps(new_data, indent=2, ensure_ascii=False))
 
+    # ✅ validate response ก่อน save
     if not new_data or "access_token" not in new_data or "error" in new_data:
         print(f"❌ Shopee refresh failed: {new_data}")
-        return
-
-    # บันทึก token ใหม่ลง Google Sheet
+        return None
+        
     save_token(
-        "shopee",
-        shop_id,
+        "shopee", shop_id,
         new_data["access_token"],
         new_data["refresh_token"],
         new_data.get("expire_in", 0),
         new_data.get("refresh_expires_in", 0)
     )
     print(f"✅ Shopee token refreshed for shop {shop_id}")
-
-# def shopee_refresh_token(shop_id):
-#     print(f"⏳ Refreshing Shopee token for shop {shop_id}")
-#     token_data = get_latest_token("shopee", shop_id)
-#     if not token_data:
-#         print(f"❌ No token found for Shopee shop {shop_id}")
-#         return
-
-#     print(f"🔑 Using refresh_token: {token_data['refresh_token']}")  # แสดงแค่บางส่วนพอ
-#     new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
-
-#     print("📥 Shopee API response:")
-#     print(json.dumps(new_data, indent=2, ensure_ascii=False))
-
-#     # ✅ validate response ก่อน save
-#     if not new_data or "access_token" not in new_data or "error" in new_data:
-#         print(f"❌ Shopee refresh failed: {new_data}")
-#         return None
-        
-#     save_token(
-#         "shopee", shop_id,
-#         new_data["access_token"],
-#         new_data["refresh_token"],
-#         new_data.get("expire_in", 0),
-#         new_data.get("refresh_expires_in", 0)
-#     )
-#     print(f"✅ Shopee token refreshed for shop {shop_id}")
