@@ -146,7 +146,7 @@ def shopee_refresh_token(shop_id):
         print(f"❌ No token found for Shopee shop {shop_id}")
         return
 
-    print(f"🔑 Using refresh_token: {token_data['refresh_token'][:8]}... (truncated)")  # แสดงแค่บางส่วนพอ
+    print(f"🔑 Using refresh_token: {token_data['refresh_token']}")  # แสดงแค่บางส่วนพอ
     new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
 
     print("📥 Shopee API response:")
@@ -165,22 +165,3 @@ def shopee_refresh_token(shop_id):
         new_data.get("refresh_expires_in", 0)
     )
     print(f"✅ Shopee token refreshed for shop {shop_id}")
-
-# ใช้สร้าง URL สำหรับให้ร้านกด authorize โดยไม่ต้องเข้า shopee open platform เอง
-# def shopee_get_authorization_url():
-#     path = "/api/v2/shop/auth_partner"
-#     timestamp = int(time.time())  # ต้องเป็นวินาที 10 หลัก
-#     sign = shopee_generate_sign(path, timestamp, is_authorize=True)
-
-#     redirect_encoded = urllib.parse.quote(SHOPEE_REDIRECT_URI, safe='')
-#     scope = "read_item,write_item"
-#     url = (
-#         f"{BASE_URL_AUTH}{path}"
-#         f"?partner_id={SHOPEE_PARTNER_ID}"
-#         f"&timestamp={timestamp}"
-#         f"&sign={sign}"
-#         f"&redirect={redirect_encoded}"
-#     )
-#     return url
-
-# สำหรับรับshop_id, code ครั้งแรกเพื่อไปแลก access_token 
