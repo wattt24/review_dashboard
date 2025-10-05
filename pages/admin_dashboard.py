@@ -9,8 +9,8 @@ from database.all_database import get_connection
 from utils.config import SHOPEE_SHOP_ID
 import plotly.express as px
 from datetime import datetime
-from api.fujikathailand_rest_api import get_all_fujikathailand_review
-from api.fujikaservice_rest_api import *#fetch_service_all_products
+from api.fujikathailand_rest_api import get_all_fujikathailand_reviews
+from api.fujikaservice_rest_api import *
 from api.facebook_graph_api import get_page_info, get_page_posts
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
