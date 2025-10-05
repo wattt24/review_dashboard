@@ -140,6 +140,7 @@ def call_api_for_shopee_refresh(shop_id: int, refresh_token: str):
     return resp.json()
 def shopee_refresh_token(shop_id: int):
     print(f"⏳ Refreshing Shopee token for shop {shop_id}")
+    
     token_data = get_latest_token("shopee", shop_id)
     if not token_data:
         print(f"❌ No token found for Shopee shop {shop_id}")

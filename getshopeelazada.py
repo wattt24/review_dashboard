@@ -76,7 +76,7 @@ async def shopee_callback(code: str = None, shop_id: int = None):
             content={"error": "Invalid authorization code", "details": str(e)}
         )
 scheduler = BackgroundScheduler()
-scheduler.add_job(shopee_refresh_token, "interval", hours=1)
+scheduler.add_job(shopee_refresh_token, "interval", hours=1, args=[SHOPEE_SHOP_ID])
 scheduler.start()
 
 @app.on_event("startup")
