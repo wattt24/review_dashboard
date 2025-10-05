@@ -1,5 +1,5 @@
 #test
-from api.fujikathailand_rest_api import get_connection
+from database.all_database import get_connection
 import pandas as pd
 
 conn = get_connection()

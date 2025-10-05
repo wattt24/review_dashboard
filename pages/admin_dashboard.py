@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 import numpy as np
 import streamlit as st
-import altair as alt
+from database.all_database import get_connection
 # from api.shopee_api import fetch_shop_sales_df,get_shop_info,get_item_list
 from utils.config import SHOPEE_SHOP_ID
 import plotly.express as px
