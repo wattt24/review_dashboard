@@ -225,3 +225,4 @@ def get_all_fujikathailand_reviews():
         ORDER BY review_date DESC
     """, conn)
     conn.close()
+    return df_all_fujikathailand

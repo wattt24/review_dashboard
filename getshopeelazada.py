@@ -3,8 +3,9 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from utils.token_manager import save_token
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi.responses import Response
-from services.shopee_auth import shopee_get_authorization_url,shopee_get_access_token
+from services.shopee_auth import shopee_get_authorization_url,shopee_get_access_token, shopee_refresh_token
 from api.shopee_api import shopee_get_categories 
 from services.lazada_auth import lazada_generate_sign ,lookup_store_from_state, lazada_save_state_mapping_to_sheet,lazada_generate_state
 from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID, SHOPEE_PARTNER_ID
@@ -74,6 +75,13 @@ async def shopee_callback(code: str = None, shop_id: int = None):
             status_code=400,
             content={"error": "Invalid authorization code", "details": str(e)}
         )
+scheduler = BackgroundScheduler()
+scheduler.add_job(shopee_refresh_token, "interval", hours=1)
+scheduler.start()
+
+@app.on_event("startup")
+async def startup_event():
+    print("FastAPI started with Shopee token refresh scheduler")
 @app.get("/shopee/categories")
 def show_shopee_categories():
     token_data = get_latest_token("shopee", SHOPEE_SHOP_ID)  # <-- ใช้ฟังก์ชันใหม่
