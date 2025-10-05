@@ -224,14 +224,42 @@ def get_connection():
         charset="utf8mb4"
     )
 
-def load_reviews(months=1):
+# def load_reviews(months=1):
+#     conn = get_connection()
+#     query = f"""
+#         SELECT platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date
+#         FROM reviews_history
+#         WHERE review_date >= DATE_SUB(NOW(), INTERVAL {months} MONTH)
+#         ORDER BY review_date DESC
+#     """
+#     df = pd.read_sql(query, conn)
+#     conn.close()
+#     return df
+# def load_reviews(months=None):
+#     conn = get_connection()
+#     query = """
+#         SELECT platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date
+#         FROM reviews_history
+#         ORDER BY review_date DESC
+#     """
+#     df = pd.read_sql(query, conn)
+#     conn.close()
+#     return df
+def load_reviews(months=None):
     conn = get_connection()
-    query = f"""
-        SELECT platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date
-        FROM reviews_history
-        WHERE review_date >= DATE_SUB(NOW(), INTERVAL {months} MONTH)
-        ORDER BY review_date DESC
-    """
+    if months:
+        query = f"""
+            SELECT platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date
+            FROM reviews_history
+            WHERE review_date >= DATE_SUB(NOW(), INTERVAL {months} MONTH)
+            ORDER BY review_date DESC
+        """
+    else:
+        query = """
+            SELECT platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date
+            FROM reviews_history
+            ORDER BY review_date DESC
+        """
     df = pd.read_sql(query, conn)
     conn.close()
     return df
