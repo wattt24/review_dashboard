@@ -111,15 +111,15 @@ def auth_partner(shop_id):
     return response.json()
 
 # ตัวกลางที่ยิง API ของ Shopee เพื่อขอ access_token ใหม่ โดยใช้ refresh_token เดิม จะ refresh แบบ access_token ยังไม่หมดอายุ 
-def call_api_for_shopee_refresh(shop_id: str, refresh_token: str): 
+def call_api_for_shopee_refresh(shop_id: int, refresh_token: str):
     path = "/api/v2/auth/token/refresh"
     timestamp = int(time.time())
 
-    # ✅ sign ที่ถูกต้อง
-    sign_input = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    # สร้าง sign สำหรับ request
+    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     sign = hmac.new(
         SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        sign_input.encode("utf-8"),
+        base_string.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
@@ -133,47 +133,33 @@ def call_api_for_shopee_refresh(shop_id: str, refresh_token: str):
     body = {
         "partner_id": str(SHOPEE_PARTNER_ID),
         "shop_id": int(shop_id),
-        "refresh_token": refresh_token  # ❌ ไม่ต้อง decode
+        "refresh_token": refresh_token  # ต้อง exact กับที่ได้จาก authorize
     }
 
     resp = requests.post(url, params=params, json=body, timeout=30)
-    data = resp.json()
-    return data
-def shopee_refresh_token(shop_id):
-    import json
+    return resp.json()
+def shopee_refresh_token(shop_id: int):
     print(f"⏳ Refreshing Shopee token for shop {shop_id}")
-
-    # ดึง token ล่าสุดจาก Google Sheet
     token_data = get_latest_token("shopee", shop_id)
     if not token_data:
         print(f"❌ No token found for Shopee shop {shop_id}")
         return
 
-    print(f"🔑 Using refresh_token: {token_data['refresh_token']}")  # แสดงเฉพาะบางส่วน
-    print(f"🕒 Token expired_at: {token_data.get('expired_at')}")
-    print(f"🕒 Token refresh_expired_at: {token_data.get('refresh_expired_at')}")
+    print(f"🔑 Using refresh_token: {token_data['refresh_token']}")
 
-    # เรียก API เพื่อรีเฟรช
-    try:
-        new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
-    except Exception as e:
-        print(f"❌ Exception calling Shopee refresh API: {e}")
-        return
+    new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
 
     print("📥 Shopee API response:")
     print(json.dumps(new_data, indent=2, ensure_ascii=False))
 
-    # ตรวจสอบ response ก่อน save
-    if not new_data:
-        print("❌ Shopee refresh returned no data")
-        return
-    if "error" in new_data:
+    if not new_data or "access_token" not in new_data or "error" in new_data:
         print(f"❌ Shopee refresh failed: {new_data}")
         return
 
-    # บันทึก token ใหม่
+    # บันทึก token ใหม่ลง Google Sheet
     save_token(
-        "shopee", shop_id,
+        "shopee",
+        shop_id,
         new_data["access_token"],
         new_data["refresh_token"],
         new_data.get("expire_in", 0),
