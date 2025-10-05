@@ -140,23 +140,38 @@ def call_api_for_shopee_refresh(shop_id: str, refresh_token: str):
     data = resp.json()
     return data
 def shopee_refresh_token(shop_id):
+    import json
     print(f"⏳ Refreshing Shopee token for shop {shop_id}")
+
+    # ดึง token ล่าสุดจาก Google Sheet
     token_data = get_latest_token("shopee", shop_id)
     if not token_data:
         print(f"❌ No token found for Shopee shop {shop_id}")
         return
 
-    print(f"🔑 Using refresh_token: {token_data['refresh_token']}")  # แสดงแค่บางส่วนพอ
-    new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
+    print(f"🔑 Using refresh_token: {token_data['refresh_token']}")  # แสดงเฉพาะบางส่วน
+    print(f"🕒 Token expired_at: {token_data.get('expired_at')}")
+    print(f"🕒 Token refresh_expired_at: {token_data.get('refresh_expired_at')}")
+
+    # เรียก API เพื่อรีเฟรช
+    try:
+        new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
+    except Exception as e:
+        print(f"❌ Exception calling Shopee refresh API: {e}")
+        return
 
     print("📥 Shopee API response:")
     print(json.dumps(new_data, indent=2, ensure_ascii=False))
 
-    # ✅ validate response ก่อน save
-    if not new_data or "access_token" not in new_data or "error" in new_data:
+    # ตรวจสอบ response ก่อน save
+    if not new_data:
+        print("❌ Shopee refresh returned no data")
+        return
+    if "error" in new_data:
         print(f"❌ Shopee refresh failed: {new_data}")
-        return None
-        
+        return
+
+    # บันทึก token ใหม่
     save_token(
         "shopee", shop_id,
         new_data["access_token"],
@@ -165,3 +180,30 @@ def shopee_refresh_token(shop_id):
         new_data.get("refresh_expires_in", 0)
     )
     print(f"✅ Shopee token refreshed for shop {shop_id}")
+
+# def shopee_refresh_token(shop_id):
+#     print(f"⏳ Refreshing Shopee token for shop {shop_id}")
+#     token_data = get_latest_token("shopee", shop_id)
+#     if not token_data:
+#         print(f"❌ No token found for Shopee shop {shop_id}")
+#         return
+
+#     print(f"🔑 Using refresh_token: {token_data['refresh_token']}")  # แสดงแค่บางส่วนพอ
+#     new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
+
+#     print("📥 Shopee API response:")
+#     print(json.dumps(new_data, indent=2, ensure_ascii=False))
+
+#     # ✅ validate response ก่อน save
+#     if not new_data or "access_token" not in new_data or "error" in new_data:
+#         print(f"❌ Shopee refresh failed: {new_data}")
+#         return None
+        
+#     save_token(
+#         "shopee", shop_id,
+#         new_data["access_token"],
+#         new_data["refresh_token"],
+#         new_data.get("expire_in", 0),
+#         new_data.get("refresh_expires_in", 0)
+#     )
+#     print(f"✅ Shopee token refreshed for shop {shop_id}")
