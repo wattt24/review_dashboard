@@ -9,6 +9,8 @@ from database.all_database import get_connection
 from utils.config import SHOPEE_SHOP_ID
 import plotly.express as px
 from datetime import datetime
+from api.fujikathailand_rest_api import get_all_fujikathailand_review
+from api.fujikaservice_rest_api import *#fetch_service_all_products
 from api.facebook_graph_api import get_page_info, get_page_posts
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
@@ -17,7 +19,7 @@ from api.fujikathailand_rest_api import *#fetch_all_product_sales, fetch_posts, 
 # from services.gsc_fujikathailand import *
 from utils.token_manager import get_gspread_client
 from collections import defaultdict
-from api.fujikaservice_rest_api import *#fetch_service_all_products
+
 service_products = fetch_service_all_products()
 products = service_products 
 sales_data, buyers_list, total_orders = fetch_sales_and_buyers_all(order_status="completed")
@@ -40,8 +42,6 @@ def app():
 
     st.title("📊 Dashboard's ข้อมูลจากหลายแพลตฟอร์ม")
     
-    
-
     # ---- Top menu to switch view ----
     view = st.selectbox("🔽 เลือกหน้าแสดงผล", ["Highlights Overview","แสดงข้อมูลแต่ละแหล่ง" ])
 
@@ -103,10 +103,12 @@ def app():
         # --------------------- 1. Fujikathailand ---------------------
         with tabs[0]:
             st.header("📰 Website Fujikathailand.com")
-            conn = get_connection()
-            df = pd.read_sql("SELECT * FROM reviews_history LIMIT 10", conn)
-            conn.close()
-            st.dataframe(df.head())
+
+            # โหลดข้อมูล GSC
+            df_all_fujikathailand = get_all_fujikathailand_reviews()
+            st.subheader("📋 รีวิวทั้งหมด (เฉพาะ fujikathailand)")
+            st.dataframe(df_all_fujikathailand, use_container_width=True)
+            st.info(f"พบรีวิวทั้งหมด {len(df_all_fujikathailand):,} รายการ")
 
 
             products, buyers, total_orders = fetch_all_product_sales()

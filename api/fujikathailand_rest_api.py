@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 import requests
+from database.all_database import get_connection
 from utils.province_mapping import province_code_map
 from requests.auth import HTTPBasicAuth
 # from utils.config import WOOCOMMERCE_URL, WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET,FUJIKA_WP_USER,FUJIKA_WP_PASSWORD,FUJIKA_WP_APP_PASSWORD_API_ACCESS
@@ -214,6 +215,13 @@ def fetch_product_reviews(product_id=None, per_page=10):
     return resp.json()
 
 
-
-
-
+# ใช้คำสั่งดเพื่อดูรีวิวของfujikathailand
+def get_all_fujikathailand_reviews():
+    conn = get_connection()
+    df_all_fujikathailand = pd.read_sql("""
+        SELECT platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date
+        FROM reviews_history
+        WHERE platform = 'fujikathailand'
+        ORDER BY review_date DESC
+    """, conn)
+    conn.close()
