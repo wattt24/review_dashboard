@@ -104,11 +104,13 @@ def app():
         with tabs[0]:
             st.header("📰 Website Fujikathailand.com")
 
-            # โหลดข้อมูล GSC
             df_all_fujikathailand = get_all_fujikathailand_reviews()
-            st.subheader("📋 รีวิวทั้งหมด (เฉพาะ fujikathailand)")
-            st.dataframe(df_all_fujikathailand, use_container_width=True)
-            st.info(f"พบรีวิวทั้งหมด {len(df_all_fujikathailand):,} รายการ")
+
+            # นับจำนวนแถวทั้งหมด
+            total_reviews = len(df_all_fujikathailand)
+
+            # แสดงจำนวนอย่างเดียว
+            st.info(f"พบรีวิวทั้งหมด {total_reviews:,} รายการ")
 
 
             products, buyers, total_orders = fetch_all_product_sales()
