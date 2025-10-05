@@ -148,7 +148,8 @@ def shopee_refresh_token(shop_id: int):
     print(f"🔑 Using refresh_token: {token_data['refresh_token']}")
 
     new_data = call_api_for_shopee_refresh(shop_id, token_data["refresh_token"])
-
+    print("=== DEBUG Response ===")
+    print("partner_id:", SHOPEE_PARTNER_ID)
     print("📥 Shopee API response:")
     print(json.dumps(new_data, indent=2, ensure_ascii=False))
 
