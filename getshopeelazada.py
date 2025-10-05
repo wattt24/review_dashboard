@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from services.shopee_auth import shopee_get_authorization_url,shopee_get_access_token
 from api.shopee_api import shopee_get_categories 
 from services.lazada_auth import lazada_generate_sign ,lookup_store_from_state, lazada_save_state_mapping_to_sheet,lazada_generate_state
-from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID
+from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID, SHOPEE_PARTNER_ID
 from fastapi import FastAPI
 import urllib
 # GOOGLE_SHEET_ID  = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
@@ -57,6 +57,7 @@ async def shopee_callback(code: str = None, shop_id: int = None):
         # 2. ถ้าแลก token สำเร็จ คืนค่ากลับไปเป็น response JSON
         return {
             "message": "✅ Token saved successfully to Google Sheet.",
+            "partner_id": SHOPEE_PARTNER_ID,
             "shop_id": shop_id,     
             "token": {
                 "access_token": token_response["access_token"],
