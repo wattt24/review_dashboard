@@ -1,4 +1,3 @@
-# main.py
 # เรียกใช้แบบตรงๆ เพื่อควบคุมรอบของเวลา refresh ของแต่ละ platform แยกกัน
 # main.py
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -17,10 +16,16 @@ def safe_job(func, *args):
 scheduler.add_job(
     func=safe_job,            # ฟังก์ชันที่จะรัน
     trigger="interval",       # กำหนด trigger เป็น keyword argument
-    hours=1,
     minutes=15,
     args=[shopee_refresh_token, SHOPEE_SHOP_ID]  # ส่ง func และ args ไปยัง safe_job
 )
+# scheduler.add_job(
+#     func=safe_job,            # ฟังก์ชันที่จะรัน
+#     trigger="interval",       # กำหนด trigger เป็น keyword argument
+#     hours=1,
+#     minutes=15,
+#     args=[shopee_refresh_token, SHOPEE_SHOP_ID]  # ส่ง func และ args ไปยัง safe_job
+# )
 
 # Lazada → ทุก 4 ชั่วโมง
 # scheduler.add_job(
