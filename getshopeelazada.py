@@ -58,7 +58,6 @@ async def shopee_callback(code: str = None, shop_id: int = None):
         return {
             "message": "✅ Token saved successfully to Google Sheet.",
             "shop_id": shop_id,     
-            "partner_id": token_response["partner_id"],
             "token": {
                 "access_token": token_response["access_token"],
                 "refresh_token": token_response["refresh_token"],
