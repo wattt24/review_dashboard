@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 import numpy as np
 import streamlit as st
-from database.all_database import get_connection
+
 # from api.shopee_api import fetch_shop_sales_df,get_shop_info,get_item_list
 from utils.config import SHOPEE_SHOP_ID
 import plotly.express as px
@@ -19,7 +19,6 @@ from api.fujikathailand_rest_api import *#fetch_all_product_sales, fetch_posts, 
 # from services.gsc_fujikathailand import *
 from utils.token_manager import get_gspread_client
 from collections import defaultdict
-
 service_products = fetch_service_all_products()
 products = service_products 
 sales_data, buyers_list, total_orders = fetch_sales_and_buyers_all(order_status="completed")
@@ -104,13 +103,45 @@ def app():
         with tabs[0]:
             st.header("📰 Website Fujikathailand.com")
 
+            # ดึงข้อมูลรีวิวทั้งหมด
             df_all_fujikathailand = get_all_fujikathailand_reviews()
 
-            # นับจำนวนแถวทั้งหมด
+            # นับจำนวนรีวิวทั้งหมด
             total_reviews = len(df_all_fujikathailand)
-
-            # แสดงจำนวนอย่างเดียว
             st.info(f"พบรีวิวทั้งหมด {total_reviews:,} รายการ")
+
+            if total_reviews > 0:
+                # Filter ช่วงเวลา
+                filter_option = st.radio(
+                    "เลือกช่วงเวลา",
+                    ["ทั้งหมด", "1 เดือน", "3 เดือน", "1 ปี"],
+                    horizontal=True
+                )
+
+                # แปลง review_date ให้เป็น datetime ถ้ายังไม่ใช่
+                df_all_fujikathailand["review_date"] = pd.to_datetime(df_all_fujikathailand["review_date"])
+
+                today = datetime.today()
+
+                if filter_option == "1 เดือน":
+                    df_filtered = df_all_fujikathailand[df_all_fujikathailand["review_date"] >= today - timedelta(days=30)]
+                elif filter_option == "3 เดือน":
+                    df_filtered = df_all_fujikathailand[df_all_fujikathailand["review_date"] >= today - timedelta(days=90)]
+                elif filter_option == "1 ปี":
+                    df_filtered = df_all_fujikathailand[df_all_fujikathailand["review_date"] >= today - timedelta(days=365)]
+                else:
+                    df_filtered = df_all_fujikathailand
+
+                # นับจำนวนใหม่ตามช่วงเวลา
+                st.success(f"พบรีวิว {len(df_filtered):,} รายการ ({filter_option})")
+
+                # เลือกเฉพาะคอลัมน์ที่ต้องการ
+                df_show = df_filtered[["platform", "rating", "review_text", "review_date"]]
+
+                # แสดงตาราง
+                st.dataframe(df_show, use_container_width=True)
+            else:
+                st.warning("ไม่พบข้อมูลรีวิว")
 
 
             products, buyers, total_orders = fetch_all_product_sales()

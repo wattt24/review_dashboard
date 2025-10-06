@@ -137,6 +137,8 @@ def call_api_for_shopee_refresh(shop_id: int, refresh_token: str):
     }
 
     resp = requests.post(url, params=params, json=body, timeout=30)
+    print("🔎 Request ID:", resp.headers.get("X-Request-ID"))
+    print("📥 Response:", resp.json())
     return resp.json()
 
 

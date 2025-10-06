@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 from database.all_database import get_connection
 from utils.province_mapping import province_code_map
 from requests.auth import HTTPBasicAuth
@@ -225,4 +226,10 @@ def get_all_fujikathailand_reviews():
         ORDER BY review_date DESC
     """, conn)
     conn.close()
+
+    # ทำความสะอาด HTML <p> ออกจาก review_text
+    df_all_fujikathailand['review_text'] = df_all_fujikathailand['review_text'].apply(
+        lambda x: BeautifulSoup(x, "html.parser").get_text().replace("\n", " ").strip() if x else x
+    )
+
     return df_all_fujikathailand

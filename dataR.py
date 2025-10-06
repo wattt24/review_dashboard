@@ -2,6 +2,7 @@ import requests
 import pymysql
 from datetime import datetime
 from requests.auth import HTTPBasicAuth
+from models.for_sentiment_keywords import clean_html, analyze_sentiment, extract_keywords
 from api.fujikathailand_rest_api import fetch_product_reviews
 from utils.config import WOOCOMMERCE_URL, WOOCOMMERCE_CONSUMER_KEY,WOOCOMMERCE_CONSUMER_SECRET,FUJIKA_WP_USER, FUJIKA_WP_APP_PASSWORD_API_ACCESS
 # DB connection
@@ -16,36 +17,77 @@ conn = pymysql.connect(
 cursor = conn.cursor()
 
 # # WooCommerce API
-api_url = "https://www.fujikathailand.com/wp-json/wc/v3/orders?per_page=100"
-auth = HTTPBasicAuth(WOOCOMMERCE_CONSUMER_KEY,WOOCOMMERCE_CONSUMER_SECRET)
-response = requests.get(api_url, auth=auth)
-orders = response.json()
+# api_url = "https://www.fujikathailand.com/wp-json/wc/v3/orders?per_page=100"
+# auth = HTTPBasicAuth(WOOCOMMERCE_CONSUMER_KEY,WOOCOMMERCE_CONSUMER_SECRET)
+# response = requests.get(api_url, auth=auth)
+# orders = response.json()
 
 shop_id = "website_01"  # กำหนดเองเพราะไม่มี shop_id
 
-for order in orders:
-    order_id = str(order["id"])
-    order_date = order["date_created"]
-    for item in order["line_items"]:
-        product_id = str(item["product_id"])
-        product_name = item["name"]
-        quantity = item["quantity"]
-        amount = item["total"]
+# for order in orders:
+#     order_id = str(order["id"])
+#     order_date = order["date_created"]
+#     for item in order["line_items"]:
+#         product_id = str(item["product_id"])
+#         product_name = item["name"]
+#         quantity = item["quantity"]
+#         amount = item["total"]
 
-        sql = """
-        INSERT INTO sales_history (platform, shop_id, order_id, product_id, product_name, quantity, amount, order_date)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE quantity=VALUES(quantity), amount=VALUES(amount)
-        """
-        cursor.execute(sql, ("fujikathailand", shop_id, order_id, product_id, product_name, quantity, amount, order_date))
+#         sql = """
+#         INSERT INTO sales_history (platform, shop_id, order_id, product_id, product_name, quantity, amount, order_date)
+#         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+#         ON DUPLICATE KEY UPDATE quantity=VALUES(quantity), amount=VALUES(amount)
+#         """
+#         cursor.execute(sql, ("fujikathailand", shop_id, order_id, product_id, product_name, quantity, amount, order_date))
+# conn.commit()
+# cursor.close()
+# conn.close()
+# print(f"Inserted/Updated {len(orders)} orders.")
+# 111111
+
+wp_base_url = "https://www.fujikathailand.com/wp-json/wp/v2"
+api_url = f"{wp_base_url}/comments?per_page=100"
+auth = HTTPBasicAuth(FUJIKA_WP_USER, FUJIKA_WP_APP_PASSWORD_API_ACCESS)
+response = requests.get(api_url, auth=auth)
+reviews = response.json()
+for r in reviews:
+    review_id = str(r["id"])
+    review_text_raw = r["content"]["rendered"]
+    review_text = clean_html(review_text_raw)  # ✅ ทำความสะอาด HTML
+    review_date = r["date"]
+
+    # WordPress comment ไม่มี product_id, rating
+    product_id = None
+    rating = None
+    sentiment = analyze_sentiment(review_text)  # วิเคราะห์ sentiment
+    keywords = extract_keywords(review_text)    # ดึง keywords
+
+    sql = """
+    INSERT INTO reviews_history 
+    (platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE 
+        review_text=VALUES(review_text),
+        sentiment=VALUES(sentiment),
+        keywords=VALUES(keywords)
+    """
+    cursor.execute(sql, (
+        "fujikathailand",
+        shop_id,
+        product_id,
+        review_id,
+        rating,
+        review_text,
+        sentiment,
+        keywords,
+        review_date
+    ))
+
 conn.commit()
 cursor.close()
 conn.close()
-print(f"Inserted/Updated {len(orders)} orders.")
-# 111111
 
-
-
+print(f"Inserted/Updated {len(reviews)} reviews with cleaned text, sentiment, and keywords.")
 # WordPress API endpoint ดึงรีวิว / comments ทั่วไป
 # wp_base_url = "https://www.fujikathailand.com/wp-json/wp/v2"
 # api_url = f"{wp_base_url}/comments?per_page=100"
@@ -73,6 +115,7 @@ print(f"Inserted/Updated {len(orders)} orders.")
 #     ON DUPLICATE KEY UPDATE review_text=VALUES(review_text)
 #     """
 #     cursor.execute(sql, ("fujikathailand",shop_id, product_id, review_id, rating, review_text, sentiment , keywords, review_date ))
+    
 
 # conn.commit()
 # cursor.close()
