@@ -16,7 +16,7 @@ def safe_job(func, *args):
 scheduler.add_job(
     func=safe_job,            # ฟังก์ชันที่จะรัน
     trigger="interval",       # กำหนด trigger เป็น keyword argument
-    minutes=15,
+    minutes=10,
     args=[shopee_refresh_token, SHOPEE_SHOP_ID]  # ส่ง func และ args ไปยัง safe_job
 )
 
