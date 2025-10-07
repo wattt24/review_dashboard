@@ -78,18 +78,21 @@ async def shopee_callback(code: str = None, shop_id: int = None):
 async def line_webhook(request: Request):
     signature = request.headers.get("x-line-signature")
     body = await request.body()
+    print("📩 Webhook received")
+    print("Body:", body)
 
     if not verify_signature(body, signature):
+        print("❌ Signature verification failed")
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     data = json.loads(body)
     events = data.get("events", [])
-    conn = get_connection()
+    print(f"📦 Events: {events}")
 
+    conn = get_connection()
     try:
         with conn.cursor() as cur:
             for ev in events:
-                # เก็บเฉพาะข้อความจากลูกค้า
                 if ev.get("type") == "message" and ev["message"]["type"] == "text":
                     user_id = ev["source"]["userId"]
                     text = ev["message"]["text"]
@@ -98,11 +101,11 @@ async def line_webhook(request: Request):
                     sql = """INSERT INTO line_messages (user_id, message, message_type, direction, created_at)
                              VALUES (%s, %s, %s, %s, %s)"""
                     cur.execute(sql, (user_id, text, 'text', 'user', created_at))
+                    print(f"✅ Saved message: {text}")
         conn.commit()
     finally:
         conn.close()
 
-    # ไม่ตอบกลับใด ๆ ให้ผู้ใช้
     return {"status": "ok"}
 
 @app.get("/shopee/categories")

@@ -23,7 +23,7 @@ scheduler.add_job(
 scheduler.add_job(
     func=safe_job, trigger="interval", hours=4, args=[fetch_store_wc_reviews])
 scheduler.add_job(
-    func=safe_job, trigger="interval", hours=4, args=[fetch_comments_reviews])
+    func=safe_job, trigger="interval", minutes=15, args=[fetch_comments_reviews])
 # scheduler.add_job(
 #     func=safe_job,            # ฟังก์ชันที่จะรัน
 #     trigger="interval",       # กำหนด trigger เป็น keyword argument
