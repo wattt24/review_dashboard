@@ -6,7 +6,7 @@ from utils.token_manager import save_token
 from services.shopee_auth import shopee_get_authorization_url,shopee_get_access_token
 from api.shopee_api import shopee_get_categories 
 from services.lazada_auth import lazada_generate_sign ,lookup_store_from_state, lazada_save_state_mapping_to_sheet,lazada_generate_state
-from services.line_wook import verify_signature,reply_message
+from services.line_wook import line_verify_signature
 from database.all_database import get_connection
 from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID, SHOPEE_PARTNER_ID
 from fastapi import FastAPI
@@ -81,7 +81,7 @@ async def line_webhook(request: Request):
     print("📩 Webhook received")
     print("Body:", body)
 
-    if not verify_signature(body, signature):
+    if not line_verify_signature(body, signature):
         print("❌ Signature verification failed")
         raise HTTPException(status_code=400, detail="Invalid signature")
 

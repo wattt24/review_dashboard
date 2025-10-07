@@ -1,11 +1,19 @@
 import os, hmac, hashlib, base64, json
 import requests
 from utils.config import LLINE_CHANNEL_ID, LINE_CHANNEL_SECRET
-def verify_signature(body: bytes, signature: str) -> bool:
-    hash = hmac.new(LLINE_CHANNEL_ID.encode("utf-8"), body, hashlib.sha256).digest()
-    expected = base64.b64encode(hash).decode()
-    return hmac.compare_digest(expected, signature)
 
+def line_verify_signature(body: bytes, signature: str) -> bool:
+    """
+    ตรวจสอบว่า signature จาก LINE ถูกต้องหรือไม่
+    """
+    hash = hmac.new(
+        LINE_CHANNEL_SECRET.encode('utf-8'),  # ใช้ secret จาก LINE Developer Console
+        body,  # ใช้ body ดิบๆ แบบ bytes
+        hashlib.sha256
+    ).digest()
+    computed_signature = base64.b64encode(hash).decode('utf-8')
+
+    return hmac.compare_digest(computed_signature, signature)
 def reply_message(reply_token: str, text: str):
     headers = {
         "Authorization": f"Bearer {LINE_CHANNEL_SECRET}",
