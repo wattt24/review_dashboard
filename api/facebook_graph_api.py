@@ -24,9 +24,11 @@ def get_page_posts(page_id: str, limit: int = 5):
     """
     ดึงโพสต์ล่าสุดจากเพจ
     """
-    ACCESS_TOKEN = ("facebook", page_id)
-    if not ACCESS_TOKEN:
+    token_data = get_latest_token("facebook", page_id)
+    if not token_data or not token_data.get("access_token"):
         return {"error": f"⚠️ ไม่มี token สำหรับเพจ {page_id}"}
+
+    ACCESS_TOKEN = token_data["access_token"]
 
     url = f"https://graph.facebook.com/v19.0/{page_id}/posts"
     params = {
@@ -37,6 +39,7 @@ def get_page_posts(page_id: str, limit: int = 5):
 
     res = requests.get(url, params=params).json()
     return res
+
 
 
 def get_page_insights(page_id: str, metric: str = "page_impressions,page_engaged_users"):

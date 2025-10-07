@@ -57,38 +57,13 @@
 
 # print("\n== Shop Summary ==")
 # print(get_shop_summary())
-import hmac
-import hashlib
-import base64
-import json
+import requests
 
-channel_secret = '516d493d9689e0c8c11bec8256e92cc6'
+ACCESS_TOKEN = "EAAfvUL3Dgv8BPmmzJxQhlA096ZC2UK0rXZBXDG8tJySWVZBRLLopdSPHK1ZCklWbxI8ZBxY99rMI4DU72YafUA1ykCE49tKFl8V7sbk8D6f0ZBKUg8nHDvCCp6CaSSvVFZCCVKtyyEMGvMBZBZCRmSZAR9RyrnAL5I5nHuUyc6eqm2JqZBY2yvpKBDbQLNAj2AY23IrSpsovNCZABpZAqEIWKbCGargqUN2h2fgbAnCND"
+PAGE_ID = "110736563133006"  # Fujika Thailand
 
-body = {
-  "events": [
-    {
-      "type": "message",
-      "replyToken": "dummy_token",
-      "source": {
-        "userId": "U1234567890abcdef",
-        "type": "user"
-      },
-      "timestamp": 1691234567890,
-      "mode": "active",
-      "message": {
-        "type": "text",
-        "id": "1234567890",
-        "text": "ทดสอบข้อความ"
-      }
-    }
-  ]
-}
+url = f"https://graph.facebook.com/v19.0/{PAGE_ID}?fields=name,fan_count"
+headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
 
-# ต้องใช้ json.dumps แบบไม่เว้นวรรค
-body_str = json.dumps(body, separators=(',', ':'), ensure_ascii=False)
-body_bytes = body_str.encode('utf-8')
-
-hash = hmac.new(channel_secret.encode('utf-8'), body_bytes, hashlib.sha256).digest()
-signature = base64.b64encode(hash).decode()
-
-print("🔐 X-Line-Signature:", signature)
+r = requests.get(url, headers=headers)
+print(r.json())
