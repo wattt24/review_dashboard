@@ -2,8 +2,8 @@ import requests
 import pymysql
 from datetime import datetime
 from requests.auth import HTTPBasicAuth
-from models.for_sentiment_keywords import clean_html, analyze_sentiment, extract_keywords
-from api.fujikathailand_rest_api import fetch_product_reviews
+from models.for_sentiment_keywords import clean_html, extract_keywords,analyze_sentiment
+# from api.fujikathailand_rest_api import fetch_product_reviews
 from utils.config import WOOCOMMERCE_URL, WOOCOMMERCE_CONSUMER_KEY,WOOCOMMERCE_CONSUMER_SECRET,FUJIKA_WP_USER, FUJIKA_WP_APP_PASSWORD_API_ACCESS
 # DB connection
 conn = pymysql.connect(
@@ -88,37 +88,4 @@ cursor.close()
 conn.close()
 
 print(f"Inserted/Updated {len(reviews)} reviews with cleaned text, sentiment, and keywords.")
-# WordPress API endpoint ดึงรีวิว / comments ทั่วไป
-# wp_base_url = "https://www.fujikathailand.com/wp-json/wp/v2"
-# api_url = f"{wp_base_url}/comments?per_page=100"
 
-# # ใช้ Basic Auth กับ username + App Password
-# auth = HTTPBasicAuth(FUJIKA_WP_USER, FUJIKA_WP_APP_PASSWORD_API_ACCESS)
-# response = requests.get(api_url, auth=auth)
-# reviews = response.json()
-
-# for r in reviews:
-#     review_id = str(r["id"])
-#     review_text = r["content"]["rendered"]
-#     review_date = r["date"]
-
-#     # สำหรับ WordPress comment ไม่มี product_id, rating, sentiment, keywords
-#     product_id = None
-#     rating = None
-#     sentiment = None
-#     keywords = None
-
-#     sql = """
-#     INSERT INTO reviews_history 
-#     (platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date)
-#     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-#     ON DUPLICATE KEY UPDATE review_text=VALUES(review_text)
-#     """
-#     cursor.execute(sql, ("fujikathailand",shop_id, product_id, review_id, rating, review_text, sentiment , keywords, review_date ))
-    
-
-# conn.commit()
-# cursor.close()
-# conn.close()
-
-# print(f"Inserted/Updated {len(reviews)} reviews.")

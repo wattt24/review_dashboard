@@ -1,18 +1,17 @@
 # scraping/fujikathailand_scraper.py
 import os
 import pandas as pd
-import requests
+import requests,re
 from bs4 import BeautifulSoup
-from database.all_database import get_connection
+from database.all_database import save_reviews_to_db
 from utils.province_mapping import province_code_map
 from requests.auth import HTTPBasicAuth
 # from utils.config import WOOCOMMERCE_URL, WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET,FUJIKA_WP_USER,FUJIKA_WP_PASSWORD,FUJIKA_WP_APP_PASSWORD_API_ACCESS
 from collections import defaultdict
-WOOCOMMERCE_URL = os.getenv("WOOCOMMERCE_URL")
-WOOCOMMERCE_CONSUMER_KEY = os.getenv("WOOCOMMERCE_CONSUMER_KEY")
-WOOCOMMERCE_CONSUMER_SECRET = os.getenv("WOOCOMMERCE_CONSUMER_SECRET")
-FUJIKA_WP_USER = os.getenv("FUJIKA_WP_USER")
-FUJIKA_WP_APP_PASSWORD_API_ACCESS = os.getenv("FUJIKA_WP_APP_PASSWORD_API_ACCESS")
+
+WOOCOMMERCE_URL="https://www.fujikathailand.com"
+from utils.config import WOOCOMMERCE_CONSUMER_KEY,WOOCOMMERCE_CONSUMER_SECRET, FUJIKA_WP_USER,FUJIKA_WP_APP_PASSWORD_API_ACCESS
+
 # -------------------- ฟังก์ชันช่วยแปลงจังหวัดเป็นภูมิภาค --------------------
 def province_to_region(province):
     province = province.strip()
@@ -200,36 +199,60 @@ def fetch_comments(post_id):
     )
     resp.raise_for_status()
     return resp.json()
-# ดึงรีวิวจากสินค้า
-def fetch_product_reviews(product_id=None, per_page=10):
-    """
-    ดึงรีวิวสินค้า (รวมเรทติ้ง)
-    ถ้า product_id=None จะดึงรีวิวทั้งหมด
-    """
+
+# ดึงรีวิวจากสินค้าที่มีการให้คะแนน
+def fetch_store_wc_reviews(shop_id= "fujikathailand",per_page=100):
+    
     url = f"{WOOCOMMERCE_URL}/wp-json/wc/v3/products/reviews"
     params = {"per_page": per_page}
-    if product_id:
-        params["product"] = product_id
-
-    resp = requests.get(url, auth=HTTPBasicAuth(WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET), params=params)
-    resp.raise_for_status()
-    return resp.json()
-
-
-# ใช้คำสั่งดเพื่อดูรีวิวของfujikathailand
-def get_all_fujikathailand_reviews():
-    conn = get_connection()
-    df_all_fujikathailand = pd.read_sql("""
-        SELECT platform, shop_id, product_id, review_id, rating, review_text, sentiment, keywords, review_date
-        FROM reviews_history
-        WHERE platform = 'fujikathailand'
-        ORDER BY review_date DESC
-    """, conn)
-    conn.close()
-
-    # ทำความสะอาด HTML <p> ออกจาก review_text
-    df_all_fujikathailand['review_text'] = df_all_fujikathailand['review_text'].apply(
-        lambda x: BeautifulSoup(x, "html.parser").get_text().replace("\n", " ").strip() if x else x
+    
+    resp = requests.get(
+        url,
+        auth=HTTPBasicAuth(WOOCOMMERCE_CONSUMER_KEY, WOOCOMMERCE_CONSUMER_SECRET),
+        params=params
     )
 
-    return df_all_fujikathailand
+    if resp.status_code != 200:
+        print(f"❌ ไม่สามารถดึงรีวิวจาก WooCommerce ได้: {resp.status_code}")
+        return
+
+    wc_reviews = resp.json()
+
+    # ✨ แปลงให้เป็นรูปแบบกลาง
+    processed = []
+    for r in wc_reviews:
+        processed.append({
+            "id": r["id"],
+            "review": r["review"],                 # เนื้อหารีวิว
+            "date_created": r["date_created"],     # วันที่
+            "rating": r.get("rating"),             # บางรีวิวอาจไม่มี
+            "product_id": r.get("product_id")      # ใช้ product id จาก Woo
+        })
+
+    save_reviews_to_db(processed, platform="Wordpress", shop_id = shop_id)
+
+# ดึงในคอมเมนต์ทั่วไปจ้า
+def fetch_comments_reviews(shop_id= "fujikathailand"):
+    wp_base_url = "https://www.fujikathailand.com/wp-json/wp/v2"
+    api_url = f"{wp_base_url}/comments?per_page=100"
+    auth = HTTPBasicAuth(FUJIKA_WP_USER, FUJIKA_WP_APP_PASSWORD_API_ACCESS)
+
+    response = requests.get(api_url, auth=auth)
+    if response.status_code != 200:
+        print("❌ ไม่สามารถดึงข้อมูลจาก WordPress ได้")
+        return
+
+    wp_reviews = response.json()
+
+    # แปลงข้อมูลให้เข้า format กลาง
+    processed = []
+    for r in wp_reviews:
+        processed.append({
+            "id": r["id"],
+            "review": r["content"]["rendered"],
+            "date_created": r["date"],
+            "rating": None,
+            "product_id": None
+        })
+
+    save_reviews_to_db(processed, platform="Wordpress", shop_id = shop_id)

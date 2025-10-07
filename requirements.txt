@@ -16,3 +16,4 @@ apscheduler
 scheduler
 pymysql
 pythainlp
+textblob

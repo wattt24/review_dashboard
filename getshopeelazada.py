@@ -1,17 +1,16 @@
 
 # getshopeelazada.py
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from utils.token_manager import save_token
-from fastapi.responses import Response
 from services.shopee_auth import shopee_get_authorization_url,shopee_get_access_token
 from api.shopee_api import shopee_get_categories 
 from services.lazada_auth import lazada_generate_sign ,lookup_store_from_state, lazada_save_state_mapping_to_sheet,lazada_generate_state
+from services.line_wook import verify_signature,reply_message
+from database.all_database import get_connection
 from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID, SHOPEE_PARTNER_ID
 from fastapi import FastAPI
 import urllib
-# GOOGLE_SHEET_ID  = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
-from fastapi.responses import JSONResponse
 from utils.token_manager import *
 app = FastAPI(title="Fujika Dashboard API")
 import requests
@@ -74,27 +73,46 @@ async def shopee_callback(code: str = None, shop_id: int = None):
             status_code=400,
             content={"error": "Invalid authorization code", "details": str(e)}
         )
+    
+@app.post("/line/webhook")
+async def line_webhook(request: Request):
+    signature = request.headers.get("x-line-signature")
+    body = await request.body()
+
+    if not verify_signature(body, signature):
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    data = json.loads(body)
+    events = data.get("events", [])
+    conn = get_connection()
+
+    try:
+        with conn.cursor() as cur:
+            for ev in events:
+                # เก็บเฉพาะข้อความจากลูกค้า
+                if ev.get("type") == "message" and ev["message"]["type"] == "text":
+                    user_id = ev["source"]["userId"]
+                    text = ev["message"]["text"]
+                    created_at = datetime.now()
+
+                    sql = """INSERT INTO line_messages (user_id, message, message_type, direction, created_at)
+                             VALUES (%s, %s, %s, %s, %s)"""
+                    cur.execute(sql, (user_id, text, 'text', 'user', created_at))
+        conn.commit()
+    finally:
+        conn.close()
+
+    # ไม่ตอบกลับใด ๆ ให้ผู้ใช้
+    return {"status": "ok"}
 
 @app.get("/shopee/categories")
 def show_shopee_categories():
-    token_data = get_latest_token("shopee", SHOPEE_SHOP_ID)  # <-- ใช้ฟังก์ชันใหม่
+    token_data = get_latest_token("shopee", SHOPEE_SHOP_ID)
     access_token = token_data["access_token"]
     data = shopee_get_categories(access_token, SHOPEE_SHOP_ID)
     return data.get("response", {}).get("category_list", [])
 
 
-# #facebook
-# @app.get("/facebook/pages")
-# def get_facebook_pages():
-#     page_tokens = get_all_page_tokens()
-#     result = {}
-
-#     for page_id, token in page_tokens.items():
-#         url = "https://graph.facebook.com/v17.0/me/accounts"
-#         resp = requests.get(url, params={"access_token": token}).json()
-#         result[page_id] = resp
-
-#     return JSONResponse(result)
 
 #  getshopeelazada.py
 @app.get("/lazada/auth/{store_id}")

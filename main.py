@@ -1,6 +1,7 @@
 # เรียกใช้แบบตรงๆ เพื่อควบคุมรอบของเวลา refresh ของแต่ละ platform แยกกัน
 # main.py
 from apscheduler.schedulers.background import BackgroundScheduler
+from api.fujikathailand_rest_api import fetch_store_wc_reviews, fetch_comments_reviews
 from services.shopee_auth import shopee_refresh_token
 from utils.config import SHOPEE_SHOP_ID
 
@@ -19,7 +20,10 @@ scheduler.add_job(
     minutes=10,
     args=[shopee_refresh_token, SHOPEE_SHOP_ID]  # ส่ง func และ args ไปยัง safe_job
 )
-
+scheduler.add_job(
+    func=safe_job, trigger="interval", hours=4, args=[fetch_store_wc_reviews])
+scheduler.add_job(
+    func=safe_job, trigger="interval", hours=4, args=[fetch_comments_reviews])
 # scheduler.add_job(
 #     func=safe_job,            # ฟังก์ชันที่จะรัน
 #     trigger="interval",       # กำหนด trigger เป็น keyword argument
@@ -33,7 +37,7 @@ scheduler.add_job(
 #     func=safe_job,
 #     trigger="interval",
 #     hours=4,
-#     args=[lazada_refresh_token, "REFRESH_TOKEN", "STORE_A"]
+#     args=[fetch_store_wc_reviews"]
 # )
 
 scheduler.start()
@@ -44,4 +48,5 @@ try:
         time.sleep(60)
 except (KeyboardInterrupt, SystemExit):
     scheduler.shutdown()
+
 
