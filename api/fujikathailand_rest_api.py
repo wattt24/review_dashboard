@@ -254,5 +254,5 @@ def fetch_comments_reviews(shop_id= "fujikathailand"):
             "rating": None,
             "product_id": None
         })
-
+    print(f"✅ ดึง {len(wp_reviews)} รีวิวจาก WordPress")
     save_reviews_to_db(processed, platform="Wordpress", shop_id = shop_id)
