@@ -1,5 +1,6 @@
 import os, hmac, hashlib, base64, json
 import requests
+from utils.config import LINE_CHANNEL_SECRET, LINE_CHANNEL_TOKEN
 def verify_signature(body: bytes, signature: str) -> bool:
     hash = hmac.new(LINE_CHANNEL_SECRET.encode("utf-8"), body, hashlib.sha256).digest()
     expected = base64.b64encode(hash).decode()
@@ -7,7 +8,7 @@ def verify_signature(body: bytes, signature: str) -> bool:
 
 def reply_message(reply_token: str, text: str):
     headers = {
-        "Authorization": f"Bearer {CHANNEL_TOKEN}",
+        "Authorization": f"Bearer {LINE_CHANNEL_TOKEN}",
         "Content-Type": "application/json"
     }
     payload = {
