@@ -28,12 +28,12 @@ def get_gspread_client():
 
 # ===== Load Google Sheet =====
 client = get_gspread_client()
-# GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
-# GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID")
-# if not GOOGLE_SHEET:
-#     raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน os.environ")
+GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
+GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID")
+if not GOOGLE_SHEET:
+    raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน os.environ")
 
-# sheet = client.open_by_key(GOOGLE_SHEET).sheet1
+sheet = client.open_by_key(GOOGLE_SHEET).sheet1
 sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
 # เอาไว้ใช้เรียก sheet ใน ไฟล์อื่นง่าย 
 def get_sheet():
