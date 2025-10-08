@@ -37,14 +37,24 @@ sheet = client.open_by_key(SHEETS["form1"]).sheet1
 sheet_form2 = client.open_by_key(SHEETS["form2"]).sheet1
 
 # เอาไว้ใช้เรียก sheet ใน ไฟล์อื่นง่าย 
+def get_sheets():
+    """
+    คืน dict ของ Google Sheet IDs โดยปลอดภัย
+    """
+    return {
+        "form1": os.environ.get("GOOGLE_SHEET_ID") or st.secrets.get("GOOGLE_SHEET_ID"),
+        "form2": os.environ.get("CONTACT_INFORMATION_SHEET_ID") or st.secrets.get("CONTACT_INFORMATION_SHEET_ID")
+    }
+
 def get_sheet(name="form1"):
     """
     คืนค่า gspread sheet object
     name: "form1" หรือ "form2"
     """
-    if name not in SHEETS:
+    sheets = get_sheets()
+    if name not in sheets:
         raise ValueError(f"❌ Sheet '{name}' ไม่มีใน SHEETS")
-    sheet_id = SHEETS[name]
+    sheet_id = sheets[name]
     return client.open_by_key(sheet_id).sheet1
 
 # คำสะั่งไว้เรียกGOOGLE_SHEET_ID ใช้ sheet1 = get_sheet("form1")
