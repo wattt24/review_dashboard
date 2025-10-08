@@ -4,14 +4,14 @@ import sys
 import pandas as pd
 import numpy as np
 import streamlit as st
-
 # from api.shopee_api import fetch_shop_sales_df,get_shop_info,get_item_list
 from utils.config import SHOPEE_SHOP_ID
 import plotly.express as px
 from datetime import datetime
 from database.all_database import get_connection
 from api.fujikaservice_rest_api import *
-from api.facebook_graph_api import get_page_info, get_page_posts
+from api.facebook_graph_api import get_page_info, get_page_posts, get_page_reviews
+from utils.config import FACEBOOK_PAGE_HEATER_ID, FACEBOOK_PAGE_BBQ_ID
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -485,37 +485,72 @@ def app():
 
         # --------------------- 6. Facebook Page / Ads ---------------------
         with tabs[5]:
-            st.title("📘 Facebook Pages Overview")
-            records = sheet.get_all_records()
-            fb_pages = [r["account_id"] for r in records if r["platform"] == "facebook"]
-            for page_id in fb_pages:
-                page_info = get_page_info(page_id)
-
+            def render_page_info(page_info, page_id):#แสดงข้อมูลเพจ (ชื่อ โลโก้ ID)
                 if "error" in page_info:
-                    st.error(page_info["error"])
-                    continue
+                    st.error(f"❌ Facebook API error: {page_info['error']}")
+                    return
+
+                name = page_info.get("name", "ไม่ทราบชื่อเพจ")
+                picture = page_info.get("picture", {}).get("data", {}).get("url", "")
 
                 st.markdown(
                     f"""
-                    <div style="background-color:#f9f9f9;
-                                padding:20px;
-                                border-radius:15px;
-                                box-shadow:2px 2px 8px rgba(0,0,0,0.1);
-                                text-align:center;
-                                margin-bottom:20px;">
-                        <img src="{page_info['picture']['data']['url']}" width="80" style="border-radius:50%;">
-                        <h3 style="margin:10px 0;">{page_info['name']}</h3>
-                        <p style="color:gray;">Page ID: {page_info['id']}</p>
+                    <div style="
+                        background-color:#f9f9f9;
+                        padding:20px;
+                        border-radius:15px;
+                        text-align:center;
+                        box-shadow:2px 2px 8px rgba(0,0,0,0.1);
+                        margin-bottom:20px;">
+                        <img src="{picture}" width="80" style="border-radius:50%;">
+                        <h3 style="margin:10px 0;">{name}</h3>
+                        <p>Page ID: {page_id}</p>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
 
-                # โชว์โพสต์ล่าสุด 3 อัน
+            def render_page_posts(posts, num_posts: int):
+                """แสดงโพสต์ล่าสุด"""
+                st.subheader(f"📝 โพสต์ล่าสุด {num_posts} โพสต์")
+                if not posts:
+                    st.info("ไม่มีโพสต์ให้แสดง")
+                    return
+
+                for post in posts:
+                    message = post.get("message", "(ไม่มีข้อความ)")[:100]
+                    st.markdown(f"- [{message}...]({post['permalink_url']}) - {post['created_time']}")
+
+
+            def render_page_reviews(reviews, num_reviews: int):
+                """แสดงรีวิวล่าสุด"""
+                st.subheader(f"⭐ รีวิวล่าสุด {num_reviews} รายการ")
+                if not reviews:
+                    st.info("ยังไม่มีรีวิวสำหรับเพจนี้")
+                    return
+
+                for r in reviews:
+                    reviewer = r.get("reviewer", {}).get("name", "Anonymous")
+                    rating_type = r.get("recommendation_type", "")
+                    review_text = r.get("review_text", "")
+                    created_time = r.get("created_time", "")
+                    st.markdown(f"- **{reviewer}** | {rating_type} | {review_text} | {created_time}")
+
+
+            # ============================ ส่วนแสดงผลหลัก (Main App) ============================
+
+            st.title("📘 Facebook Pages Overview")
+
+            for page_id in [FACEBOOK_PAGE_HEATER_ID, FACEBOOK_PAGE_BBQ_ID]:
+                page_info = get_page_info(page_id)
+                render_page_info(page_info, page_id)
+
                 posts = get_page_posts(page_id, limit=3)
-                if "data" in posts:
-                    for post in posts["data"]:
-                        st.write(f"📝 [{post.get('message','(ไม่มีข้อความ)')[:50]}...]({post['permalink_url']}) - {post['created_time']}")
+                render_page_posts(posts, num_posts=3)
+
+                reviews = get_page_reviews(page_id, limit=5)
+                render_page_reviews(reviews, num_reviews=5)
+
         # --------------------- 7. LINE OA ---------------------
         with tabs[6]:
             st.header("💬 LINE OA Insights")

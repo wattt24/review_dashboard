@@ -92,5 +92,5 @@ elif role == "marketing":
 elif role == "shopee_test":
     shptst.app()
 else:
-    st.error(f"Role '{role}' not recognized")
+    st.warning(f"กรุณกรอก Email และ Password ให้ถูกต้อง")
 
