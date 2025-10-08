@@ -44,54 +44,54 @@
 # print(json.dumps(ratings, indent=2, ensure_ascii=False))
 
 
-import time, hmac, hashlib, requests
-import os, json
-import urllib.parse
+# import time, hmac, hashlib, requests
+# import os, json
+# import urllib.parse
 
-from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_SHOP_ID)
-from utils.token_manager import get_latest_token
-BASE_URL = "https://partner.shopeemobile.com"
-# ค่าพวกนี้ดึงจาก config หรือ Google Sheet
-SHOPEE_PARTNER_ID = 2012650
-from utils.config import SHOPEE_PARTNER_SECRET, SHOPEE_PARTNER_ID
-BASE_URL = "https://partner.shopeemobile.com"
+# from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_SHOP_ID)
+# from utils.token_manager import get_latest_token
+# BASE_URL = "https://partner.shopeemobile.com"
+# # ค่าพวกนี้ดึงจาก config หรือ Google Sheet
+# SHOPEE_PARTNER_ID = 2012650
+# from utils.config import SHOPEE_PARTNER_SECRET, SHOPEE_PARTNER_ID
+# BASE_URL = "https://partner.shopeemobile.com"
 
-def shopee_get_shop_info(shop_id, access_token):
-    path = "/api/v2/shop/get_shop_info"
-    timestamp = int(time.time())
+# def shopee_get_shop_info(shop_id, access_token):
+#     path = "/api/v2/shop/get_shop_info"
+#     timestamp = int(time.time())
 
-    # ✅ base_string สำหรับ sign
-    base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}"
-    sign = hmac.new(
-        SHOPEE_PARTNER_SECRET.encode("utf-8"),
-        base_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
+#     # ✅ base_string สำหรับ sign
+#     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}"
+#     sign = hmac.new(
+#         SHOPEE_PARTNER_SECRET.encode("utf-8"),
+#         base_string.encode("utf-8"),
+#         hashlib.sha256
+#     ).hexdigest()
 
-    url = f"{BASE_URL}{path}"
-    params = {
-        "partner_id": SHOPEE_PARTNER_ID,
-        "timestamp": timestamp,
-        "sign": sign,
-        "access_token": access_token,
-        "shop_id": shop_id
-    }
+#     url = f"{BASE_URL}{path}"
+#     params = {
+#         "partner_id": SHOPEE_PARTNER_ID,
+#         "timestamp": timestamp,
+#         "sign": sign,
+#         "access_token": access_token,
+#         "shop_id": shop_id
+#     }
 
-    print("BASE STRING:", base_string)
-    print("SIGN:", sign)
-    print("URL:", url)
-    print("PARAMS:", params)
+#     print("BASE STRING:", base_string)
+#     print("SIGN:", sign)
+#     print("URL:", url)
+#     print("PARAMS:", params)
 
-    resp = requests.get(url, params=params, timeout=15)
-    return resp.json()
+#     resp = requests.get(url, params=params, timeout=15)
+#     return resp.json()
 
 
-# ทดลองเรียก
-shop_id = 57360480
-access_token = "76686b686b484d794b4f647941534a6f"  # จาก callback/Google Sheet
-info = shopee_get_shop_info(shop_id, access_token)
-print("== ข้อมูลร้าน ==")
-print(info)
+# # ทดลองเรียก
+# shop_id = 57360480
+# access_token = "76686b686b484d794b4f647941534a6f"  # จาก callback/Google Sheet
+# info = shopee_get_shop_info(shop_id, access_token)
+# print("== ข้อมูลร้าน ==")
+# print(info)
 # #//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -168,3 +168,11 @@ print(info)
 #     items = fetch_items_from_shopee(SHOPEE_SHOP_ID)
 #     print("== รายการสินค้าในร้าน ==")
 #     print(items)
+# ดึงข้อมูลเฉพาะ platform = fujikathailand
+from  database.all_database import get_all_reviews
+df_fujika = get_all_reviews(platform="fujikathailand", limit=100)
+
+# แสดงผล
+import streamlit as st
+st.subheader("📦 รีวิวจาก FujikaThailand")
+st.dataframe(df_fujika)

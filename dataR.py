@@ -12,6 +12,7 @@ conn = pymysql.connect(
     password="yeiIByLVJqRlPrzKLGaNCNySevvHeabG",
     port=49296,
     database="railway",
+    
     charset="utf8mb4"
 )
 cursor = conn.cursor()

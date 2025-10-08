@@ -50,7 +50,49 @@ def app():
         
 
         st.title("Highlights Overview")
+        if not df_gsc_fujikathailand.empty:
+            st.subheader("🔍 คำค้นหายอดนิยม (Top Keywords)")
+                
+                # เปลี่ยนชื่อคอลัมน์เป็นภาษาไทย
+            df_gsc_fujikathailand = df_gsc_fujikathailand.rename(columns={
+                "query": "คำค้นหา",
+                "clicks": "จำนวนคลิก",
+                "impressions": "จำนวนการแสดงผล",
+                "ctr": "อัตราการคลิก (%)",
+                "position": "อันดับเฉลี่ย"
+            })
 
+                # เรียงข้อมูลจากจำนวนคลิกมากไปน้อย
+            df_sorted = df_gsc_fujikathailand.sort_values(by="จำนวนคลิก", ascending=False)
+
+                # แสดงตารางข้อมูล
+            st.dataframe(df_sorted)
+
+                # 🔸 แสดงคีย์เวิร์ดที่ถูกค้นมากที่สุด
+            top_keyword = df_sorted.iloc[0]
+            st.markdown(f"""
+            ### 🏆 คีย์เวิร์ดที่ถูกค้นมากที่สุดคือ  
+            **"{top_keyword['คำค้นหา']}"**
+                
+            • จำนวนคลิก: **{int(top_keyword['จำนวนคลิก']):,} ครั้ง**  
+            • การแสดงผล: **{int(top_keyword['จำนวนการแสดงผล']):,} ครั้ง**  
+            • CTR: **{top_keyword['อัตราการคลิก (%)']:.2f}%**  
+            • อันดับเฉลี่ย: **{top_keyword['อันดับเฉลี่ย']:.2f}**
+            """)
+
+            # 🔹 สร้างกราฟแสดง 10 อันดับแรก
+            df_plot = df_sorted.head(10)
+            fig = px.bar(
+                df_plot,
+                x="คำค้นหา",
+                y="จำนวนคลิก",
+                hover_data=["จำนวนการแสดงผล", "อัตราการคลิก (%)", "อันดับเฉลี่ย"],
+                title="📊 10 อันดับคำค้นหาที่มีจำนวนคลิกมากที่สุด",
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        else:
+            st.warning("⚠️ ไม่มีข้อมูลจาก Google Search Console")    
 
         st.set_page_config(
             page_title="Review Insight Dashboard",
@@ -267,31 +309,35 @@ def app():
         # --------------------- 1. Fujikathailand ---------------------
         with tabs[0]:
             st.header("📰 Website Fujikathailand.com")
+            df_gsc_fujikathailand = get_gsc_data()
+
+
                        # โหลดข้อมูล GSC
-            df = get_gsc_data()
+            df_gsc_fujikathailand = get_gsc_data()
         
+            if not df_gsc_fujikathailand.empty:
+                st.subheader("คำค้นหายอดนิยม (Top Keywords)")
+                st.dataframe(df_gsc_fujikathailand.sort_values('clicks', ascending=False))
 
-            if not df.empty:
-                st.subheader("Top Keywords")
-                st.dataframe(df.sort_values('clicks', ascending=False))
-
-                df_plot = df.rename(columns={
-                    "query": "Keyword",
-                    "clicks": "Clicks",
-                    "impressions": "Impressions",
-                    "ctr": "CTR",
-                    "position": "Avg. Position"
+                df_plot = df_gsc_fujikathailand.rename(columns={
+                    "query": "คำค้นหา",
+                    "clicks": "จำนวนคลิก",
+                    "impressions": "จำนวนการแสดงผล",
+                    "ctr": "อัตราการคลิก (%)",
+                    "position": "อันดับเฉลี่ย"
                 })
 
                 fig = px.bar(
-                    df_plot.sort_values('Clicks', ascending=False),
-                    x='Keyword',
-                    y='Clicks',
-                    hover_data=['Impressions', 'CTR', 'Avg. Position']
+                    df_plot.sort_values('จำนวนคลิก', ascending=False),
+                    x='คำค้นหา',
+                    y='จำนวนคลิก',
+                    hover_data=['จำนวนการแสดงผล', 'อัตราการคลิก (%)', 'อันดับเฉลี่ย']
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning("⚠️ ไม่มีข้อมูลจาก Google Search Console")
+
+
 
             conn = get_connection()
             df_focus_fujikathailand = pd.read_sql("SELECT * FROM reviews_history LIMIT 50", conn)
