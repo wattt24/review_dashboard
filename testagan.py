@@ -113,7 +113,7 @@ if df is not None and not df.empty:
         except Exception as e:
             st.warning(f"⚠️ ไม่สามารถสร้างกราฟได้: {e}")
 
-    # 🧾 ตารางรีวิวทั้งหมด
+    # 🧾 ตารางรีวิวทั้งหมด + ปุ่ม Export
     st.divider()
     st.subheader("📋 รายการรีวิวทั้งหมด")
     st.dataframe(
@@ -121,5 +121,59 @@ if df is not None and not df.empty:
         use_container_width=True, height=550
     )
 
+    # 💾 ปุ่ม Export
+    csv_data = df[["platform", "shop_id", "review_text", "sentiment", "review_date"]].to_csv(index=False, encoding='utf-8-sig')
+    st.download_button(
+        label="📥 ดาวน์โหลดรายงาน CSV",
+        data=csv_data,
+        file_name=f"review_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+        mime="text/csv"
+    )
+
 else:
     st.warning("⚠️ ไม่พบข้อมูลรีวิวในช่วงเวลาที่เลือก")
+
+if "platform" in df.columns:
+    st.divider()
+    st.subheader("📊 จำนวนรีวิวตามแพลตฟอร์ม")
+    platform_df = df.groupby("platform").size().reset_index(name="จำนวนรีวิว")
+    platform_df = platform_df.sort_values(by="จำนวนรีวิว", ascending=False)
+
+    # กราฟอันดับแพลตฟอร์ม
+
+
+# 📊 Top Platform (แพลตฟอร์มที่มีรีวิวเยอะที่สุด)
+
+if "platform" in df.columns:
+    platform_df = df.groupby("platform").size().reset_index(name="จำนวนรีวิว")
+    platform_df = platform_df.sort_values(by="จำนวนรีวิว", ascending=False)
+    top_platforms = platform_df.head(3)  # Top 3
+
+    st.divider()
+    st.subheader("🏆 Top 3 แพลตฟอร์มที่มีรีวิวเยอะที่สุด")
+
+    # กำหนดสี gradient แต่ละอันดับ
+    gradients = [
+        "linear-gradient(135deg, #4f46e5, #3b82f6)",  # อันดับ 1
+        "linear-gradient(135deg, #10b981, #06b6d4)",  # อันดับ 2
+        "linear-gradient(135deg, #f472b6, #f59e0b)"   # อันดับ 3
+    ]
+
+    cols = st.columns(3)
+    for i, (index, row) in enumerate(top_platforms.iterrows()):
+        with cols[i]:
+            st.markdown(f"""
+            <div style="
+                background: {gradients[i]};
+                color: white;
+                padding: 25px;
+                border-radius: 20px;
+                text-align: center;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            ">
+                <h2 style="margin: 0; font-size: 36px; font-weight: bold;">{i+1}. {row['platform'].upper()}</h2>
+                <p style="margin: 5px 0 0; font-size: 22px; font-weight: 500;">{row['จำนวนรีวิว']:,} รีวิว</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+

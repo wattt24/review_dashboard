@@ -26,36 +26,23 @@ def get_gspread_client():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scope)
     return gspread.authorize(creds)
 
+# ===== Connect to Google Sheets =====
 client = get_gspread_client()
-# ===== Load Google Sheet =====
-SHEETS = {
-    "form1": os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"],
-    "form2": os.environ.get("CONTACT_INFORMATION_SHEET_ID") or st.secrets["CONTACT_INFORMATION_SHEET_ID"]
-}
 
-sheet = client.open_by_key(SHEETS["form1"]).sheet1
-sheet_form2 = client.open_by_key(SHEETS["form2"]).sheet1
+# โหลด Sheet ID (มีแค่ตัวเดียว)
+GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID") or st.secrets.get("GOOGLE_SHEET_ID")
 
-# เอาไว้ใช้เรียก sheet ใน ไฟล์อื่นง่าย 
-def get_sheets():
-    """
-    คืน dict ของ Google Sheet IDs โดยปลอดภัย
-    """
-    return {
-        "form1": os.environ.get("GOOGLE_SHEET_ID") or st.secrets.get("GOOGLE_SHEET_ID"),
-        "form2": os.environ.get("CONTACT_INFORMATION_SHEET_ID") or st.secrets.get("CONTACT_INFORMATION_SHEET_ID")
-    }
+if not GOOGLE_SHEET_ID:
+    st.error("❌ ไม่พบ GOOGLE_SHEET_ID ใน environment หรือ st.secrets")
+else:
+    sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
 
-def get_sheet(name="form1"):
-    """
-    คืนค่า gspread sheet object
-    name: "form1" หรือ "form2"
-    """
-    sheets = get_sheets()
-    if name not in sheets:
-        raise ValueError(f"❌ Sheet '{name}' ไม่มีใน SHEETS")
-    sheet_id = sheets[name]
-    return client.open_by_key(sheet_id).sheet1
+# ===== Utility functions =====
+def get_sheet():
+    """คืนค่า gspread sheet object"""
+    if not GOOGLE_SHEET_ID:
+        raise ValueError("❌ GOOGLE_SHEET_ID not found in environment or secrets.")
+    return client.open_by_key(GOOGLE_SHEET_ID).sheet1
 
 # คำสะั่งไว้เรียกGOOGLE_SHEET_ID ใช้ sheet1 = get_sheet("form1")
 # เรียกCONTACT_INFORMATION_SHEET_ID ใช้ sheet2 = get_sheet("form2")
