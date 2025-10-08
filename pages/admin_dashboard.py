@@ -52,31 +52,7 @@ def app():
         st.set_page_config(page_title="GSC Dashboard", layout="wide")
         st.title("Highlights Overview")
 
-            # โหลดข้อมูล GSC
-        # df = get_gsc_data()
-    
 
-        # if not df.empty:
-        #     st.subheader("Top Keywords")
-        #     st.dataframe(df.sort_values('clicks', ascending=False))
-
-        #     df_plot = df.rename(columns={
-        #         "query": "Keyword",
-        #         "clicks": "Clicks",
-        #         "impressions": "Impressions",
-        #         "ctr": "CTR",
-        #         "position": "Avg. Position"
-        #     })
-
-        #     fig = px.bar(
-        #         df_plot.sort_values('Clicks', ascending=False),
-        #         x='Keyword',
-        #         y='Clicks',
-        #         hover_data=['Impressions', 'CTR', 'Avg. Position']
-        #     )
-        #     st.plotly_chart(fig, use_container_width=True)
-        # else:
-        #     st.warning("⚠️ ไม่มีข้อมูลจาก Google Search Console")
         if "platform" in df.columns:
             platform_df = df.groupby("platform").size().reset_index(name="จำนวนรีวิว")
             platform_df = platform_df.sort_values(by="จำนวนรีวิว", ascending=False)
@@ -232,7 +208,7 @@ def app():
             )
 
 
-            # 💾 ปุ่ม Export
+            # 💾 Export
             csv_data = df[["platform", "shop_id", "review_text", "sentiment", "review_date"]].to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
                 label="📥 ดาวน์โหลดรายงาน CSV",
@@ -244,16 +220,36 @@ def app():
         else:
             st.warning("⚠️ ไม่พบข้อมูลรีวิวในช่วงเวลาที่เลือก")
 
-        if "platform" in df.columns:
-            st.divider()
-            st.subheader("📊 จำนวนรีวิวตามแพลตฟอร์ม")
-            platform_df = df.groupby("platform").size().reset_index(name="จำนวนรีวิว")
-            platform_df = platform_df.sort_values(by="จำนวนรีวิว", ascending=False)
+                    # โหลดข้อมูล GSC
+        df = get_gsc_data()
+    
 
-            # กราฟอันดับแพลตฟอร์ม
+        if not df.empty:
+            st.subheader("Top Keywords")
+            st.dataframe(df.sort_values('clicks', ascending=False))
+
+            df_plot = df.rename(columns={
+                "query": "Keyword",
+                "clicks": "Clicks",
+                "impressions": "Impressions",
+                "ctr": "CTR",
+                "position": "Avg. Position"
+            })
+
+            fig = px.bar(
+                df_plot.sort_values('Clicks', ascending=False),
+                x='Keyword',
+                y='Clicks',
+                hover_data=['Impressions', 'CTR', 'Avg. Position']
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("⚠️ ไม่มีข้อมูลจาก Google Search Console")
 
 
-        # 📊 Top Platform (แพลตฟอร์มที่มีรีวิวเยอะที่สุด)
+
+
+
 
         
 
