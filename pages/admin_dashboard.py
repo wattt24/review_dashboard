@@ -85,6 +85,23 @@ def app():
                     </div>
                     """, unsafe_allow_html=True)
 
+            cols = st.columns(3)
+            for i, (index, row) in enumerate(top_platforms.iterrows()):
+                with cols[i]:
+                    st.markdown(f"""
+                    <div style="
+                        background: {gradients[i]};
+                        color: white;
+                        padding: 25px;
+                        border-radius: 20px;
+                        text-align: center;
+                        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+                    ">
+                        <h2 style="margin: 0; font-size: 36px; font-weight: bold;">{i+1}. {row['platform'].upper()}</h2>
+                        <p style="margin: 5px 0 0; font-size: 22px; font-weight: 500;">{row['จำนวนรีวิว']:,} รีวิว</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
         st.markdown("""
         <style>
             .main {
@@ -220,31 +237,7 @@ def app():
         else:
             st.warning("⚠️ ไม่พบข้อมูลรีวิวในช่วงเวลาที่เลือก")
 
-                    # โหลดข้อมูล GSC
-        df = get_gsc_data()
-    
-
-        if not df.empty:
-            st.subheader("Top Keywords")
-            st.dataframe(df.sort_values('clicks', ascending=False))
-
-            df_plot = df.rename(columns={
-                "query": "Keyword",
-                "clicks": "Clicks",
-                "impressions": "Impressions",
-                "ctr": "CTR",
-                "position": "Avg. Position"
-            })
-
-            fig = px.bar(
-                df_plot.sort_values('Clicks', ascending=False),
-                x='Keyword',
-                y='Clicks',
-                hover_data=['Impressions', 'CTR', 'Avg. Position']
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("⚠️ ไม่มีข้อมูลจาก Google Search Console")
+         
 
 
 
@@ -273,7 +266,31 @@ def app():
         # --------------------- 1. Fujikathailand ---------------------
         with tabs[0]:
             st.header("📰 Website Fujikathailand.com")
-            
+                       # โหลดข้อมูล GSC
+            df = get_gsc_data()
+        
+
+            if not df.empty:
+                st.subheader("Top Keywords")
+                st.dataframe(df.sort_values('clicks', ascending=False))
+
+                df_plot = df.rename(columns={
+                    "query": "Keyword",
+                    "clicks": "Clicks",
+                    "impressions": "Impressions",
+                    "ctr": "CTR",
+                    "position": "Avg. Position"
+                })
+
+                fig = px.bar(
+                    df_plot.sort_values('Clicks', ascending=False),
+                    x='Keyword',
+                    y='Clicks',
+                    hover_data=['Impressions', 'CTR', 'Avg. Position']
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("⚠️ ไม่มีข้อมูลจาก Google Search Console")
 
             conn = get_connection()
             df_focus_fujikathailand = pd.read_sql("SELECT * FROM reviews_history LIMIT 50", conn)
