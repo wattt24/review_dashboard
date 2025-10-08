@@ -6,6 +6,7 @@ import numpy as np
 import streamlit as st
 # from api.shopee_api import fetch_shop_sales_df,get_shop_info,get_item_list
 from utils.config import SHOPEE_SHOP_ID
+import os, sys
 import plotly.express as px
 from datetime import datetime
 from database.all_database import get_connection
@@ -540,7 +541,11 @@ def app():
             # ============================ ส่วนแสดงผลหลัก (Main App) ============================
 
             st.title("📘 Facebook Pages Overview")
-
+      
+            st.write("Current working dir:", os.getcwd())
+            st.write("Python path:", sys.path)
+            st.write("FACEBOOK_PAGE_HEATER_ID:", FACEBOOK_PAGE_HEATER_ID)
+            st.write("FACEBOOK_PAGE_BBQ_ID:", FACEBOOK_PAGE_BBQ_ID)
             for page_id in [FACEBOOK_PAGE_HEATER_ID, FACEBOOK_PAGE_BBQ_ID]:
                 page_info = get_page_info(page_id)
                 render_page_info(page_info, page_id)
