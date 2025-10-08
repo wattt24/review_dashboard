@@ -1,11 +1,11 @@
 # เอาไว้เก็บลง Google Sheet เป็นศูนย์กลาง token ของทุกแพลตฟอร์ม (Shopee, Lazada, Facebook ฯลฯ) 
 # utils/token_manager.py
 import os , json
+import pandas as pd
 import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials 
 import streamlit as st
-from utils.config import GOOGLE_SHEET_ID
 
 # ===== Google Sheet Setup =====
 scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
@@ -26,19 +26,35 @@ def get_gspread_client():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scope)
     return gspread.authorize(creds)
 
-# ===== Load Google Sheet =====
 client = get_gspread_client()
-GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"]
-GOOGLE_SHEET = os.environ.get("GOOGLE_SHEET_ID")
-if not GOOGLE_SHEET:
-    raise ValueError("❌ ไม่พบ GOOGLE_SHEET_ID ใน os.environ")
+# ===== Load Google Sheet =====
+SHEETS = {
+    "form1": os.environ.get("GOOGLE_SHEET_ID") or st.secrets["GOOGLE_SHEET_ID"],
+    "form2": os.environ.get("CONTACT_INFORMATION_SHEET_ID") or st.secrets["CONTACT_INFORMATION_SHEET_ID"]
+}
 
-sheet = client.open_by_key(GOOGLE_SHEET).sheet1
-sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+sheet = client.open_by_key(SHEETS["form1"]).sheet1
+sheet_form2 = client.open_by_key(SHEETS["form2"]).sheet1
+
 # เอาไว้ใช้เรียก sheet ใน ไฟล์อื่นง่าย 
-def get_sheet():
-    return sheet
-# คำสะั่งไว้เรียกใช้ / sheet = get_sheet()  / เอา sheet มาใช้
+def get_sheet(name="form1"):
+    """
+    คืนค่า gspread sheet object
+    name: "form1" หรือ "form2"
+    """
+    if name not in SHEETS:
+        raise ValueError(f"❌ Sheet '{name}' ไม่มีใน SHEETS")
+    sheet_id = SHEETS[name]
+    return client.open_by_key(sheet_id).sheet1
+
+# คำสะั่งไว้เรียกGOOGLE_SHEET_ID ใช้ sheet1 = get_sheet("form1")
+# เรียกCONTACT_INFORMATION_SHEET_ID ใช้ sheet2 = get_sheet("form2")
+def sheet_to_df(sheet):
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+    if "Timestamp" in df.columns:
+        df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce")
+    return df
 
 # บันทึก Token ลง Google Sheet
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):

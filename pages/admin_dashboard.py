@@ -4,9 +4,10 @@ import sys
 import pandas as pd
 import numpy as np
 import streamlit as st
-# from api.shopee_api import fetch_shop_sales_df,get_shop_info,get_item_list
 from utils.config import SHOPEE_SHOP_ID
-import os, sys
+from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+from utils.token_manager import get_sheet, sheet_to_df
 import plotly.express as px
 from datetime import datetime
 from database.all_database import get_connection
@@ -16,7 +17,7 @@ from utils.config import FACEBOOK_PAGE_HEATER_ID, FACEBOOK_PAGE_BBQ_ID
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api.fujikathailand_rest_api import *#fetch_all_product_sales, fetch_posts, fetch_comments,fetch_product_reviews
+from api.fujikathailand_rest_api import *
 # from services.gsc_fujikathailand import *
 from utils.token_manager import get_gspread_client
 from collections import defaultdict
@@ -432,46 +433,60 @@ def app():
                     st.markdown(f"{avg_rating:.1f} ⭐ ({p.get('rating_count',0)})")
                     
                     st.markdown("---")
+            st.title("📊 Dashboard สรุป Form2")
 
+            # เลือกช่วงเวลา
+            period = st.selectbox("เลือกช่วงเวลา", ["ทั้งหมด", "1 เดือน", "3 เดือน", "1 ปี"])
+
+            # ดึงข้อมูลจาก sheet form2
+            sheet = get_sheet("form2")
+            df = sheet_to_df(sheet)
+
+            # Filter ช่วงเวลา
+            if period != "ทั้งหมด" and "Timestamp" in df.columns:
+                now = datetime.now()
+                if period == "1 เดือน":
+                    start = now - timedelta(days=30)
+                elif period == "3 เดือน":
+                    start = now - timedelta(days=90)
+                else:  # 1 ปี
+                    start = now - timedelta(days=365)
+                df = df[df["Timestamp"] >= start]
+
+            st.write(f"แถวข้อมูล: {len(df)}")
+            st.dataframe(df)
+
+            # --- สร้างกราฟ Top 3 สินค้า ---
+            if "ชนิดสินค้า" in df.columns:
+                top_products = df["ชนิดสินค้า"].value_counts().head(3)
+                fig, ax = plt.subplots()
+                top_products.plot(kind="bar", color="skyblue", ax=ax)
+                ax.set_title("Top 3 สินค้าขายดี")
+                ax.set_xlabel("ชนิดสินค้า")
+                ax.set_ylabel("จำนวนขาย / จำนวนรายการ")
+                st.pyplot(fig)
+            else:
+                st.warning("❌ ไม่พบคอลัมน์ 'ชนิดสินค้า' ใน Sheet")
+
+            # --- Export CSV / Excel ---
+            st.subheader("Export ข้อมูล")
+            export_format = st.selectbox("เลือกไฟล์ที่จะ export", ["CSV", "Excel"])
+            if st.button("Export"):
+                if export_format == "CSV":
+                    csv = df.to_csv(index=False).encode("utf-8-sig")
+                    st.download_button("Download CSV", data=csv, file_name="form2_data.csv", mime="text/csv")
+                else:  # Excel
+                    from io import BytesIO
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+                        df.to_excel(writer, index=False, sheet_name="Form2")
+                        writer.save()
+                    st.download_button("Download Excel", data=output.getvalue(), file_name="form2_data.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")       
         # --------------------- 4. Shopee ---------------------
         with tabs[3]:
             st.header("🛍️ รีวิว Shopee")
         
-            # st.title("📊 Shopee Product Dashboard")
-            # try:
-            #     df = fetch_shop_sales_df()
-            #     print("DEBUG df:", df)  # ✅ ดูข้อมูลจริงที่ได้
-            # except Exception as e:
-            #     st.error(f"❌ ไม่สามารถดึงข้อมูล Shopee ได้: {e}")
-            #     return
 
-            # if df.empty:
-            #     st.warning("⚠️ ไม่มีข้อมูลร้านค้า หรือเกิดข้อผิดพลาดในการดึงข้อมูล")
-            #     return
-
-            # shop_name = df["shop_name"].iloc[0]
-            # shop_logo = df["shop_logo"].iloc[0]
-            # total_sales = df["total_sales"].iloc[0]
-
-            # # ตรวจสอบค่าก่อนแสดง
-            # print("DEBUG shop_name:", shop_name)
-            # print("DEBUG shop_logo:", shop_logo)
-            # print("DEBUG total_sales:", total_sales)
-
-            # # แสดงผล
-            # if shop_logo:
-            #     st.image(shop_logo, width=120)
-            # st.subheader(f"ร้าน: {shop_name}")
-            # st.metric("ยอดขายรวมทั้งหมด", total_sales)
-            # st.dataframe(df, use_container_width=True)
-            # ACCESS_TOKEN = auto_refresh_token("shopee", SHOPEE_SHOP_ID)
-            # st.write("DEBUG ACCESS_TOKEN:", ACCESS_TOKEN)
-
-            # shop_info = get_shop_info(ACCESS_TOKEN, SHOPEE_SHOP_ID)
-            # st.write("DEBUG shop_info:", shop_info)
-
-            # items = get_item_list(ACCESS_TOKEN, SHOPEE_SHOP_ID)
-            # st.write("DEBUG items:", items)
 
                 
         # --------------------- 5. Lazada ---------------------
