@@ -115,11 +115,25 @@ if df is not None and not df.empty:
 
     # 🧾 ตารางรีวิวทั้งหมด + ปุ่ม Export
     st.divider()
-    st.subheader("📋 รายการรีวิวทั้งหมด")
+    display_df = df.rename(columns={
+        "platform": "แพลตฟอร์ม",
+        "shop_id": "รหัสร้านค้า",
+        "review_text": "ข้อความรีวิว",
+        "sentiment": "อารมณ์รีวิว",
+        "review_date": "วันที่รีวิว"
+    })
+
+    # ✅ เพิ่มคอลัมน์ลำดับที่เริ่มจาก 1
+    display_df = display_df.copy()  # ป้องกัน SettingWithCopyWarning
+    display_df.insert(0, "ลำดับ", range(1, len(display_df) + 1))
+
+    # ✅ แสดงผล
     st.dataframe(
-        df[["platform", "shop_id", "review_text", "sentiment", "review_date"]],
-        use_container_width=True, height=550
+        display_df[["ลำดับ", "แพลตฟอร์ม", "รหัสร้านค้า", "ข้อความรีวิว", "อารมณ์รีวิว", "วันที่รีวิว"]],
+        use_container_width=True,
+        height=550
     )
+
 
     # 💾 ปุ่ม Export
     csv_data = df[["platform", "shop_id", "review_text", "sentiment", "review_date"]].to_csv(index=False, encoding='utf-8-sig')
