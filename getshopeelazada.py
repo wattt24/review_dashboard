@@ -155,10 +155,11 @@ async def lazada_callback(request: Request):
 
     params = {
         "app_key": LAZADA_CLIENT_ID,
+        "sign_method": "sha256",
+        "timestamp": str(int(time.time() * 1000)),  # ต้องมี
         "code": code,
         "grant_type": "authorization_code",
-        "redirect_uri": LAZADA_REDIRECT_URI,
-        "sign_method": "sha256",
+        "redirect_uri": LAZADA_REDIRECT_URI,       # ต้องตรงกับ console
     }
 
     # ✅ generate sign อย่างถูกต้อง
