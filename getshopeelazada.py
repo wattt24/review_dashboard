@@ -151,40 +151,39 @@ async def lazada_callback(request: Request):
     if not code:
         return HTMLResponse("❌ Authorization canceled.", status_code=400)
 
-    print(f"Callback received code={code}, state={state}")
-
     token_url = "https://auth.lazada.com/rest/auth/token/create"
 
-    payload = {
+    params = {
         "app_key": LAZADA_CLIENT_ID,
         "code": code,
         "grant_type": "authorization_code",
-        "redirect_uri": LAZADA_REDIRECT_URI,   # ไม่ต้อง encode
+        "redirect_uri": LAZADA_REDIRECT_URI,
         "sign_method": "sha256",
     }
-    payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
 
-    print("Payload:", payload)
+    # ✅ generate sign อย่างถูกต้อง
+    sign = lazada_generate_sign(params, LAZADA_CLIENT_SECRET)
+    params["sign"] = sign
 
-    resp = requests.post(
-        token_url,
-        data=payload,
-        headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
-    print("DEBUG payload:", payload)
-    print("DEBUG status:", resp.status_code)
-    print("DEBUG response:", resp.text)
-    print("Authorization Code:", code)
-    print("Shop ID:", state)
-    print("DEBUG Response status:", resp.status_code)
-    print("DEBUG Response text:", resp.text)
+    print(">>> Lazada token request params:", params)
 
-    data = resp.json()
+    try:
+        resp = requests.post(
+            token_url,
+            data=params,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=15
+        )
+        print(">>> Status:", resp.status_code)
+        print(">>> Response:", resp.text)
+
+        data = resp.json()
+    except Exception as e:
+        return HTMLResponse(f"❌ Request failed: {e}", status_code=500)
 
     if "access_token" not in data:
         return HTMLResponse(f"❌ Failed to obtain token: {data}", status_code=500)
 
-    # mapping state → store_id
     store_id = lookup_store_from_state(state)
     if store_id:
         save_token(
@@ -198,3 +197,4 @@ async def lazada_callback(request: Request):
         return HTMLResponse(f"✅ Token saved for store {store_id}")
     else:
         return HTMLResponse("⚠️ State mapping not found, token not saved")
+
