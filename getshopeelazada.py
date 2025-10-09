@@ -145,57 +145,72 @@ async def lazada_auth(store_id: str):
 # Step 2: Lazada callback
 @app.get("/lazada/callback")
 async def lazada_callback(request: Request):
-    code = request.query_params.get("code")
-    state = request.query_params.get("state")
-
-    if not code:
-        return HTMLResponse("❌ Authorization canceled.", status_code=400)
-
-    token_url = "https://auth.lazada.com/rest/auth/token/create"
-
-    params = {
-        "app_key": LAZADA_CLIENT_ID,
-        "sign_method": "sha256",
-        "timestamp": str(int(time.time() * 1000)),  # ต้องมี
-        "code": code,
-        "grant_type": "authorization_code",
-        "redirect_uri": LAZADA_REDIRECT_URI,       # ต้องตรงกับ console
-    }
-
-    # ✅ generate sign อย่างถูกต้อง
-    sign = lazada_generate_sign(params, LAZADA_CLIENT_SECRET)
-    params["sign"] = sign
-
-    print(">>> Lazada token request params:", params)
-
     try:
-        resp = requests.post(
-            token_url,
-            data=params,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            timeout=15
-        )
-        print(">>> Status:", resp.status_code)
-        print(">>> Response:", resp.text)
-
-        data = resp.json()
+        params = dict(request.query_params)
+        print("🔍 Callback received params:", params)
+        code = params.get("code")
+        state = params.get("state")
+        if not code:
+            return "❌ Missing authorization code"
+        print(f"✅ Received authorization code for {state}: {code}")
+        return f"Received authorization code for {state}: {code}"
     except Exception as e:
-        return HTMLResponse(f"❌ Request failed: {e}", status_code=500)
+        print("❌ Error in callback:", e)
+        return f"Sorry, wrong! Error Message: {e}"
 
-    if "access_token" not in data:
-        return HTMLResponse(f"❌ Failed to obtain token: {data}", status_code=500)
+# @app.get("/lazada/callback")
+# async def lazada_callback(request: Request):
+#     code = request.query_params.get("code")
+#     state = request.query_params.get("state")
 
-    store_id = lookup_store_from_state(state)
-    if store_id:
-        save_token(
-            "lazada",
-            store_id,
-            data["access_token"],
-            data.get("refresh_token", ""),
-            data.get("expires_in", 0),
-            data.get("refresh_expires_in", 0)
-        )
-        return HTMLResponse(f"✅ Token saved for store {store_id}")
-    else:
-        return HTMLResponse("⚠️ State mapping not found, token not saved")
+#     if not code:
+#         return HTMLResponse("❌ Authorization canceled.", status_code=400)
+
+#     token_url = "https://auth.lazada.com/rest/auth/token/create"
+
+#     params = {
+#         "app_key": LAZADA_CLIENT_ID,
+#         "sign_method": "sha256",
+#         "timestamp": str(int(time.time() * 1000)),  # ต้องมี
+#         "code": code,
+#         "grant_type": "authorization_code",
+#         "redirect_uri": LAZADA_REDIRECT_URI,       # ต้องตรงกับ console
+#     }
+
+#     # ✅ generate sign อย่างถูกต้อง
+#     sign = lazada_generate_sign(params, LAZADA_CLIENT_SECRET)
+#     params["sign"] = sign
+
+#     print(">>> Lazada token request params:", params)
+
+#     try:
+#         resp = requests.post(
+#             token_url,
+#             data=params,
+#             headers={"Content-Type": "application/x-www-form-urlencoded"},
+#             timeout=15
+#         )
+#         print(">>> Status:", resp.status_code)
+#         print(">>> Response:", resp.text)
+
+#         data = resp.json()
+#     except Exception as e:
+#         return HTMLResponse(f"❌ Request failed: {e}", status_code=500)
+
+#     if "access_token" not in data:
+#         return HTMLResponse(f"❌ Failed to obtain token: {data}", status_code=500)
+
+#     store_id = lookup_store_from_state(state)
+#     if store_id:
+#         save_token(
+#             "lazada",
+#             store_id,
+#             data["access_token"],
+#             data.get("refresh_token", ""),
+#             data.get("expires_in", 0),
+#             data.get("refresh_expires_in", 0)
+#         )
+#         return HTMLResponse(f"✅ Token saved for store {store_id}")
+#     else:
+#         return HTMLResponse("⚠️ State mapping not found, token not saved")
 
