@@ -1,52 +1,41 @@
-# เรียกใช้แบบตรงๆ เพื่อควบคุมรอบของเวลา refresh ของแต่ละ platform แยกกัน
-# main.py
 from apscheduler.schedulers.background import BackgroundScheduler
-from api.fujikathailand_rest_api import fetch_store_wc_reviews, fetch_comments_reviews
-from services.shopee_auth import shopee_refresh_token
-from utils.config import SHOPEE_SHOP_ID
+from datetime import datetime, timedelta
+import time
 
-scheduler = BackgroundScheduler()
+from api.shopee_api import shopee_get_item_list  # ฟังก์ชันดึงสินค้าของคุณ
+from services.shopee_auth import get_shopee_refresh_access_token  # ฟังก์ชัน refresh token
 
-def safe_job(func, *args):
-    try:
-        func(*args)
-    except Exception as e:
-        print(f"❌ Error running job {func.__name__}: {e}")
+# ===== Scheduler =====
+scheduler = BackgroundScheduler(timezone="Asia/Bangkok")
 
-# Shopee → ทุก 1 ชั่วโมง 15 นาที
-scheduler.add_job(
-    func=safe_job,            # ฟังก์ชันที่จะรัน
-    trigger="interval",       # กำหนด trigger เป็น keyword argument
-    minutes=10,
-    args=[shopee_refresh_token, SHOPEE_SHOP_ID]  # ส่ง func และ args ไปยัง safe_job
-)
-scheduler.add_job(
-    func=safe_job, trigger="interval", hours=4, args=[fetch_store_wc_reviews])
-scheduler.add_job(
-    func=safe_job, trigger="interval", minutes=15, args=[fetch_comments_reviews])
-# scheduler.add_job(
-#     func=safe_job,            # ฟังก์ชันที่จะรัน
-#     trigger="interval",       # กำหนด trigger เป็น keyword argument
-#     hours=1,
-#     minutes=15,
-#     args=[shopee_refresh_token, SHOPEE_SHOP_ID]  # ส่ง func และ args ไปยัง safe_job
-# )
+# === job: refresh Shopee token ทุก 3.5 ชั่วโมง ===
+def refresh_token_job():
+    print(f"🔄 Running refresh_token_job at {datetime.now()}")
+    data = get_shopee_refresh_access_token()
+    if data:
+        print("✅ Shopee token refreshed")
+    else:
+        print("❌ Failed to refresh token")
 
-# Lazada → ทุก 4 ชั่วโมง
-# scheduler.add_job(
-#     func=safe_job,
-#     trigger="interval",
-#     hours=4,
-#     args=[fetch_store_wc_reviews"]
-# )
+scheduler.add_job(refresh_token_job, 'interval', hours=3.5, id="refresh_shopee_token")
 
+# === job: ดึงข้อมูลสินค้าจาก Shopee วันละครั้ง ===
+def shopee_daily_job():
+    print(f"📦 Running shopee_daily_job at {datetime.now()}")
+    shopee_get_item_list()
+    print("✅ Shopee items fetched")
+
+scheduler.add_job(shopee_daily_job, 'cron', hour=2, minute=0, id="shopee_daily_fetch")
+# cron hour=2 → ดึงตอนตี 2 ของทุกวัน ปรับเวลาได้ตามต้องการ
+
+# เริ่ม scheduler
 scheduler.start()
+print("🟢 Scheduler started...")
 
+# ทำให้ main thread ไม่ exit
 try:
-    import time
     while True:
         time.sleep(60)
 except (KeyboardInterrupt, SystemExit):
     scheduler.shutdown()
-
-
+    print("🔴 Scheduler stopped")
