@@ -17,7 +17,7 @@ def refresh_token_job():
     else:
         print("❌ Failed to refresh token")
 
-scheduler.add_job(refresh_token_job, 'interval', hours=3.5, id="refresh_shopee_token")
+scheduler.add_job(refresh_token_job, 'interval', minute=15, id="refresh_shopee_token")
 
 # === job: ดึงข้อมูลสินค้าจาก Shopee วันละครั้ง ===
 def shopee_daily_job():
