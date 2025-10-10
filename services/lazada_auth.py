@@ -59,19 +59,19 @@ def build_lazada_auth_url(state):
     qs = urllib.parse.urlencode(params)  # urlencode จะ encode ให้เอง
     return f"{base}?{qs}"
 # สร้าง sign เพื่อ  generate token
-# def lazada_generate_sign(params: dict, app_secret: str) -> str:
-#     # 1. เรียง key ตามตัวอักษร
-#     sorted_params = sorted(params.items(), key=lambda x: x[0])
-#     # 2. ต่อ string เป็น k1v1k2v2...
-#     base_string = "".join(f"{k}{v}" for k, v in sorted_params)
-#     # 3. HMAC-SHA256
-#     sign = hmac.new(
-#         app_secret.encode("utf-8"),
-#         base_string.encode("utf-8"),
-#         hashlib.sha256
-#     ).hexdigest().upper()
-#     print("Base string for HMAC:", base_string)
-#     return sign
+def lazada_generate_sign(params: dict, app_secret: str) -> str:
+    # 1. เรียง key ตามตัวอักษร
+    sorted_params = sorted(params.items(), key=lambda x: x[0])
+    # 2. ต่อ string เป็น k1v1k2v2...
+    base_string = "".join(f"{k}{v}" for k, v in sorted_params)
+    # 3. HMAC-SHA256
+    sign = hmac.new(
+        app_secret.encode("utf-8"),
+        base_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest().upper()
+    print("Base string for HMAC:", base_string)
+    return sign
 def lazada_generate_sign(params, app_secret):
     # ต้องเรียง key ตามตัวอักษร
     sorted_params = sorted(params.items())

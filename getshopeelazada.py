@@ -8,7 +8,7 @@ from api.shopee_api import shopee_get_categories
 from services.lazada_auth import lazada_generate_sign ,lookup_store_from_state, lazada_save_state_mapping_to_sheet,lazada_generate_state
 from services.line_wook import line_verify_signature
 from database.all_database import get_connection
-from utils.config import SHOPEE_SHOP_ID, LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, LAZADA_CLIENT_SECRET, GOOGLE_SHEET_ID, SHOPEE_PARTNER_ID
+from utils.config import SHOPEE_SHOP_ID, LAZADA_APP_SECRET, LAZADA_REDIRECT_URI, LAZADA_APP_ID, GOOGLE_SHEET_ID, SHOPEE_PARTNER_ID
 from fastapi import FastAPI
 import urllib
 from utils.token_manager import *
@@ -128,7 +128,7 @@ async def lazada_auth(store_id: str):
     auth_url = (
         f"https://auth.lazada.com/oauth/authorize?"
         f"response_type=code"
-        f"&client_id={LAZADA_CLIENT_ID}"
+        f"&client_id={LAZADA_APP_ID}"
         f"&redirect_uri={redirect_uri}"
         f"&state={state}"
         f"&force_auth=true"
@@ -143,6 +143,7 @@ async def lazada_auth(store_id: str):
 
 
 # Step 2: Lazada callback
+
 @app.get("/lazada/callback")
 async def lazada_callback(request: Request):
     try:
@@ -153,10 +154,70 @@ async def lazada_callback(request: Request):
         if not code:
             return "❌ Missing authorization code"
         print(f"✅ Received authorization code for {state}: {code}")
-        return f"Received authorization code for {state}: {code}"
+
+        # 🔹 2) ขอ token จาก Lazada
+        import requests
+        token_url = "https://auth.lazada.com/rest/auth/token/create"
+        params = {
+            "code": code,
+            "client_id": LAZADA_APP_ID,
+            "client_secret": LAZADA_APP_SECRET,
+            "redirect_uri": LAZADA_REDIRECT_URI,
+        }
+
+        print("🔁 Requesting access token from Lazada...")
+        response = requests.get(token_url, params=params)
+        data = response.json()
+        print("🔹 Lazada token response:", data)
+
+        if "access_token" not in data:
+            return f"❌ Token exchange failed: {data}"
+
+        # 🔹 3) แยกค่าที่ได้
+        access_token = data["access_token"]
+        refresh_token = data["refresh_token"]
+        account = data.get("account", "unknown_account")
+        expires_in = data.get("expires_in")
+        refresh_expires_in = data.get("refresh_expires_in")
+
+        # ✅ 4) บันทึก token ลง Google Sheet
+        from utils.token_manager import save_token
+        save_token(
+            platform="lazada",
+            account_id=account,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=expires_in,
+            refresh_expires_in=refresh_expires_in
+        )
+
+        print(f"✅ Lazada Authorized & Saved: {account}")
+        return {
+            "message": f"Lazada Authorized successfully for {account}",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_in": expires_in,
+        }
+
     except Exception as e:
         print("❌ Error in callback:", e)
         return f"Sorry, wrong! Error Message: {e}"
+
+# @app.get("/lazada/callback")
+# async def lazada_callback(request: Request):
+#     try:
+#         params = dict(request.query_params)
+#         print("🔍 Callback received params:", params)
+#         code = params.get("code")
+#         state = params.get("state")
+#         if not code:
+#             return "❌ Missing authorization code"
+#         print(f"✅ Received authorization code for {state}: {code}")
+#         return f"Received authorization code for {state}: {code}"
+
+#     except Exception as e:
+#         print("❌ Error in callback:", e)
+#         return f"Sorry, wrong! Error Message: {e}"
 
 # @app.get("/lazada/callback")
 # async def lazada_callback(request: Request):

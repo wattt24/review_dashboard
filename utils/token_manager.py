@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials 
 import streamlit as st
 
-
 # ===== Google Sheet Setup =====
 scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
 # utils/token_manager.py
