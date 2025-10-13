@@ -89,48 +89,45 @@ def lazada_generate_sign(params, app_secret):
         hashlib.sha256
     ).hexdigest().upper()
     return sign
-def lazada_exchange_token(code: str):
-    import time, hmac, hashlib, requests
+def lazada_exchange_token_thailand(code: str):
+    """แลก Authorization Code (สำหรับ Lazada ประเทศไทย)"""
+    
+    # ✅ Timestamp (UTC milliseconds)
+    timestamp = str(int(time.time() * 1000))
 
-    # ✅ ใช้เวลาปัจจุบัน UTC (ไม่บวก 8 ชั่วโมง)
-    timestamp = int(time.time() * 1000)  # milliseconds (13 digits)
+    # ✅ พารามิเตอร์ที่ต้องใช้ (เรียง A-Z ทีหลัง)
+    params = {
+        "app_key": LAZADA_APP_ID,
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": LAZADA_REDIRECT_URI,
+        "sign_method": "sha256",
+        "timestamp": timestamp
+    }
 
-    grant_type = "authorization_code"
+    # ✅ เรียงตาม A-Z
+    sorted_params = sorted(params.items(), key=lambda x: x[0])
+    base_str = "".join(f"{k}{v}" for k, v in sorted_params)
 
-    base_str = (
-        f"app_key{LAZADA_APP_ID}"
-        f"code{code}"
-        f"grant_type{grant_type}"
-        f"redirect_uri{LAZADA_REDIRECT_URI}"
-        f"timestamp{timestamp}"
-    )
-
+    # ✅ สร้าง sign ด้วย HMAC-SHA256
     sign = hmac.new(
         LAZADA_APP_SECRET.encode("utf-8"),
         base_str.encode("utf-8"),
         hashlib.sha256
     ).hexdigest().upper()
 
-    payload = {
-        "app_key": LAZADA_APP_ID,
-        "code": code,
-        "grant_type": grant_type,
-        "redirect_uri": LAZADA_REDIRECT_URI,
-        "timestamp": str(timestamp),  # ✅ เป็น string
-        "sign_method": "sha256",
-        "sign": sign
-    }
+    # ✅ เพิ่ม sign ลงใน payload
+    params["sign"] = sign
 
-    print("⏰ UTC time:", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
-    print("Payload:", payload)
+    print("🧾 Base string:", base_str)
+    print("✅ Sign:", sign)
 
     url = "https://auth.lazada.com/rest/auth/token/create"
-    response = requests.post(url, data=payload)
+    response = requests.post(url, data=params)
     print("status_code:", response.status_code)
     print("resp.text:", response.text)
 
     return response.json()
-
 
 # def lazada_exchange_token(code: str):
 #     import requests
