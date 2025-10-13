@@ -156,9 +156,7 @@ async def lazada_callback(request: Request):
     account = data.get("account", "unknown_account")
     expires_in = data.get("expires_in")
     refresh_expires_in = data.get("refresh_expires_in")
-
-    # บันทึก token ลง Google Sheet
-    from utils.token_manager import save_token
+    
     save_token(
         platform="lazada",
         account_id=account,
