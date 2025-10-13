@@ -88,36 +88,48 @@ def lazada_generate_sign(params, app_secret):
         hashlib.sha256
     ).hexdigest().upper()
     return sign
-def lazada_exchange_token(code: str):
-    token_url = "https://auth.lazada.com/rest/auth/token/create"
+# def lazada_exchange_token(code: str):
+#     token_url = "https://auth.lazada.com/rest/auth/token/create"
 
+#     payload = {
+#         "app_key": LAZADA_CLIENT_ID,
+#         "code": code,
+#         "grant_type": "authorization_code",
+#         "redirect_uri": LAZADA_REDIRECT_URI,  # ต้องตรงกับ Developer Console
+#         "timestamp": int(time.time() * 1000),
+#         "sign_method": "sha256",
+#         }
+
+#     payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
+
+#     # Lazada ต้องการ form-urlencoded
+#     resp = requests.post(
+#     token_url,
+#     data=payload,
+#     headers={"Content-Type": "application/x-www-form-urlencoded"}
+#     )
+#     print("Payload for token request:", payload)
+#     print("status_code:", resp.status_code)
+#     print("resp.text:", resp.text)
+
+#     sorted_params = sorted(payload.items(), key=lambda x: x[0])
+#     base_string = "".join(f"{k}{v}" for k, v in sorted_params)
+#     print("Base string for HMAC:", base_string)
+
+#     return resp.json()
+def lazada_exchange_token(code):
+    url = "https://auth.lazada.com/rest/auth/token/create"
     payload = {
-        "app_key": LAZADA_CLIENT_ID,
         "code": code,
+        "app_key": LAZADA_CLIENT_ID,
+        "app_secret": LAZADA_CLIENT_SECRET,
         "grant_type": "authorization_code",
-        "redirect_uri": LAZADA_REDIRECT_URI,  # ต้องตรงกับ Developer Console
-        "timestamp": int(time.time() * 1000),
-        "sign_method": "sha256",
-        }
+        "redirect_uri": LAZADA_REDIRECT_URI
+    }
 
-    payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
-
-    # Lazada ต้องการ form-urlencoded
-    resp = requests.post(
-    token_url,
-    data=payload,
-    headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
-    print("Payload for token request:", payload)
-    print("status_code:", resp.status_code)
-    print("resp.text:", resp.text)
-
-    sorted_params = sorted(payload.items(), key=lambda x: x[0])
-    base_string = "".join(f"{k}{v}" for k, v in sorted_params)
-    print("Base string for HMAC:", base_string)
-
-    return resp.json()
-
+    response = requests.post(url, data=payload)
+    print("🔹 Lazada token response:", response.json())
+    return response.json()
 
 # refresh token
 def lazada_refresh_token(refresh_token: str, store_id: str):
