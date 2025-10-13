@@ -88,12 +88,20 @@ def lazada_generate_sign(params, app_secret):
         hashlib.sha256
     ).hexdigest().upper()
     return sign
-
 def lazada_exchange_token(code: str):
-    import requests
-
     timestamp = int(time.time())
-    base_str = f"app_key{LAZADA_APP_ID}app_secret{LAZADA_APP_SECRET}code{code}grant_typeauthorization_coderedirect_uri{LAZADA_REDIRECT_URI}timestamp{timestamp}"
+    grant_type = "authorization_code"
+
+    # สร้าง base string สำหรับ sign
+    base_str = (
+        f"app_key{LAZADA_APP_ID}"
+        f"code{code}"
+        f"grant_type{grant_type}"
+        f"redirect_uri{LAZADA_REDIRECT_URI}"
+        f"timestamp{timestamp}"
+    )
+
+    # สร้าง signature ด้วย SHA256
     sign = hmac.new(
         LAZADA_APP_SECRET.encode("utf-8"),
         base_str.encode("utf-8"),
@@ -102,18 +110,48 @@ def lazada_exchange_token(code: str):
 
     payload = {
         "app_key": LAZADA_APP_ID,
-        "app_secret": LAZADA_APP_SECRET,
         "code": code,
-        "grant_type": "authorization_code",
+        "grant_type": grant_type,
         "redirect_uri": LAZADA_REDIRECT_URI,
         "timestamp": timestamp,
+        "sign_method": "sha256",  # ✅ เพิ่มบรรทัดนี้
         "sign": sign
     }
 
+    print("🔁 Requesting access token from Lazada...")
+    print("Payload for token request:", payload)
+
     url = "https://auth.lazada.com/rest/auth/token/create"
     response = requests.post(url, data=payload)
-    print("Payload for token request:", payload)
+    print("status_code:", response.status_code)
+    print("resp.text:", response.text)
+
     return response.json()
+# def lazada_exchange_token(code: str):
+#     import requests
+
+#     timestamp = int(time.time())
+#     base_str = f"app_key{LAZADA_APP_ID}app_secret{LAZADA_APP_SECRET}code{code}grant_typeauthorization_coderedirect_uri{LAZADA_REDIRECT_URI}timestamp{timestamp}"
+#     sign = hmac.new(
+#         LAZADA_APP_SECRET.encode("utf-8"),
+#         base_str.encode("utf-8"),
+#         hashlib.sha256
+#     ).hexdigest().upper()
+
+#     payload = {
+#         "app_key": LAZADA_APP_ID,
+#         "app_secret": LAZADA_APP_SECRET,
+#         "code": code,
+#         "grant_type": "authorization_code",
+#         "redirect_uri": LAZADA_REDIRECT_URI,
+#         "timestamp": timestamp,
+#         "sign": sign
+#     }
+
+#     url = "https://auth.lazada.com/rest/auth/token/create"
+#     response = requests.post(url, data=payload)
+#     print("Payload for token request:", payload)
+#     return response.json()
 # def lazada_exchange_token(code: str):
 #     token_url = "https://auth.lazada.com/rest/auth/token/create"
 #     payload = {
