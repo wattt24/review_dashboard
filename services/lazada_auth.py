@@ -112,6 +112,7 @@ def lazada_exchange_token(code: str):
 
     url = "https://auth.lazada.com/rest/auth/token/create"
     response = requests.post(url, data=payload)
+    print("Payload for token request:", payload)
     return response.json()
 # def lazada_exchange_token(code: str):
 #     token_url = "https://auth.lazada.com/rest/auth/token/create"
