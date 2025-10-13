@@ -5,6 +5,7 @@ import os
 import time, hmac, hashlib
 import requests
 from datetime import datetime
+from datetime import datetime, timedelta
 from utils.token_manager import get_gspread_client , save_token , get_latest_token# ถ้าจะเก็บ mapping ลง Google Sheet
 from utils.config import (LAZADA_APP_ID, LAZADA_REDIRECT_URI, GOOGLE_SHEET_ID, LAZADA_APP_SECRET)
 
@@ -89,7 +90,9 @@ def lazada_generate_sign(params, app_secret):
     ).hexdigest().upper()
     return sign
 def lazada_exchange_token(code: str):
-    timestamp = int(time.time())
+
+    china_time = datetime.utcnow() + timedelta(hours=8)
+    timestamp = int(china_time.timestamp() * 1000)
     grant_type = "authorization_code"
 
     # สร้าง base string สำหรับ sign
