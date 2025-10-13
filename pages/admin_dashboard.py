@@ -49,7 +49,7 @@ def app():
     if view == "Highlights Overview":
         
         st.title("Highlights Overview")
-        if not df.empty:
+        if df_gsc_fujikathailand is not None and not df_gsc_fujikathailand.empty:
                 st.subheader("🔍 คำค้นหายอดนิยม (Top Keywords)")
                 
                 # เปลี่ยนชื่อคอลัมน์เป็นภาษาไทย

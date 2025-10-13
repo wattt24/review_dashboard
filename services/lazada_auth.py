@@ -6,7 +6,7 @@ import time, hmac, hashlib
 import requests
 from datetime import datetime
 from utils.token_manager import get_gspread_client , save_token , get_latest_token# ถ้าจะเก็บ mapping ลง Google Sheet
-from utils.config import (LAZADA_CLIENT_ID, LAZADA_REDIRECT_URI, GOOGLE_SHEET_ID, LAZADA_CLIENT_SECRET)
+from utils.config import (LAZADA_APP_ID, LAZADA_REDIRECT_URI, GOOGLE_SHEET_ID, LAZADA_APP_SECRET)
 
 def lazada_generate_state(store_id):
     # state ควรเป็น unique + ยากเดา
@@ -50,7 +50,7 @@ def build_lazada_auth_url(state):
     base = "https://auth.lazada.com/oauth/authorize"
     params = {
         "response_type": "code",
-        "client_id": LAZADA_CLIENT_ID,
+        "client_id": LAZADA_APP_ID,
         "redirect_uri": LAZADA_REDIRECT_URI,  # ปล่อยเป็น raw
         "state": state,
         "force_auth": "true",
@@ -88,41 +88,58 @@ def lazada_generate_sign(params, app_secret):
         hashlib.sha256
     ).hexdigest().upper()
     return sign
+
 def lazada_exchange_token(code: str):
-    token_url = "https://auth.lazada.com/rest/auth/token/create"
+    import requests
+
+    timestamp = int(time.time())
+    base_str = f"app_key{LAZADA_APP_ID}app_secret{LAZADA_APP_SECRET}code{code}grant_typeauthorization_coderedirect_uri{LAZADA_REDIRECT_URI}timestamp{timestamp}"
+    sign = hmac.new(
+        LAZADA_APP_SECRET.encode("utf-8"),
+        base_str.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest().upper()
+
     payload = {
+        "app_key": LAZADA_APP_ID,
+        "app_secret": LAZADA_APP_SECRET,
         "code": code,
-        "app_key": LAZADA_CLIENT_ID,
-        "app_secret": LAZADA_CLIENT_SECRET,
         "grant_type": "authorization_code",
-        "redirect_uri": LAZADA_REDIRECT_URI
+        "redirect_uri": LAZADA_REDIRECT_URI,
+        "timestamp": timestamp,
+        "sign": sign
     }
+
+    url = "https://auth.lazada.com/rest/auth/token/create"
+    response = requests.post(url, data=payload)
+    return response.json()
+# def lazada_exchange_token(code: str):
+#     token_url = "https://auth.lazada.com/rest/auth/token/create"
 #     payload = {
-#         "app_key": LAZADA_CLIENT_ID,
 #         "code": code,
+#         "app_key": LAZADA_CLIENT_ID,
+#         "app_secret": LAZADA_CLIENT_SECRET,
 #         "grant_type": "authorization_code",
-#         "redirect_uri": LAZADA_REDIRECT_URI,  # ต้องตรงกับ Developer Console
-#         "timestamp": int(time.time() * 1000),
-#         "sign_method": "sha256",
-#         }
+#         "redirect_uri": LAZADA_REDIRECT_URI
+#     }
 
-    payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
+#     payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
 
-    # Lazada ต้องการ form-urlencoded
-    resp = requests.post(
-    token_url,
-    data=payload,
-    headers={"Content-Type": "application/x-www-form-urlencoded"}
-    )
-    print("Payload for token request:", payload)
-    print("status_code:", resp.status_code)
-    print("resp.text:", resp.text)
+#     # Lazada ต้องการ form-urlencoded
+#     resp = requests.post(
+#     token_url,
+#     data=payload,
+#     headers={"Content-Type": "application/x-www-form-urlencoded"}
+#     )
+#     print("Payload for token request:", payload)
+#     print("status_code:", resp.status_code)
+#     print("resp.text:", resp.text)
 
-    sorted_params = sorted(payload.items(), key=lambda x: x[0])
-    base_string = "".join(f"{k}{v}" for k, v in sorted_params)
-    print("Base string for HMAC:", base_string)
+#     sorted_params = sorted(payload.items(), key=lambda x: x[0])
+#     base_string = "".join(f"{k}{v}" for k, v in sorted_params)
+#     print("Base string for HMAC:", base_string)
 
-    return resp.json()
+#     return resp.json()
 # def lazada_exchange_token(code):
 #     url = "https://auth.lazada.com/rest/auth/token/create"
 #     payload = {
@@ -144,14 +161,14 @@ def lazada_refresh_token(refresh_token: str, store_id: str):
     timestamp = int(time.time() * 1000)
 
     payload = {
-        "app_key": LAZADA_CLIENT_ID,
+        "app_key": LAZADA_APP_ID,
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
         "timestamp": timestamp,
         "sign_method": "sha256",
     }
 
-    payload["sign"] = lazada_generate_sign(payload, LAZADA_CLIENT_SECRET)
+    payload["sign"] = lazada_generate_sign(payload, LAZADA_APP_SECRET)
 
     resp = requests.post(
         token_url,
