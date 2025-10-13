@@ -89,7 +89,7 @@ def lazada_generate_sign(params, app_secret):
         hashlib.sha256
     ).hexdigest().upper()
     return sign
-def lazada_exchange_token_thailand(code: str):
+def lazada_exchange_token(code: str):
     """แลก Authorization Code (สำหรับ Lazada ประเทศไทย)"""
     
     # ✅ Timestamp (UTC milliseconds)
