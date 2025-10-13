@@ -48,13 +48,12 @@ def app():
 
     if view == "Highlights Overview":
         
-
         st.title("Highlights Overview")
-        if not df_gsc_fujikathailand.empty:
+        if not df.empty:
                 st.subheader("🔍 คำค้นหายอดนิยม (Top Keywords)")
                 
                 # เปลี่ยนชื่อคอลัมน์เป็นภาษาไทย
-                df_gsc_fujikathailand = df_gsc_fujikathailand.rename(columns={
+                df_gsc_fujikathailand = df.rename(columns={
                     "query": "คำค้นหา",
                     "clicks": "จำนวนคลิก",
                     "impressions": "จำนวนการแสดงผล",
