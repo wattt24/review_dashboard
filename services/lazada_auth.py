@@ -90,20 +90,19 @@ def lazada_generate_sign(params, app_secret):
     ).hexdigest().upper()
     return sign
 def lazada_exchange_token(code: str):
+    import time, hmac, hashlib, requests
 
-    # ✅ Lazada ใช้เวลาจีนในรูปแบบ yyyy-MM-dd HH:mm:ss
-    china_time = datetime.utcnow() + timedelta(hours=8)
-    timestamp_str = china_time.strftime("%Y-%m-%d %H:%M:%S")
+    # ✅ ใช้เวลาปัจจุบัน UTC (ไม่บวก 8 ชั่วโมง)
+    timestamp = int(time.time() * 1000)  # milliseconds (13 digits)
 
     grant_type = "authorization_code"
 
-    # ✅ ต้องเรียงลำดับตัวอักษรใน signature ตาม A-Z
     base_str = (
         f"app_key{LAZADA_APP_ID}"
         f"code{code}"
         f"grant_type{grant_type}"
         f"redirect_uri{LAZADA_REDIRECT_URI}"
-        f"timestamp{timestamp_str}"
+        f"timestamp{timestamp}"
     )
 
     sign = hmac.new(
@@ -117,12 +116,12 @@ def lazada_exchange_token(code: str):
         "code": code,
         "grant_type": grant_type,
         "redirect_uri": LAZADA_REDIRECT_URI,
-        "timestamp": timestamp_str,  # ✅ ใช้เวลาเป็น string
+        "timestamp": str(timestamp),  # ✅ เป็น string
         "sign_method": "sha256",
         "sign": sign
     }
 
-    print("⏰ China time:", timestamp_str)
+    print("⏰ UTC time:", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
     print("Payload:", payload)
 
     url = "https://auth.lazada.com/rest/auth/token/create"
