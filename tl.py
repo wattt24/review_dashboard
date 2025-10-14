@@ -1,10 +1,10 @@
 import time, hashlib, hmac, requests
-from utils.config import LAZADA_CLIENT_ID, LAZADA_CLIENT_SECRET, LAZADA_REDIRECT_URI
 LAZADA_CLIENT_ID = "ใส่ app_key ของคุณ"
 LAZADA_CLIENT_SECRET = "ใส่ app_secret ของคุณ"
 LAZADA_REDIRECT_URI = "https://review-dashboard-ccvk.onrender.com/lazada/callback"
 code = "0_135259_8QDVXX4gPcG6ipyUvDNOJWSx365"
 from utils.config import LAZADA_APP_ID, LAZADA_APP_SECRET   
+
 def lazada_exchange_token(code: str):
     """
     แลก authorization code จาก Lazada เพื่อขอ access_token และ refresh_token
