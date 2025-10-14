@@ -90,7 +90,6 @@ def lazada_generate_sign(params, app_secret):
     ).hexdigest().upper()
     return sign
 def lazada_exchange_token(code: str):
-    """แลก Authorization Code (สำหรับ Lazada ประเทศไทย)"""
     
     # ✅ Timestamp (UTC milliseconds)
     timestamp = str(int(time.time() * 1000))
@@ -99,8 +98,8 @@ def lazada_exchange_token(code: str):
     params = {
         "app_key": LAZADA_APP_ID,
         "code": code,
-        "grant_type": "authorization_code",
-        "redirect_uri": LAZADA_REDIRECT_URI,
+        # "grant_type": "authorization_code",
+        # "redirect_uri": LAZADA_REDIRECT_URI,
         "sign_method": "sha256",
         "timestamp": timestamp
     }

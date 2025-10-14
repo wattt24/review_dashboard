@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from database.all_database import get_all_reviews, get_reviews_by_period
 import plotly.express as px
-from datetime import datetime
 from database.all_database import get_connection
 from api.fujikaservice_rest_api import *
 from api.facebook_graph_api import get_page_info, get_page_posts, get_page_reviews
@@ -49,7 +48,7 @@ def app():
     if view == "Highlights Overview":
         
         st.title("Highlights Overview")
-        if df_gsc_fujikathailand is not None and not df_gsc_fujikathailand.empty:
+        if df_gsc_fujikathailand is not None and not get_gsc_data.empty:
                 st.subheader("🔍 คำค้นหายอดนิยม (Top Keywords)")
                 
                 # เปลี่ยนชื่อคอลัมน์เป็นภาษาไทย

@@ -121,20 +121,24 @@ def get_shopee_refresh_access_token():
         print(f"❌ No refresh_token found for Shopee shop {SHOPEE_SHOP_ID} in Google Sheet")
         return None
     SHOPEE_REFRESH_TOKEN = token_data["refresh_token"]
+    
     timestamp = int(time.time())
     path = "/api/v2/auth/access_token/get"
     base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
     sign = hmac.new(SHOPEE_PARTNER_KEY.encode(), base_string.encode(), hashlib.sha256).hexdigest()
 
     url = f"https://partner.shopeemobile.com{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+
     body = {
         "partner_id": SHOPEE_PARTNER_ID,
         "shop_id": SHOPEE_SHOP_ID,
         "refresh_token": SHOPEE_REFRESH_TOKEN
     }
 
-    # ===== DEBUG LOG =====
+    # ====== DEBUG PRINTS ======
+    # Local timezone (+07:00 for Thailand)
     request_time = datetime.datetime.fromtimestamp(timestamp, datetime.timezone(datetime.timedelta(hours=7)))
+
     print("\n================ Shopee API Debug Info ================")
     print(f"🔹 API Name: {path}")
     print(f"🔹 Full Request URL: {url}")
@@ -144,31 +148,75 @@ def get_shopee_refresh_access_token():
     print(f"🔹 Request Parameters: {body}")
     print("=======================================================\n")
 
-    # ===== ส่ง Request =====
+    # ====== SEND REQUEST ======
     try:
-        response = requests.post(url, json=body, timeout=15)
+        response = requests.post(url, json=body)
         data = response.json()
     except Exception as e:
         print("❌ Request failed:", e)
-        return None
+        data = None
 
-    # ===== LOG ผลลัพธ์ =====
+    # ====== RESPONSE LOG ======
     print("🟢 Response:")
-    print(data)
-    if "request_id" in data:
-        print(f"🔸 Request ID: {data['request_id']}")
-    print("\n=======================================================\n")
-
-    # ===== บันทึกลง Google Sheet =====
     if data.get("access_token") and data.get("refresh_token"):
-        expires_in = data.get("expires_in")  # คำนวณเวลาหมดอายุ Access Token
+        expires_in = data.get("expires_in")
         save_token(
             platform="Shopee",
             account_id=SHOPEE_SHOP_ID,
             access_token=data["access_token"],
             refresh_token=data["refresh_token"],
-            expires_in=expires_in
+            expires_in=expires_in,
+            timestamp=timestamp  # ✅ เพิ่มบันทึก timestamp ที่ใช้ใน request
         )
         print(f"✅ Shopee token saved to Google Sheet for shop {SHOPEE_SHOP_ID}")
+    # timestamp = int(time.time())
+    # path = "/api/v2/auth/access_token/get"
+    # base_string = f"{SHOPEE_PARTNER_ID}{path}{timestamp}"
+    # sign = hmac.new(SHOPEE_PARTNER_KEY.encode(), base_string.encode(), hashlib.sha256).hexdigest()
 
-    return data
+    # url = f"https://partner.shopeemobile.com{path}?partner_id={SHOPEE_PARTNER_ID}&timestamp={timestamp}&sign={sign}"
+    # body = {
+    #     "partner_id": SHOPEE_PARTNER_ID,
+    #     "shop_id": SHOPEE_SHOP_ID,
+    #     "refresh_token": SHOPEE_REFRESH_TOKEN
+    # }
+
+    # # ===== DEBUG LOG =====
+    # request_time = datetime.datetime.fromtimestamp(timestamp, datetime.timezone(datetime.timedelta(hours=7)))
+    # print("\n================ Shopee API Debug Info ================")
+    # print(f"🔹 API Name: {path}")
+    # print(f"🔹 Full Request URL: {url}")
+    # print(f"🔹 Request Time (TH timezone): {request_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+    # print(f"🔹 Partner ID: {SHOPEE_PARTNER_ID}")
+    # print(f"🔹 Shop ID: {SHOPEE_SHOP_ID}")
+    # print(f"🔹 Request Parameters: {body}")
+    # print("=======================================================\n")
+
+    # # ===== ส่ง Request =====
+    # try:
+    #     response = requests.post(url, json=body, timeout=15)
+    #     data = response.json()
+    # except Exception as e:
+    #     print("❌ Request failed:", e)
+    #     return None
+
+    # # ===== LOG ผลลัพธ์ =====
+    # print("🟢 Response:")
+    # print(data)
+    # if "request_id" in data:
+    #     print(f"🔸 Request ID: {data['request_id']}")
+    # print("\n=======================================================\n")
+
+    # # ===== บันทึกลง Google Sheet =====
+    # if data.get("access_token") and data.get("refresh_token"):
+    #     expires_in = data.get("expires_in")  # คำนวณเวลาหมดอายุ Access Token
+    #     save_token(
+    #         platform="Shopee",
+    #         account_id=SHOPEE_SHOP_ID,
+    #         access_token=data["access_token"],
+    #         refresh_token=data["refresh_token"],
+    #         expires_in=expires_in
+    #     )
+    #     print(f"✅ Shopee token saved to Google Sheet for shop {SHOPEE_SHOP_ID}")
+
+    # return data
