@@ -92,38 +92,61 @@ def lazada_generate_sign(params, app_secret):
 def lazada_exchange_token(code: str):
     """
     แลก authorization code จาก Lazada เพื่อขอ access_token และ refresh_token
+    พร้อม debug log ครบทุกขั้นตอน
     """
     try:
-        url = "https://auth.lazada.com/rest/auth/token/create"
+        path = "/auth/token/create"
+        url = f"https://auth.lazada.com/rest{path}"
 
-        # Lazada ต้องการพารามิเตอร์เหล่านี้
+        # ✅ ใส่เฉพาะพารามิเตอร์ที่ Lazada ต้องการ
         params = {
             "app_key": LAZADA_APP_ID,
-            "timestamp": str(int(time.time() * 1000)),
-            "sign_method": "sha256",
             "code": code,
+            "sign_method": "sha256",
+            "timestamp": str(int(time.time() * 1000))
         }
 
-        # ✅ สร้าง signature ตามที่ Lazada กำหนด
-        sorted_params = "".join([f"{k}{v}" for k, v in sorted(params.items())])
-        sign_base = LAZADA_APP_SECRET + sorted_params + LAZADA_APP_SECRET
-        sign = hmac.new(
+        # ✅ เรียงตามชื่อ A-Z
+        sorted_items = sorted(params.items())
+        concatenated = ''.join([f"{k}{v}" for k, v in sorted_items])
+
+        # ✅ สร้าง base string และเซ็นด้วย HMAC-SHA256
+        base_string = path + concatenated
+        sign_bytes = hmac.new(
             LAZADA_APP_SECRET.encode("utf-8"),
-            sign_base.encode("utf-8"),
+            base_string.encode("utf-8"),
             hashlib.sha256
         ).hexdigest().upper()
 
-        # เพิ่ม sign เข้าไปใน params
-        params["sign"] = sign
+        params["sign"] = sign_bytes
 
-        print("📡 Requesting Lazada token with params:", params)
+        # 🧩 DEBUG LOG DETAIL
+        print("\n==================== LAZADA TOKEN DEBUG ====================")
+        print("⏰ Local UTC Time:", time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
+        print("🌍 Endpoint URL:", url)
+        print("🧾 Raw Parameters (Before sort):", json.dumps(params, indent=2))
+        print("🔡 Sorted & Concatenated Params:", concatenated)
+        print("🧮 Base String to Sign:", base_string)
+        print("🔐 App Secret (hidden):", LAZADA_APP_SECRET[:4] + "..." + LAZADA_APP_SECRET[-4:])
+        print("✅ Generated Signature:", sign_bytes)
+        print("📤 Sending POST request to Lazada...")
+        print("============================================================\n")
 
-        # ส่ง POST request ไปยัง API
+        # ✅ ส่ง request (ใช้ POST)
         response = requests.post(url, data=params, timeout=10)
-        response.raise_for_status()
 
-        data = response.json()
-        print("🔹 Lazada token response:", data)
+        print("📬 HTTP Status Code:", response.status_code)
+        print("📜 Raw Response Text:", response.text)
+
+        try:
+            data = response.json()
+        except Exception:
+            print("⚠️ Failed to decode JSON, raw text returned.")
+            data = {"raw_text": response.text}
+
+        print("🔹 Lazada token response:", json.dumps(data, indent=2))
+        print("============================================================\n")
+
         return data
 
     except Exception as e:
