@@ -157,14 +157,19 @@ async def lazada_callback(request: Request):
     expires_in = data.get("expires_in")
     refresh_expires_in = data.get("refresh_expires_in")
     
-    save_token(
-        platform="lazada",
-        account_id=account,
-        access_token=access_token,
-        refresh_token=refresh_token,
-        expires_in=expires_in,
-        refresh_expires_in=refresh_expires_in
-    )
+    try:
+        save_token(
+            platform="lazada",
+            account_id=account,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=expires_in,
+            refresh_expires_in=refresh_expires_in
+        )
+        print(f"✅ Lazada token saved to Google Sheet for account: {account}")
+    except Exception as e:
+        print(f"❌ Failed to save Lazada token to Google Sheet: {e}")
+
 
     print(f"✅ Lazada Authorized & Saved: {account}")
     return {

@@ -56,37 +56,71 @@ def sheet_to_df(sheet):
 
 # บันทึก Token ลง Google Sheet
 def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
-    now = datetime.now()
-    # Access Token expiry
-    expired_at = (now + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
-
-    # Refresh Token expiry
-    refresh_expired_at = ""
-    if platform.lower() == "shopee":
-        # Shopee refresh token มีอายุ 30 วัน → คำนวณเอง
-        refresh_expired_at = (now + timedelta(days=30)).isoformat()
-    elif refresh_expires_in:  
-        # Lazada หรือ platform อื่นที่ส่งค่ามา
-        refresh_expired_at = (now + timedelta(seconds=refresh_expires_in)).isoformat()
-
-    account_id_str = str(account_id).strip()
-    
     try:
-    # ค้นหาแถวที่ตรงกับ platform + account_id
-        cell_platform = sheet.find(str(platform).strip(), in_column=1)  # สมมติ platform อยู่ column A
-        row_idx = cell_platform.row
-        # ตรวจสอบ account_id ด้วย
-        if str(sheet.cell(row_idx, 2).value).strip() == account_id_str:  # account_id column B
-            # update แถว
-            sheet.update(f"A{row_idx}:G{row_idx}", [[
-                platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
-            ]])
-            return
-    except gspread.CellNotFound:
-        # ถ้าไม่เจอ → append row ใหม่
+        sheet = get_sheet()  # โหลด sheet ทุกครั้งที่บันทึก
+        now = datetime.now()
+        expired_at = (now + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
+        refresh_expired_at = ""
+        if platform.lower() == "shopee":
+            refresh_expired_at = (now + timedelta(days=30)).isoformat()
+        elif refresh_expires_in:
+            refresh_expired_at = (now + timedelta(seconds=refresh_expires_in)).isoformat()
+
+        account_id_str = str(account_id).strip()
+
+        # หาแถวที่ตรงกับ platform + account_id
+        try:
+            cell_platform = sheet.find(str(platform).strip(), in_column=1)
+            row_idx = cell_platform.row
+            if str(sheet.cell(row_idx, 2).value).strip() == account_id_str:
+                sheet.update(f"A{row_idx}:G{row_idx}", [[
+                    platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+                ]])
+                print(f"✅ Updated existing token row {row_idx}")
+                return
+        except gspread.CellNotFound:
+            pass  # ไม่เจอแถวที่ตรงกัน
+
+        # ถ้าไม่เจอแถว append ใหม่
         sheet.append_row([
             platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
         ])
+        print("✅ Appended new token row")
+
+    except Exception as e:
+        print(f"❌ Exception in save_token: {e}")
+# def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
+#     now = datetime.now()
+#     # Access Token expiry
+#     expired_at = (now + timedelta(seconds=expires_in)).isoformat() if expires_in else ""
+
+#     # Refresh Token expiry
+#     refresh_expired_at = ""
+#     if platform.lower() == "shopee":
+#         # Shopee refresh token มีอายุ 30 วัน → คำนวณเอง
+#         refresh_expired_at = (now + timedelta(days=30)).isoformat()
+#     elif refresh_expires_in:  
+#         # Lazada หรือ platform อื่นที่ส่งค่ามา
+#         refresh_expired_at = (now + timedelta(seconds=refresh_expires_in)).isoformat()
+
+#     account_id_str = str(account_id).strip()
+    
+#     try:
+#     # ค้นหาแถวที่ตรงกับ platform + account_id
+#         cell_platform = sheet.find(str(platform).strip(), in_column=1)  # สมมติ platform อยู่ column A
+#         row_idx = cell_platform.row
+#         # ตรวจสอบ account_id ด้วย
+#         if str(sheet.cell(row_idx, 2).value).strip() == account_id_str:  # account_id column B
+#             # update แถว
+#             sheet.update(f"A{row_idx}:G{row_idx}", [[
+#                 platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+#             ]])
+#             return
+#     except gspread.CellNotFound:
+#         # ถ้าไม่เจอ → append row ใหม่
+#         sheet.append_row([
+#             platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
+#         ])
 
 
 # ดึง Token ล่าสุด
