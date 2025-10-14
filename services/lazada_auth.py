@@ -90,28 +90,25 @@ def lazada_generate_sign(params, app_secret):
     ).hexdigest().upper()
     return sign
 def lazada_exchange_token(code: str):
-    
-    # ✅ Timestamp (UTC milliseconds)
+    import time, hmac, hashlib, requests
+
     timestamp = str(int(time.time() * 1000))
 
-    # ✅ พารามิเตอร์ที่ต้องใช้ (เรียง A-Z ทีหลัง)
     params = {
         "app_key": LAZADA_APP_ID,
         "code": code,
-        # "grant_type": "authorization_code",
-        # "redirect_uri": LAZADA_REDIRECT_URI,
         "sign_method": "sha256",
         "timestamp": timestamp
     }
 
-    # ✅ เรียงตาม A-Z
+    # เรียงตามตัวอักษร A-Z
     sorted_params = sorted(params.items(), key=lambda x: x[0])
     concatenated_params = "".join(f"{k}{v}" for k, v in sorted_params)
 
-    # ✅ Lazada ต้องการให้ base string มี secret คั่นหัว–ท้าย
+    # Base string = secret + concatenated_params + secret
     base_str = f"{LAZADA_APP_SECRET}{concatenated_params}{LAZADA_APP_SECRET}"
 
-    # ✅ สร้าง sign
+    # สร้าง HMAC-SHA256 sign
     sign = hmac.new(
         LAZADA_APP_SECRET.encode("utf-8"),
         base_str.encode("utf-8"),
@@ -122,14 +119,17 @@ def lazada_exchange_token(code: str):
 
     print("🧾 Base string:", base_str)
     print("✅ Sign:", sign)
+    print("📤 Payload:", params)
 
     url = "https://auth.lazada.com/rest/auth/token/create"
-    response = requests.post(url, data=params)
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    response = requests.post(url, data=params, headers=headers)
     print("status_code:", response.status_code)
     print("resp.text:", response.text)
 
     return response.json()
-
 # def lazada_exchange_token(code: str):
 #     import requests
 
