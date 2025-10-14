@@ -90,46 +90,42 @@ def lazada_generate_sign(params, app_secret):
     ).hexdigest().upper()
     return sign
 def lazada_exchange_token(code: str):
-    import time, hmac, hashlib, requests
+    """
+    แลก authorization code จาก Lazada เพื่อขอ access_token และ refresh_token
+    """
+    try:
+        url = "https://auth.lazada.com/rest/auth/token/create"
 
-    timestamp = str(int(time.time() * 1000))
+        # Lazada ต้องการพารามิเตอร์เหล่านี้
+        params = {
+            "app_key": LAZADA_APP_ID,
+            "timestamp": str(int(time.time() * 1000)),
+            "sign_method": "sha256",
+            "code": code,
+        }
 
-    params = {
-        "app_key": LAZADA_APP_ID,
-        "code": code,
-        "sign_method": "sha256",
-        "timestamp": timestamp
-    }
+        # ✅ สร้าง signature ตามที่ Lazada กำหนด
+        # Signature = UpperCase(HMAC_SHA256(app_secret, sorted_params))
+        sorted_params = "".join([f"{k}{v}" for k, v in sorted(params.items())])
+        sign_base = LAZADA_APP_SECRET + sorted_params + LAZADA_APP_SECRET
+        sign = hmac.new(LAZADA_APP_SECRET.encode("utf-8"), sign_base.encode("utf-8"), hashlib.sha256).hexdigest().upper()
 
-    # เรียงตามตัวอักษร A-Z
-    sorted_params = sorted(params.items(), key=lambda x: x[0])
-    concatenated_params = "".join(f"{k}{v}" for k, v in sorted_params)
+        # เพิ่ม sign เข้าไปใน params
+        params["sign"] = sign
 
-    # Base string = secret + concatenated_params + secret
-    base_str = f"{LAZADA_APP_SECRET}{concatenated_params}{LAZADA_APP_SECRET}"
+        print("📡 Requesting Lazada token with params:", params)
 
-    # สร้าง HMAC-SHA256 sign
-    sign = hmac.new(
-        LAZADA_APP_SECRET.encode("utf-8"),
-        base_str.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest().upper()
+        # ส่ง POST request ไปยัง API
+        response = requests.post(url, data=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        print("🔹 Lazada token response:", response.json())
+        print("🔹 data", data())
+        return data
 
-    params["sign"] = sign
-
-    print("🧾 Base string:", base_str)
-    print("✅ Sign:", sign)
-    print("📤 Payload:", params)
-
-    url = "https://auth.lazada.com/rest/auth/token/create"
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
-    response = requests.post(url, data=params, headers=headers)
-    print("status_code:", response.status_code)
-    print("resp.text:", response.text)
-
-    return response.json()
+    except Exception as e:
+        print("❌ Error exchanging token:", str(e))
+        return {"error": str(e)}
 # def lazada_exchange_token(code: str):
 #     import requests
 
