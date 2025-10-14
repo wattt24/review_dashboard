@@ -105,10 +105,13 @@ def lazada_exchange_token(code: str):
         }
 
         # ✅ สร้าง signature ตามที่ Lazada กำหนด
-        # Signature = UpperCase(HMAC_SHA256(app_secret, sorted_params))
         sorted_params = "".join([f"{k}{v}" for k, v in sorted(params.items())])
         sign_base = LAZADA_APP_SECRET + sorted_params + LAZADA_APP_SECRET
-        sign = hmac.new(LAZADA_APP_SECRET.encode("utf-8"), sign_base.encode("utf-8"), hashlib.sha256).hexdigest().upper()
+        sign = hmac.new(
+            LAZADA_APP_SECRET.encode("utf-8"),
+            sign_base.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest().upper()
 
         # เพิ่ม sign เข้าไปใน params
         params["sign"] = sign
@@ -118,9 +121,9 @@ def lazada_exchange_token(code: str):
         # ส่ง POST request ไปยัง API
         response = requests.post(url, data=params, timeout=10)
         response.raise_for_status()
+
         data = response.json()
-        print("🔹 Lazada token response:", response.json())
-        print("🔹 data", data())
+        print("🔹 Lazada token response:", data)
         return data
 
     except Exception as e:

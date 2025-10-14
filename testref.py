@@ -12,7 +12,7 @@ import hmac
 import hashlib
 import requests
 import datetime
-# from utils.config import PARTNER_ID, PARTNER_KEY, SHOP_ID, REFRESH_TOKEN
+from utils.config import PARTNER_ID, PARTNER_KEY, SHOP_ID, REFRESH_TOKEN
 
 # def get_shopee_access_token():
 #     """
