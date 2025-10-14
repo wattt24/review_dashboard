@@ -4,6 +4,7 @@ import urllib.parse
 import os
 import time, hmac, hashlib
 import requests
+import json
 from datetime import datetime
 from datetime import datetime, timedelta
 from utils.token_manager import get_gspread_client , save_token , get_latest_token# ถ้าจะเก็บ mapping ลง Google Sheet
