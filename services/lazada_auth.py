@@ -106,16 +106,18 @@ def lazada_exchange_token(code: str):
 
     # ✅ เรียงตาม A-Z
     sorted_params = sorted(params.items(), key=lambda x: x[0])
-    base_str = "".join(f"{k}{v}" for k, v in sorted_params)
+    concatenated_params = "".join(f"{k}{v}" for k, v in sorted_params)
 
-    # ✅ สร้าง sign ด้วย HMAC-SHA256
+    # ✅ Lazada ต้องการให้ base string มี secret คั่นหัว–ท้าย
+    base_str = f"{LAZADA_APP_SECRET}{concatenated_params}{LAZADA_APP_SECRET}"
+
+    # ✅ สร้าง sign
     sign = hmac.new(
         LAZADA_APP_SECRET.encode("utf-8"),
         base_str.encode("utf-8"),
         hashlib.sha256
     ).hexdigest().upper()
 
-    # ✅ เพิ่ม sign ลงใน payload
     params["sign"] = sign
 
     print("🧾 Base string:", base_str)
