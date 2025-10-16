@@ -1,3 +1,4 @@
+#main.py
 from apscheduler.schedulers.blocking import BlockingScheduler
 import time
 from api.fujikathailand_rest_api import fetch_store_fujikathailand_reviews, fetch_comments_fujikathailand_reviews
