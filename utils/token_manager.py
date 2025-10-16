@@ -2,10 +2,11 @@
 # utils/token_manager.py
 import os , json
 import pandas as pd
-import gspread
+from gspread.exceptions import GSpreadException
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials 
 import streamlit as st
+import gspread
 
 # ===== Google Sheet Setup =====
 scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
@@ -32,11 +33,6 @@ client = get_gspread_client()
 # โหลด Sheet ID (มีแค่ตัวเดียว)
 GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID") or st.secrets.get("GOOGLE_SHEET_ID")
 
-if not GOOGLE_SHEET_ID:
-    st.error("❌ ไม่พบ GOOGLE_SHEET_ID ใน environment หรือ st.secrets")
-else:
-    sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
-
 # ===== Utility functions =====
 def get_sheet():
     """คืนค่า gspread sheet object"""
@@ -47,10 +43,24 @@ def get_sheet():
 # คำสะั่งไว้เรียกGOOGLE_SHEET_ID ใช้ sheet1 = get_sheet("form1")
 # เรียกCONTACT_INFORMATION_SHEET_ID ใช้ sheet2 = get_sheet("form2")
 def sheet_to_df(sheet):
-    data = sheet.get_all_records()
+    expected_headers = [
+        "platform",
+        "account_id",
+        "access_token",
+        "refresh_token",
+        "expired_at",
+        "refresh_expired_at",
+        "updated_at"
+    ]
+    # ใช้ expected_headers เพื่อให้ gspread ไม่สนใจ column ว่าง
+    data = sheet.get_all_records(expected_headers=expected_headers)
+    
     df = pd.DataFrame(data)
+    
+    # ถ้ามี column Timestamp
     if "Timestamp" in df.columns:
         df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce")
+    
     return df
 
 
@@ -78,7 +88,7 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
                 ]])
                 print(f"✅ Updated existing token row {row_idx}")
                 return
-        except gspread.CellNotFound:
+        except GSpreadException:
             pass  # ไม่เจอแถวที่ตรงกัน
 
         # ถ้าไม่เจอแถว append ใหม่
@@ -89,6 +99,43 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
 
     except Exception as e:
         print(f"❌ Exception in save_token: {e}")
+
+
+
+# ดึง Token ล่าสุด
+def get_latest_token(platform, account_id):
+    try:
+        sheet = get_sheet()
+        expected_headers = [
+            "platform",
+            "account_id",
+            "access_token",
+            "refresh_token",
+            "expired_at",
+            "refresh_expired_at",
+            "updated_at"
+        ]
+        records = sheet.get_all_records(expected_headers=expected_headers)
+        account_id_str = str(account_id).strip()
+        print(f"Searching token for {platform}:{account_id_str}")
+        print("ให้อ่านทุกแถวไม่ต้องตกใจ")
+        for record in records:
+            print(record.get("platform"), record.get("account_id"))
+            if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
+            and str(record.get("account_id", "")).strip() == account_id_str:
+                return {
+                    "access_token": record.get("access_token", ""),
+                    "refresh_token": record.get("refresh_token", ""),
+                    "expired_at": record.get("expired_at"),
+                    "refresh_expired_at": record.get("refresh_expired_at")
+                }
+
+    except Exception as e:
+        print("❌ get_latest_token error:", str(e))
+    return None
+
+
+
 # def save_token(platform, account_id, access_token, refresh_token, expires_in=None, refresh_expires_in=None):
 #     now = datetime.now()
 #     # Access Token expiry
@@ -121,28 +168,3 @@ def save_token(platform, account_id, access_token, refresh_token, expires_in=Non
 #         sheet.append_row([
 #             platform, account_id_str, access_token, refresh_token, expired_at, refresh_expired_at, datetime.now().isoformat()
 #         ])
-
-
-# ดึง Token ล่าสุด
-def get_latest_token(platform, account_id):
-    try:
-        sheet = get_sheet()
-        records = sheet.get_all_records()
-        account_id_str = str(account_id).strip()
-        print(f"Searching token for {platform}:{account_id_str}")
-        for record in records:
-            print(record.get("platform"), record.get("account_id"))
-            if str(record.get("platform", "")).strip().lower() == str(platform).strip().lower() \
-            and str(record.get("account_id", "")).strip() == account_id_str:
-                return {
-                    "access_token": record.get("access_token", ""),
-                    "refresh_token": record.get("refresh_token", ""),
-                    "expired_at": record.get("expired_at"),
-                    "refresh_expired_at": record.get("refresh_expired_at")
-                }
-
-    except Exception as e:
-        print("❌ get_latest_token error:", str(e))
-    return None
-
-

@@ -140,7 +140,7 @@ def fetch_sales_and_buyers_all(order_status="completed", per_page=100, timeout=1
     return sales_data, buyers_list, total_orders
 
 
-# -------------------- รวมสินค้า + ยอดขาย + ผู้ซื้อ --------------------
+#รวมสินค้า + ยอดขาย + ผู้ซื้อ
 # ดึงข้อมูลสินค้าพร้อมยอดขายและรายชื่อผู้ซื้อ
   
 def fetch_all_product_sales():
@@ -170,7 +170,7 @@ def summarize_buyers_with_quantity(buyers_list):
 
 
 # post
-# -------------------- ดึงโพสต์ --------------------
+#ดึงโพสต์
 def fetch_posts(per_page=10):
     """
     ดึงโพสต์จาก WordPress REST API
@@ -185,7 +185,7 @@ def fetch_posts(per_page=10):
     resp.raise_for_status()
     return resp.json()
 
-# -------------------- ดึงคอมเมนต์ --------------------
+#ดึงคอมเมนต์
 def fetch_comments(post_id):
     """
     ดึงคอมเมนต์ของโพสต์
@@ -200,8 +200,8 @@ def fetch_comments(post_id):
     resp.raise_for_status()
     return resp.json()
 
-# ดึงรีวิวจากสินค้าที่มีการให้คะแนน
-def fetch_store_wc_reviews(shop_id= "fujikathailand",per_page=100):
+# ดึงรีวิวจากสินค้าที่มีการให้คะแนน ไปที่ database.all_database
+def fetch_store_fujikathailand_reviews(shop_id= "Fujikathailand",per_page=100):
     
     url = f"{WOOCOMMERCE_URL}/wp-json/wc/v3/products/reviews"
     params = {"per_page": per_page}
@@ -229,10 +229,10 @@ def fetch_store_wc_reviews(shop_id= "fujikathailand",per_page=100):
             "product_id": r.get("product_id")      # ใช้ product id จาก Woo
         })
 
-    save_reviews_to_db(processed, platform="Wordpress", shop_id = shop_id)
+    save_reviews_to_db(processed, platform="Website_Wordpress", shop_id = shop_id)
 
-# ดึงในคอมเมนต์ทั่วไปจ้า
-def fetch_comments_reviews(shop_id= "fujikathailand"):
+# ดึงในคอมเมนต์ทั่วไปจ้า ไปที่ database.all_database
+def fetch_comments_fujikathailand_reviews(shop_id= "Fujikathailand"):
     wp_base_url = "https://www.fujikathailand.com/wp-json/wp/v2"
     api_url = f"{wp_base_url}/comments?per_page=100"
     auth = HTTPBasicAuth(FUJIKA_WP_USER, FUJIKA_WP_APP_PASSWORD_API_ACCESS)
@@ -255,4 +255,4 @@ def fetch_comments_reviews(shop_id= "fujikathailand"):
             "product_id": None
         })
     print(f"✅ ดึง {len(wp_reviews)} รีวิวจาก WordPress")
-    save_reviews_to_db(processed, platform="Wordpress", shop_id = shop_id)
+    save_reviews_to_db(processed, platform="Website_Wordpress", shop_id = shop_id)

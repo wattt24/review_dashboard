@@ -8,7 +8,7 @@ from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_SHOP_
 partner_id = 2012650
 partner_key = "shpk746161577650576364596f5657646c596b49705772546b4a52446a416b42"
 shop_id = 57360480
-access_token = "71704c546764554b6e427065654d4678"
+access_token = "eyJhbGciOiJIUzI1NiJ9.COrrehABGOCArRsgASipnL3HBjD88e3jCzgBQAE.cYvkR8091JkyjaRCKHPT1NZI009rK13s9gdg_960Le4"
 # ======= ฟังก์ชันสร้าง sign =======
 def shopee_generate_sign(path, timestamp, shop_id, access_token ):
     print(">>> DEBUG shop_id param:", shop_id)
@@ -26,12 +26,19 @@ def shopee_generate_sign(path, timestamp, shop_id, access_token ):
     return sign
 
 
-# # ======= เรียก API =======
-# path = "/api/v2/shop/get_shop_info"
-# timestamp = int(time.time())
 
-# # เรียกใช้ฟังก์ชัน generate sign
-# sign = shopee_generate_sign(path, timestamp, shop_id, access_token)
+
+
+
+# item_id = 1039005306  # 🟢 item_id ที่ต้องการดูรีวิว
+
+# timestamp = int(time.time())
+# path = "/api/v2/product/get_comment"
+
+# base_string = f"{partner_id}{path}{timestamp}{access_token}{shop_id}"
+# sign = hmac.new(
+#     partner_key.encode("utf-8"), base_string.encode("utf-8"), hashlib.sha256
+# ).hexdigest()
 
 # url = (
 #     f"https://partner.shopeemobile.com{path}"
@@ -40,45 +47,13 @@ def shopee_generate_sign(path, timestamp, shop_id, access_token ):
 #     f"&shop_id={shop_id}"
 #     f"&timestamp={timestamp}"
 #     f"&sign={sign}"
+#     f"&item_id={item_id}"
+#     f"&page_size=50"
 # )
-
-# print("Base string:", f"{partner_id}{path}{timestamp}{access_token}{shop_id}")
-# print("Sign:", sign)
-# print("URL:", url)
-# print("timestamp:", timestamp)
-# print("human time:", datetime.datetime.fromtimestamp(timestamp))
 
 # response = requests.get(url)
 # data = response.json()
-
-# # ======= แสดงข้อมูลร้าน =======
-# print(data)
-
-
-item_id = 1039005306  # 🟢 item_id ที่ต้องการดูรีวิว
-
-timestamp = int(time.time())
-path = "/api/v2/product/get_comment"
-
-base_string = f"{partner_id}{path}{timestamp}{access_token}{shop_id}"
-sign = hmac.new(
-    partner_key.encode("utf-8"), base_string.encode("utf-8"), hashlib.sha256
-).hexdigest()
-
-url = (
-    f"https://partner.shopeemobile.com{path}"
-    f"?access_token={access_token}"
-    f"&partner_id={partner_id}"
-    f"&shop_id={shop_id}"
-    f"&timestamp={timestamp}"
-    f"&sign={sign}"
-    f"&item_id={item_id}"
-    f"&page_size=50"
-)
-
-response = requests.get(url)
-data = response.json()
-print(json.dumps(data, indent=2, ensure_ascii=False))
+# print(json.dumps(data, indent=2, ensure_ascii=False))
 
 
 # response = requests.get(url)

@@ -1,5 +1,6 @@
 # api/shopee_api.py
 import os, json
+import datetime
 import time, hmac, hashlib, requests
 import urllib.parse
 from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_SHOP_ID)
@@ -10,7 +11,7 @@ def get_shopee_access_token(shop_id: str, force_refresh: bool = False):
     """
     ดึง access_token จาก Google Sheet และ auto-refresh ถ้าจำเป็น
     """
-    token = get_latest_token("shopee", shop_id, force=force_refresh)
+    token = get_latest_token("shopee", shop_id)
     if token:
         return token
     # fallback กรณี refresh ไม่สำเร็จ → ดึง token ล่าสุดที่บันทึกไว้
@@ -30,7 +31,42 @@ def shopee_generate_sign(path, timestamp, shop_id, access_token ):
     print("BASE STRING:", base_string)
     print("GENERATED SIGN:", sign)  # ดู sign ที่สร้าง
     return sign
+# ใช้เรียกดูรายละเอียดร้านได้แล้ว
+def get_shopee_shop_info(shop_id, access_token): #    shop_info = get_shopee_shop_info(shop_id, access_token) 
+    """
+    ดึงข้อมูลร้านจาก Shopee API
+    """
+    path = "/api/v2/shop/get_shop_info"
+    timestamp = int(time.time())
 
+    # สร้าง sign
+    sign = shopee_generate_sign(path, timestamp, shop_id, access_token)
+
+    # ประกอบ URL เรียก API
+    url = (
+        f"https://partner.shopeemobile.com{path}"
+        f"?access_token={access_token}"
+        f"&partner_id={SHOPEE_PARTNER_ID}"
+        f"&shop_id={shop_id}"
+        f"&timestamp={timestamp}"
+        f"&sign={sign}"
+    )
+
+    print("🔹 Base string:", f"{SHOPEE_PARTNER_ID}{path}{timestamp}{access_token}{shop_id}")
+    print("🔹 Sign:", sign)
+    print("🔹 URL:", url)
+    print("🔹 Timestamp:", timestamp)
+    print("🔹 Human time:", datetime.datetime.fromtimestamp(timestamp))
+
+    # เรียก API
+    response = requests.get(url)
+    data = response.json()
+
+    print("\n📦 Shopee Shop Info Response:")
+    print(data)
+
+    return data
+# ใช้ได้ เรียกดู global ของ Shopee
 def shopee_get_categories(shop_id, language="en"):
     path = "/api/v2/product/get_category"
     base_url = "https://partner.shopeemobile.com"
@@ -57,6 +93,7 @@ def shopee_get_categories(shop_id, language="en"):
     response = requests.get(url, params=params)
     return response.json()
 
+# ยังใช้ไม่ได้ ค่าว่าง
 def shopee_get_item_list(shop_id, access_token, page_size=100, offset=0):
     path = "/api/v2/product/get_item_list"
     timestamp = int(time.time())

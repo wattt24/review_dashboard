@@ -19,3 +19,4 @@ pythainlp
 textblob
 beautifulsoup4
 matplotlib
+altair

@@ -157,10 +157,11 @@ async def lazada_callback(request: Request):
     expires_in = data.get("expires_in")
     refresh_expires_in = data.get("refresh_expires_in")
     
+    seller_id = data.get("account") # test 
     try:
         save_token(
             platform="lazada",
-            account_id=account,
+            account_id=seller_id,  # test เดิมคือ account_id=account,
             access_token=access_token,
             refresh_token=refresh_token,
             expires_in=expires_in,
