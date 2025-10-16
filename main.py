@@ -40,7 +40,7 @@ if __name__ == "__main__":
     print("⏰ Scheduler started, refreshing every 12600 วินาที ")
 
     # Lazada: ทุก 20 วัน (20 * 24 * 60 * 60 = 1,728,000 วินาที)
-    scheduler.add_job(refresh_lazada_token_job, "interval", days=20, id="lazada_refresh")
+    scheduler.add_job(refresh_lazada_token_job, "interval", days=20, id=LAZADA_ACCOUNT_SELLER_ID)
 
 
     # 2️ รีวิว: ดึงข้อมูลทุกวันตอนตี 3
