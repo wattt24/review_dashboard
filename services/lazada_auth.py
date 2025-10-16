@@ -187,7 +187,7 @@ def lazada_refresh_access_token(account_id):
     🔄 รีเฟรช Lazada Access Token ผ่าน Lazop SDK และบันทึกลง Google Sheet
     """
     # ดึง refresh_token ล่าสุดจาก Google Sheet
-    token_data = get_latest_token(platform="lazada", account_id=account_id)
+    token_data = get_latest_token(platform="lazada", account_id=seller_id)
     if not token_data or not token_data.get("refresh_token"):
         print(f"❌ ไม่พบ refresh_token สำหรับ account_id {account_id}")
         return None
@@ -197,7 +197,7 @@ def lazada_refresh_access_token(account_id):
     print("\n================ Lazada API Debug Info ================")
     print(f"🔹 API Name: /auth/token/refresh")
     print(f"🔹 Refresh Token: {refresh_token}")
-    print(f"🔹 Account ID: {account_id}")
+    print(f"🔹 Account ID: {seller_id}")
     print("=======================================================\n")
 
     # เรียกผ่าน SDK ด้วยฟังก์ชันกลาง

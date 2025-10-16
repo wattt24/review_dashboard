@@ -3,9 +3,9 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import time
 from api.fujikathailand_rest_api import fetch_store_fujikathailand_reviews, fetch_comments_fujikathailand_reviews
 import datetime
-LAZADA_ACCOUNT_ID = "pirattapong.v@gmail.com"
+
 from  services.shopee_auth import shopee_refresh_access_token  # import ฟังก์ชัน
-from utils.config import SHOPEE_PARTNER_ID, SHOPEE_PARTNER_KEY, SHOPEE_SHOP_ID
+from utils.config import SHOPEE_PARTNER_ID, SHOPEE_PARTNER_KEY, SHOPEE_SHOP_ID, LAZADA_ACCOUNT_SELLER_ID
 from services.lazada_auth import lazada_refresh_access_token
 # ====== ตั้งค่า Shopee ======
 def refresh_token_job():
@@ -16,7 +16,7 @@ def refresh_token_job():
 def refresh_lazada_token_job():
     print(f"🔄 [Lazada Refresh Job] {datetime.datetime.now()}")
     try:
-        lazada_refresh_access_token(account_id=LAZADA_ACCOUNT_ID)
+        lazada_refresh_access_token(account_id=LAZADA_ACCOUNT_SELLER_ID)
         print("✅ Lazada token refreshed successfully\n")
     except Exception as e:
         print(f"❌ Lazada refresh failed: {e}\n")

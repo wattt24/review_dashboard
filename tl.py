@@ -88,6 +88,24 @@ def call_lazada_api(endpoint, method="GET", params=None, account_id=LAZADA_ACCOU
     except Exception as e:
         print(f"❌ Error calling Lazada API: {str(e)}")
         return {"error": str(e)}
+    
+def lazada_get_seller_info():
+    """
+    ดึงข้อมูลร้าน (Seller Info) ของบัญชีที่เชื่อมต่อไว้
+    เช่น seller_id, name, email, country, shop_name ฯลฯ
+    """
+    response = call_lazada_api(
+        endpoint="/seller/get",
+        method="GET"
+    )
+
+    if not response or response.get("code") != "0":
+        print("❌ Error fetching seller info:", response)
+        return None
+
+    data = response.get("data", {})
+    print("✅ ข้อมูลร้าน:", json.dumps(data, indent=2, ensure_ascii=False))
+    return data
 
 # ====== ฟังก์ชันย่อยเฉพาะ ======
 
@@ -253,8 +271,16 @@ def get_all_reviews_for_item_list(item_id_list, days_back=7):
 
 # ===== ทดสอบเรียกใช้งาน =====
 if __name__ == "__main__":
-    products_response = lazada_get_products(offset=0, limit=10)
-    print(json.dumps(products_response, indent=2, ensure_ascii=False))
+    seller_info = lazada_get_seller_info()
+
+    if seller_info:
+        print("\n🎯 รายละเอียดร้าน:")
+        print("🆔 Seller ID:", seller_info.get("seller_id"))
+        print("🏪 ชื่อร้าน:", seller_info.get("shop_name"))
+        print("📧 อีเมล:", seller_info.get("email"))
+        
+    # products_response = lazada_get_products(offset=0, limit=10)
+    # print(json.dumps(products_response, indent=2, ensure_ascii=False))
     # active_item_ids = lazada_check_get_all_active_item_ids(limit=50)
 
     # # แสดงผลลัพธ์
