@@ -6,7 +6,7 @@ from requests.auth import HTTPBasicAuth
 import pandas as pd
 from utils.config import FUJIKA_SERVICE_SITE_URL, FUJIKA_SERVICE_CONSUMER_KEY, FUJIKA_SERVICE_CONSUMER_SECRET
 
-def fetch_all_products(per_page=100):
+def fetch_all_products_fujikaservice(per_page=100):
     """
     ดึงข้อมูล Products จาก WooCommerce
     คืนค่าเป็น DataFrame

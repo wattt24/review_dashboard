@@ -9,7 +9,7 @@ import altair as alt
 import plotly.express as px
 import matplotlib.pyplot as plt
 from utils.token_manager import get_gspread_client
-from api.fujikaservice_rest_api import fetch_all_products
+from api.fujikaservice_rest_api import fetch_all_products_fujikaservice
 from datetime import datetime, timedelta
 from database.all_database import get_all_reviews, get_reviews_by_period
 from database.all_database import get_connection
@@ -781,10 +781,10 @@ def app():
 
             # ===== ดึงข้อมูล products =====
             @st.cache_data(ttl=600)
-            def get_products():
-                return fetch_all_products()
+            def get_products_fujikaservice():
+                return fetch_all_products_fujikaservice()
 
-            df_products = get_products()
+            df_products = get_products_fujikaservice()
 
             if df_products.empty:
                 st.warning("ไม่มีข้อมูลสินค้า")
