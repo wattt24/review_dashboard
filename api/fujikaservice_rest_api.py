@@ -8,7 +8,7 @@ from utils.config import FUJIKA_SERVICE_SITE_URL, FUJIKA_SERVICE_CONSUMER_KEY, F
 
 import pandas as pd
 
-def get_products_fujikaservice(per_page=100):
+def fetch_all_products_fujikaservice(per_page=100):
     """
     ดึงข้อมูล Products จาก WooCommerce ของ FujikaService
     คืนค่าเป็น DataFrame
