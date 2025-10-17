@@ -20,3 +20,8 @@ textblob
 beautifulsoup4
 matplotlib
 altair
+transformers
+psycopg2-binary
+torch
+
+

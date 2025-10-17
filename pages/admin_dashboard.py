@@ -15,6 +15,7 @@ from database.all_database import get_all_reviews, get_reviews_by_period
 from database.all_database import get_connection
 from api.fujikaservice_rest_api import *
 from api.facebook_graph_api import get_page_info, get_page_posts, get_page_reviews
+from api.line_oa_processing import fetch_line_messages, analyze_messages, summarize_categories, summarize_confidence
 from utils.config import FACEBOOK_PAGE_HEATER_ID, FACEBOOK_PAGE_BBQ_ID
 from services.gsc_fujikathailand import *  # ดึง DataFrame จากไฟล์ก่อนหน้า
 st.set_page_config(page_title="Fujika Dashboard",page_icon="🌎", layout="wide")
@@ -256,10 +257,10 @@ def app():
             "📰 Fujikathailand.com",
             "🏭 CPSManu.com",
             "🛠️ FujikaService.com",
-            "🛍️ Shopee",
-            "📦 Lazada",
-            "📘 Facebook Page/Ads",
-            "💬 LINE Official Account"
+            " Shopee",
+            " Lazada",
+            "📘 Facebook",
+            "💬 LINE OA"
         ])
 
     
@@ -914,6 +915,52 @@ def app():
 
         # --------------------- 7. LINE OA ---------------------
         with tabs[6]:
-            st.header("💬 LINE OA Insights")
-            # insights = line_oa_scraper.get_line_oa_insight()
-            # st.json(insights)
+            st.header("💬 LINE OA ")
+            st.title("📊 LINE Messages Dashboard")
+
+            st.info("โหลดข้อความจากฐานข้อมูลและวิเคราะห์หมวดหมู่โดยโมเดล")
+
+            # ดึงข้อมูล
+            df_messages = fetch_line_messages()
+            st.write(f"ตอนนี้มีข้อมูลจาก line messages {len(df_messages)} รายการ")
+
+            # ปุ่มวิเคราะห์
+            with st.spinner("🔍 กำลังวิเคราะห์ข้อความ..."):
+                df_analyzed = analyze_messages(df_messages)
+
+            # แสดงผลในตาราง scrollable
+            
+            st.success("✅ วิเคราะห์เสร็จแล้ว")
+            category_summary = summarize_categories(df_analyzed)
+            # สร้าง pie chart
+            fig_category = px.pie(
+                category_summary,
+                names="Category",
+                values="Count",
+                title="📊 สัดส่วนข้อความตาม Category",
+                color_discrete_sequence=px.colors.qualitative.Set2
+            )
+            st.plotly_chart(fig_category, use_container_width=True)
+
+            # สรุปความมั่นใจของโมเดล
+            confidence_summary = summarize_confidence(df_analyzed)
+            # สร้าง bar chart
+            fig_confidence = px.bar(
+                confidence_summary,
+                x="category",
+                y="ความมั่นใจเฉลี่ย",
+                color="category",
+                text="ความมั่นใจเฉลี่ย",
+                title="📊 ความมั่นใจเฉลี่ยของโมเดลตาม Category",
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            fig_confidence.update_traces(textposition='outside')
+            fig_confidence.update_layout(yaxis=dict(range=[0,1]))
+            st.plotly_chart(fig_confidence, use_container_width=True)
+
+            # แสดง DataFrame ของข้อความทั้งหมด
+            st.subheader("📋 ตารางข้อความที่วิเคราะห์แล้ว")
+            st.dataframe(
+                df_analyzed[["message", "category", "confidence"]].sort_values(by="confidence", ascending=False),
+                height=600
+            )
