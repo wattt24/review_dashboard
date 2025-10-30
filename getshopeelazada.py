@@ -16,10 +16,13 @@ app = FastAPI(title="Fujika Dashboard API")
 import requests
 import time
 # from services import shopee_auth
-from utils.config import SHOPEE_SHOP_ID
+
+@app.get("/")
+def home():
+    return {"status": "ok"}
 @app.get("/")
 async def root():
-    
+
     return {"message": "Service is running"}
 @app.get("/shopee/authorize")
 async def shopee_authorize():
