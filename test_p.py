@@ -267,3 +267,36 @@
     #     df_analyzed[["message", "category", "confidence"]].sort_values(by="confidence", ascending=False),
     #     height=600
     # )
+
+# -*- coding: utf-8 -*-
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+import torch.nn.functional as F
+
+# โหลดโมเดลและ tokenizer
+model_name = "FlukeTJ/distilbert-base-thai-sentiment"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSequenceClassification.from_pretrained(model_name)
+
+def analyze_sentiment(text: str):
+    inputs = tokenizer(text[:512], return_tensors="pt")  # ตัด 512 token
+    # ลบ token_type_ids หากมี
+    if "token_type_ids" in inputs:
+        del inputs["token_type_ids"]
+    
+    outputs = model(**inputs)
+    probs = F.softmax(outputs.logits, dim=-1)
+    labels = ["negative", "neutral", "positive"]
+    idx = torch.argmax(probs, dim=-1).item()
+    return labels[idx], probs[0, idx].item()
+
+# ทดสอบ
+
+
+# 🔹 ตัวอย่างการใช้งาน
+if __name__ == "__main__":
+ 
+    text = "ใช้ดีจ้า ซื้อเป็นครั้งที่สองแล้ว ดีว่าเก็บโคดสำเร็จ แถมส่งฟรี ปิ้งเหมือนไปกินบาบีก้อน แต่วุกไม่ทันใจคนเยอะ กินได้ประมาณ 4 คน ถ้าเยอะรอย่างนานไป อาจต้องเพิ่มเตา"
+    sentiment, confidence = analyze_sentiment(text)
+    print(f"ข้อความ: {text}")
+    print(f"Sentiment: {sentiment}, Confidence: {confidence:.3f}")

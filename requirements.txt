@@ -23,5 +23,11 @@ altair
 transformers
 psycopg2-binary
 torch
+mysql-connector-python
+numpy
+schedule
+python-dateutil
+torchvision
+torchaudio
 
 

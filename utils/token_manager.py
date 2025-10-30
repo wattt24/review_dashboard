@@ -31,7 +31,8 @@ def get_gspread_client():
 client = get_gspread_client()
 
 # โหลด Sheet ID (มีแค่ตัวเดียว)
-GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID") or st.secrets.get("GOOGLE_SHEET_ID")
+# GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID") or st.secrets.get("GOOGLE_SHEET_ID")
+GOOGLE_SHEET_ID = "113NflRY6A8qDm5KmZ90bZSbQGWaNtFaDVK3qOPU8uqE"
 
 # ===== Utility functions =====
 def get_sheet():

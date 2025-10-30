@@ -45,7 +45,7 @@ def check_unique_values():
     print(df)
     return df
 # ==========================
-# 2️⃣ โหลดโมเดลสำหรับจัดหมวดหมู่
+# 2️⃣ โหลดโมเดล
 # ==========================
 def get_classifier():
     print("📦 กำลังโหลดโมเดล zero-shot classification...")
@@ -73,16 +73,23 @@ def classify_message(text, classifier):
 # ==========================
 # 4️⃣ วิเคราะห์ข้อความทั้งหมด
 # ==========================
-def analyze_messages(df):
-    if df.empty:
-        df["category"] = []
-        df["confidence"] = []
-        return df
+def update_analysis_results(df):
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    classifier = get_classifier()
-    results = [classify_message(x, classifier) for x in df["message"]]
-    df["category"], df["confidence"] = zip(*results)
-    return df
+    for _, row in df.iterrows():
+        query = """
+            UPDATE line_messages
+            SET category = %s,
+                confidence = %s
+            WHERE id = %s;
+        """
+        cursor.execute(query, (row["category"], row["confidence"], row["id"]))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    print(f"✅ อัปเดตผลการวิเคราะห์ {len(df)} แถวกลับเข้า database สำเร็จ!")
 
 
 def analyze_and_display_all():

@@ -8,7 +8,7 @@ from utils.config import (SHOPEE_PARTNER_ID, SHOPEE_PARTNER_SECRET, SHOPEE_SHOP_
 partner_id = 2012650
 partner_key = "shpk746161577650576364596f5657646c596b49705772546b4a52446a416b42"
 shop_id = 57360480
-access_token = "eyJhbGciOiJIUzI1NiJ9.COrrehABGOCArRsgASipnL3HBjD88e3jCzgBQAE.cYvkR8091JkyjaRCKHPT1NZI009rK13s9gdg_960Le4"
+access_token = "4d6c69445246576a535a615865644951"
 # ======= ฟังก์ชันสร้าง sign =======
 def shopee_generate_sign(path, timestamp, shop_id, access_token ):
     print(">>> DEBUG shop_id param:", shop_id)
@@ -29,78 +29,31 @@ def shopee_generate_sign(path, timestamp, shop_id, access_token ):
 
 
 
+def get_shop_info():
+    path = "/api/v2/shop/get_shop_info"
+    timestamp = int(time.time())
 
-# item_id = 1039005306  # 🟢 item_id ที่ต้องการดูรีวิว
+    sign = shopee_generate_sign(path, timestamp, SHOPEE_SHOP_ID, access_token)
 
-# timestamp = int(time.time())
-# path = "/api/v2/product/get_comment"
+    # ✅ ใส่ param ลงใน query string ตาม Shopee API ต้องการ
+    url = (
+        f"https://partner.shopeemobile.com{path}"
+        f"?partner_id={SHOPEE_PARTNER_ID}"
+        f"&timestamp={timestamp}"
+        f"&access_token={access_token}"
+        f"&shop_id={SHOPEE_SHOP_ID}"
+        f"&sign={sign}"  # 🟡 อาจใส่ sign ไปใน query ด้วย (ขึ้นกับ endpoint)
+    )
 
-# base_string = f"{partner_id}{path}{timestamp}{access_token}{shop_id}"
-# sign = hmac.new(
-#     partner_key.encode("utf-8"), base_string.encode("utf-8"), hashlib.sha256
-# ).hexdigest()
+    headers = {
+        "Content-Type": "application/json"
+    }
 
-# url = (
-#     f"https://partner.shopeemobile.com{path}"
-#     f"?access_token={access_token}"
-#     f"&partner_id={partner_id}"
-#     f"&shop_id={shop_id}"
-#     f"&timestamp={timestamp}"
-#     f"&sign={sign}"
-#     f"&item_id={item_id}"
-#     f"&page_size=50"
-# )
+    # ❌ Shopee endpoint นี้ ไม่ต้องการ body -> ลองส่งเป็น empty dict
+    response = requests.get(url, headers=headers)  # ✅ ใช้ GET ตาม Shopee doc
 
-# response = requests.get(url)
-# data = response.json()
-# print(json.dumps(data, indent=2, ensure_ascii=False))
-
-
-# response = requests.get(url)
-# data = response.json()
-
-# # ======= แสดงข้อมูลร้าน =======
-# print(data)
-
-# def get_all_items():
-#     path = "/api/v2/product/get_item_list"
-#     all_items = []
-#     offset = 0
-#     page_size = 50  # Shopee อนุญาตสูงสุด 100 ต่อหน้า
-
-#     while True:
-#         timestamp = int(time.time())
-#         sign = shopee_generate_sign(path, timestamp, shop_id, access_token)
-#         url = (
-#             f"https://partner.shopeemobile.com{path}"
-#             f"?access_token={access_token}"
-#             f"&partner_id={partner_id}"
-#             f"&shop_id={shop_id}"
-#             f"&timestamp={timestamp}"
-#             f"&sign={sign}"
-#             f"&item_status=NORMAL"
-#             f"&offset={offset}"
-#             f"&page_size={page_size}"
-#         )
-
-#         response = requests.get(url)
-#         data = response.json()
-
-#         # ตรวจสอบ error
-#         if data.get("error"):
-#             print(f"❌ ERROR: {data['error']} - {data['message']}")
-#             break
-
-#         response_data = data.get("response", {})
-#         items = response_data.get("item", [])
-#         all_items.extend(items)
-
-#         print(f"✅ ดึงมาแล้ว {len(all_items)} / {response_data.get('total_count', '?')} รายการ")
-
-#         if not response_data.get("has_next_page"):
-#             break  # ไม่มีหน้าถัดไปแล้ว
-
-#         offset = response_data.get("next_offset", offset + page_size)
-#         time.sleep(1)  # กัน rate limit
-
-#     return all_items
+    print("=== RESPONSE ===")
+    print(response.status_code)
+    print(response.text)
+# === RUN ===
+get_shop_info()
