@@ -73,6 +73,16 @@ def classify_message(text, classifier):
 # ==========================
 # 4️⃣ วิเคราะห์ข้อความทั้งหมด
 # ==========================
+def analyze_messages(df):
+    if df.empty:
+        df["category"] = []
+        df["confidence"] = []
+        return df
+
+    classifier = get_classifier()
+    results = [classify_message(x, classifier) for x in df["message"]]
+    df["category"], df["confidence"] = zip(*results)
+    return df
 def update_analysis_results(df):
     conn = get_connection()
     cursor = conn.cursor()
